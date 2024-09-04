@@ -199,7 +199,7 @@ int main(void) {
 				}
 				tag.command = TAG_TIMESTAMP_QUERY;
 			}
-			if (tag.readings == DISTANCE_READINGS - 2) {
+			if ((tag.readings == DISTANCE_READINGS - 2) ) { //|| (tag.command == TAG_SET_SLEEP_MODE)
 				tag.command = TAG_SET_SLEEP_MODE;
 				tag_status = TAG_SEND_SET_SLEEP;
 			}
@@ -521,7 +521,7 @@ static void MX_USART1_UART_Init(void) {
 
 	/* USER CODE END USART1_Init 1 */
 	huart1.Instance = USART1;
-	huart1.Init.BaudRate = 1000000;
+	huart1.Init.BaudRate = 250000;
 	huart1.Init.WordLength = UART_WORDLENGTH_8B;
 	huart1.Init.StopBits = UART_STOPBITS_1;
 	huart1.Init.Parity = UART_PARITY_NONE;

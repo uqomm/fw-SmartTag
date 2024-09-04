@@ -217,7 +217,8 @@ int main(void)
 			else if (tag_status == TAG_WAIT_FOR_TIMESTAMPT_QUERY)
 				query_ticks = HAL_GetTick();
 
-		} else if (tag_status == TAG_WAIT_FOR_TIMESTAMPT_QUERY) {
+		}
+		else if (tag_status == TAG_WAIT_FOR_TIMESTAMPT_QUERY) {
 			tag_status = process_queried_tag_information(tag);
 
 			if (tag_status == TAG_TX_SUCCESS) {
@@ -225,14 +226,15 @@ int main(void)
 					tag_status = TAG_WAIT_FOR_TIMESTAMPT_QUERY;
 				else if (tag->command == TAG_SET_SLEEP_MODE)
 					tag_status = TAG_SLEEP;
-			} else if (tag_status == TAG_RX_COMMAND_ERROR){
+			}
+			else if (tag_status == TAG_RX_COMMAND_ERROR){
 				HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
 				HAL_Delay(1);
 				HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_SET);
 				if (tag_init(&defatult_dwt_config, &defatult_dwt_txconfig,
 						&dwt_local_data, running_device, RATE_6M8) == 1)
 					Error_Handler();
-				tag_status = TAG_DISCOVERY;
+				tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
 			}
 
 			else
@@ -244,7 +246,8 @@ int main(void)
 				tag_status = TAG_SLEEP;
 			}
 
-		} else if (tag_status == TAG_SLEEP) {
+		}
+		else if (tag_status == TAG_SLEEP) {
 
 			tag->readings++;
 			debug(tag, tag_status);

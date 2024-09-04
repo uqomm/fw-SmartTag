@@ -521,7 +521,7 @@ void debug(TAG_t tag, TAG_STATUS_t status) {
 	HAL_UART_Transmit(&huart1, (uint8_t*) dist_str, size, HAL_MAX_DELAY);
 	//if (status == TAG_DISCOVERY || status == TAG_SEND_TIMESTAMP_QUERY)
 	if (status == TAG_DISCOVERY)
-		HAL_UART_Transmit(&huart1, (uint8_t*) "\r", 1, HAL_MAX_DELAY);
+		HAL_UART_Transmit(&huart1, (uint8_t*) "\n\r", 1, HAL_MAX_DELAY);
 	else
 		HAL_UART_Transmit(&huart1, (uint8_t*) "\n\r", 2, HAL_MAX_DELAY);
 
