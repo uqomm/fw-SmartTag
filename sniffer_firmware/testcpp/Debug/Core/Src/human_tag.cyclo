@@ -1,0 +1,12 @@
+../Core/Src/human_tag.c:16:14:process_first_tag_information	6
+../Core/Src/human_tag.c:75:14:process_queried_tag_information	8
+../Core/Src/human_tag.c:106:14:process_response	3
+../Core/Src/human_tag.c:142:14:send_message_with_timestamps	3
+../Core/Src/human_tag.c:191:10:send_response_with_timestamps	3
+../Core/Src/human_tag.c:244:9:read_human_tag_first_message	2
+../Core/Src/human_tag.c:344:10:create_message_and_alloc_buffer	2
+../Core/Src/human_tag.c:403:6:start_tag_reception_inmediate	1
+../Core/Src/human_tag.c:416:14:wait_rx_data	8
+../Core/Src/human_tag.c:464:10:allocate_and_read_received_frame	3
+../Core/Src/human_tag.c:492:5:start_transmission_delayed_with_response_expected	3
+../Core/Src/human_tag.c:531:6:sleep_config	1
