@@ -184,8 +184,9 @@ int main(void) {
 				tag_status = TAG_DISCOVERY;
 			else
 				query_ticks = HAL_GetTick();
-			set_battery_voltage(&(tag.battery_voltage));
-			set_temperature(&(tag.temperature));
+//			set_battery_voltage(&(tag.battery_voltage));
+//			set_temperature(&(tag.temperature));
+			int_to_float_Tag_Battery_Voltage(&tag);
 			debug(tag, tag_status);
 
 		} else if (tag_status == TAG_SEND_TIMESTAMP_QUERY) {

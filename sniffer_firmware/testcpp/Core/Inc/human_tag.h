@@ -31,10 +31,11 @@ typedef struct {
 	uint32_t id;
 	uint64_t readings;
 	uint8_t command;
-	uint16_t raw_battery_voltage; // IC V bat read during production and stored in OTP (Vmeas @ 3V3)
-	uint8_t raw_temperature; // IC temp read during production and stored in OTP (Tmeas @ 23C)
-	uint8_t calibrated_battery_voltage; // IC V bat read during production and stored in OTP (Vmeas @ 3V3)
-	uint8_t calibrateds_temperature; // IC temp read during production and stored in OTP (Tmeas @ 23C)
+	uint16_t Voltaje_Bat;
+//	uint16_t raw_battery_voltage; // IC V bat read during production and stored in OTP (Vmeas @ 3V3)
+//	uint8_t raw_temperature; // IC temp read during production and stored in OTP (Tmeas @ 23C)
+//	uint8_t calibrated_battery_voltage; // IC V bat read during production and stored in OTP (Vmeas @ 3V3)
+//	uint8_t calibrateds_temperature; // IC temp read during production and stored in OTP (Tmeas @ 23C)
 	uint32_t resp_tx_timestamp;
 	uint32_t poll_rx_timestamp;
 	uint32_t resp_tx_time;
@@ -68,7 +69,7 @@ typedef enum{
 	TAG_UNKNOWN
 
 }TAG_STATUS_t;
-#define TX_BUFFER_SIZE (sizeof(uint8_t) + 3 * sizeof(uint32_t) + 4 * sizeof(uint8_t))
+#define TX_BUFFER_SIZE (sizeof(uint8_t) + 3 * sizeof(uint32_t) + 4 * sizeof(uint8_t)) //Modificar para tamaño de batería de 16bits unsigned
 #define TAG_TIMESTAMP_QUERY 0x11
 #define TAG_SET_SLEEP_MODE 0x12
 #define TAG_ID_QUERY 0x13

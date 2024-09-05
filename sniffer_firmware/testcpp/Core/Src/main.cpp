@@ -196,14 +196,15 @@ int main(void)
 	tag->resp_tx_time = 0;
 	tag->resp_tx_timestamp = 0;
 	tag->poll_rx_timestamp = 0;
+	tag->Voltaje_Bat = 0;
 
 	tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
 	tag->id = _dwt_otpread(PARTID_ADDRESS);
-	tag->calibrateds_temperature = _dwt_otpread(VTEMP_ADDRESS);
-	tag->calibrated_battery_voltage = _dwt_otpread(VBAT_ADDRESS);
-	uint16_t read_temp_vbat = dwt_readtempvbat();
-	tag->raw_temperature = (uint8_t) (read_temp_vbat >> 8);
-	tag->raw_battery_voltage = (uint8_t) (read_temp_vbat);
+//	tag->calibrateds_temperature = _dwt_otpread(VTEMP_ADDRESS);
+//	tag->calibrated_battery_voltage = _dwt_otpread(VBAT_ADDRESS);
+//	uint16_t read_temp_vbat = dwt_readtempvbat();
+//	tag->raw_temperature = (uint8_t) (read_temp_vbat >> 8);
+//	tag->raw_battery_voltage = (uint8_t) (read_temp_vbat);
 	dwt_configuresleep(DWT_RUNSAR, DWT_WAKE_WUP);
 	dwt_configuresleepcnt(4095);
 	//dwt_setsniffmode(1, 2, 200);
@@ -243,7 +244,7 @@ int main(void)
 
 		if(flags == 0x80){
 			flags = 0;
-			tag->raw_battery_voltage = battery_charger.register_adc_bat();//register_adc_bat(0x42, 0x43);
+			tag->Voltaje_Bat = battery_charger.register_adc_bat();//register_adc_bat(0x42, 0x43);
 		}
 
 		tag_status = process_queried_tag_information(tag);

@@ -76,13 +76,13 @@ void reset_TAG_values(TAG_t *tag) {
 	tag->command = 0;
 	tag->distance = NULL;
 	// Initialize Measurement_data_t variables to zero
-	tag->temperature.calibrated = 0;
-	tag->temperature.raw = 0;
-	tag->temperature.real = 0.0;
-
-	tag->battery_voltage.calibrated = 0;
-	tag->battery_voltage.raw = 0;
-	tag->battery_voltage.real = 0.0;
+//	tag->temperature.calibrated = 0;
+//	tag->temperature.raw = 0;
+//	tag->temperature.real = 0.0;
+//
+//	tag->battery_voltage.calibrated = 0;
+//	tag->battery_voltage.raw = 0;
+//	tag->battery_voltage.real = 0.0;
 
 	tag->distance_a.value = 0;
 	for (int i = 0; i < DISTANCE_READINGS / 2; i++) {
@@ -134,14 +134,16 @@ static TAG_STATUS_t setup_and_transmit(TAG_t *tag, uint8_t *tx_buffer,
 static void parse_received_data(TAG_t *tag, const uint8_t *rx_buffer) {
 	tag->id = *(const uint32_t*) (rx_buffer + 1);
 	compute_distance(tag, rx_buffer, POLL_RX_OFFSET, RESP_TX_OFFSET);
-	tag->battery_voltage.raw = *(const uint8_t*) (rx_buffer
-			+ BATTERY_VOLTAGE_RAW_OFFSET);
-	tag->battery_voltage.calibrated = *(const uint8_t*) (rx_buffer
-			+ BATTERY_VOLTAGE_CALIBRATED_OFFSET);
-	tag->temperature.raw =
-			*(const uint8_t*) (rx_buffer + TEMPERATURE_RAW_OFFSET);
-	tag->temperature.calibrated = *(const uint8_t*) (rx_buffer
-			+ TEMPERATURE_CALIBRATED_OFFSET);
+	tag->Battery_Voltage = *(const uint16_t*) (rx_buffer + BATTERY_VOLTAGE_RAW_OFFSET);
+//	tag->battery_voltage.real = *(const uint16_t*) (rx_buffer
+//			+ BATTERY_VOLTAGE_RAW_OFFSET);
+//	tag->battery_voltage.real = (tag->battery_voltage.real*6.0)/65536.0;
+//	tag->battery_voltage.calibrated = *(const uint8_t*) (rx_buffer
+//			+ BATTERY_VOLTAGE_CALIBRATED_OFFSET);
+//	tag->temperature.raw =
+//			*(const uint8_t*) (rx_buffer + TEMPERATURE_RAW_OFFSET);
+//	tag->temperature.calibrated = *(const uint8_t*) (rx_buffer
+//			+ TEMPERATURE_CALIBRATED_OFFSET);
 }
 
 TAG_STATUS_t tag_send_timestamp_query(TAG_t *tag) {
@@ -507,16 +509,17 @@ void debug(TAG_t tag, TAG_STATUS_t status) {
 		status = TAG_UNKNOWN;
 	}
 
-	size =
-			sprintf(dist_str,
-					"{message: %s},{ID: 0x%08X},{times: %lu},{error_a:%u},{error_b:%u},{distance_a: %0.2f},{distance_b: %0.2f},{battery_voltage: %u},{temperature: %u}",
-					TAG_MESSAGES[status], (int) tag.id,
+	size =	sprintf(dist_str,
+			"{message: %s},{ID: 0x%08X},{times: %lu},{error_a:%u},{error_b:%u},{distance_a: %0.2f},{distance_b: %0.2f},{battery_voltage: %0.2f}",
+					TAG_MESSAGES[status],
+					(int) tag.id,
 					(unsigned long) tag.readings,
 					tag.distance_a.error_times,
 					tag.distance_b.error_times,
 					(float) tag.distance_a.readings[tag.distance_a.counter - 1],
 					(float) tag.distance_b.readings[tag.distance_b.counter - 1],
-					tag.battery_voltage.real, tag.temperature.real);
+					tag.Float_Battery_Voltage);
+//					tag.temperature.real);
 
 	HAL_UART_Transmit(&huart1, (uint8_t*) dist_str, size, HAL_MAX_DELAY);
 	//if (status == TAG_DISCOVERY || status == TAG_SEND_TIMESTAMP_QUERY)
@@ -554,10 +557,14 @@ void debug_tag(TAG_t tag) {
 	int size = 0;
 	size =
 			sprintf(dist_str,
-					"{ID: 0x%08X},{times: %lu},{distance_a: %u},{distance_b: %u},{battery_voltage: %u},{temperature: %u}",
-					(int) tag.id, (unsigned long) tag.readings,
-					tag.distance_a.value, tag.distance_b.value,
-					tag.battery_voltage.real, tag.temperature.real);
+					"{ID: 0x%08X},{times: %lu},{distance_a: %u},{distance_b: %u},{battery_voltage: %0.2f}",
+					(int) tag.id,
+					(unsigned long) tag.readings,
+					tag.distance_a.value,
+					tag.distance_b.value,
+					tag.Float_Battery_Voltage);
+//					tag.battery_voltage.real,
+//					tag.temperature.real);
 
 	HAL_UART_Transmit(&huart1, (uint8_t*) dist_str, size,
 	HAL_MAX_DELAY);
@@ -621,21 +628,26 @@ void print_serialized_tags(TAG_List *list) {
 	HAL_UART_Transmit(&huart1, (uint8_t*) "####\n\r", (uint16_t) 6,
 	HAL_MAX_DELAY);
 }
-void set_battery_voltage(Mesurement_data_t *measurement) {
-	/* Bench measurements gives approximately:
-	 * VDDBAT = sar_read * Vref / max_code * 16x_atten   - assume Vref @ 3.0V
-	 */
-	measurement->real = (float) ((float) (measurement->raw
-			- measurement->calibrated) * 0.4f * 16 / 255) + 3.0f;
+//void set_battery_voltage(Mesurement_data_t *measurement) {
+//	/* Bench measurements gives approximately:
+//	 * VDDBAT = sar_read * Vref / max_code * 16x_atten   - assume Vref @ 3.0V
+//	 */
+//	measurement->real = (float) ((float) (measurement->raw
+//			- measurement->calibrated) * 0.4f * 16 / 255) + 3.0f;
+//}
+//
+//void set_temperature(Mesurement_data_t *measurement) {
+//	/* the User Manual formula is:
+//	 * Temperature (�C) = ( (SAR_LTEMP ?OTP_READ(Vtemp @ 20�C) ) x 1.05)        // Vtemp @ 20�C
+//	 */
+//	measurement->real = (float) ((measurement->raw - measurement->calibrated)
+//			* 105) + 200;
+//}
+
+void int_to_float_Tag_Battery_Voltage(TAG_t *tag){
+	tag->Float_Battery_Voltage = ((tag->Battery_Voltage)*6.0)/65536.0;
 }
 
-void set_temperature(Mesurement_data_t *measurement) {
-	/* the User Manual formula is:
-	 * Temperature (�C) = ( (SAR_LTEMP ?OTP_READ(Vtemp @ 20�C) ) x 1.05)        // Vtemp @ 20�C
-	 */
-	measurement->real = (float) ((measurement->raw - measurement->calibrated)
-			* 105) + 200;
-}
 
 // Function to insert a new TAG_t node into the linked list
 
@@ -725,13 +737,13 @@ static void serialize_tag(TAG_t *tag, uint8_t *buffer) {
 			sizeof(tag->distance_b.value));
 	offset += sizeof(tag->distance_b.value);
 
-	memcpy(buffer + offset, &tag->temperature.real,
-			sizeof(tag->temperature.real));
-	offset += sizeof(tag->temperature.real);
-
-	memcpy(buffer + offset, &tag->battery_voltage.real,
-			sizeof(tag->battery_voltage.real));
-	offset += sizeof(tag->battery_voltage.real);
+//	memcpy(buffer + offset, &tag->temperature.real,
+//			sizeof(tag->temperature.real));
+//	offset += sizeof(tag->temperature.real);
+//
+//	memcpy(buffer + offset, &tag->battery_voltage.real,
+//			sizeof(tag->battery_voltage.real));
+//	offset += sizeof(tag->battery_voltage.real);
 }
 
 void serialize_tag_list(TAG_List *list, uint8_t *buffer) {
@@ -742,8 +754,9 @@ void serialize_tag_list(TAG_List *list, uint8_t *buffer) {
 		offset += sizeof(current->tag.id)
 				+ sizeof(current->tag.distance_a.value)
 				+ sizeof(current->tag.distance_b.value)
-				+ sizeof(current->tag.temperature.real)
-				+ sizeof(current->tag.battery_voltage.real);
+				+ sizeof(current->tag.Float_Battery_Voltage);
+//				+ sizeof(current->tag.temperature.real)
+//				+ sizeof(current->tag.battery_voltage.real);
 		current = current->next;
 	}
 }

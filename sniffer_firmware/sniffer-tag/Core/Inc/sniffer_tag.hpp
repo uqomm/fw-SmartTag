@@ -44,11 +44,11 @@ typedef struct {
 	uint8_t counter;
 } Distance_t;
 
-typedef struct {
-	uint8_t calibrated;
-	uint8_t raw;
-	uint16_t real;
-} Mesurement_data_t;
+//typedef struct {
+//	uint8_t calibrated;
+//	uint8_t raw;
+//	uint16_t real;
+//} Mesurement_data_t;
 
 typedef struct {
 	uint32_t id;
@@ -57,8 +57,10 @@ typedef struct {
 	Distance_t *distance;
 	Distance_t distance_a;
 	Distance_t distance_b;
-	Mesurement_data_t temperature;
-	Mesurement_data_t battery_voltage;
+	uint16_t Battery_Voltage;
+	float Float_Battery_Voltage;
+//	Mesurement_data_t temperature;
+//	Mesurement_data_t battery_voltage;
 } TAG_t;
 
 typedef struct tag_node {
@@ -128,8 +130,9 @@ void debug_status(TAG_STATUS_t status);
 void debug(TAG_t tag, TAG_STATUS_t status);
 void debug_tag(TAG_t tag);
 double distance_smooth(Distance_t *distance);
-void set_battery_voltage(Mesurement_data_t *battery_voltage);
-void set_temperature(Mesurement_data_t *temperature);
+//void set_battery_voltage(Mesurement_data_t *battery_voltage);
+//void set_temperature(Mesurement_data_t *temperature);
+void int_to_float_Tag_Battery_Voltage(TAG_t *tag);
 // Function to insert a new TAG_t node into the linked list
 void insert_tag(TAG_List *list, TAG_t new_tag);
 void delete_tag(TAG_List *list, uint32_t id);

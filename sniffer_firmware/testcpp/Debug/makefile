@@ -84,8 +84,8 @@ all: main-build
 main-build: testcpp.elf secondary-outputs
 
 # Tool invocations
-testcpp.elf testcpp.map: $(OBJS) $(USER_OBJS) C:\Users\manue\Documents\Tag\testcpp\STM32U535VETXQ_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-g++ -o "testcpp.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"C:\Users\manue\Documents\Tag\testcpp\STM32U535VETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="testcpp.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
+testcpp.elf testcpp.map: $(OBJS) $(USER_OBJS) C:\Users\manue\Documents\Projects\sniffer-tag\sniffer_firmware\testcpp\STM32U535VETXQ_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-g++ -o "testcpp.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"C:\Users\manue\Documents\Projects\sniffer-tag\sniffer_firmware\testcpp\STM32U535VETXQ_FLASH.ld" --specs=nosys.specs -Wl,-Map="testcpp.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

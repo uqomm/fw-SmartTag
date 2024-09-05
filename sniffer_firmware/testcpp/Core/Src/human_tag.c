@@ -57,12 +57,13 @@ TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 	index += sizeof(uint32_t);
 	*(uint32_t*) (tx_buffer + index) = tag->resp_tx_timestamp;
 	index += sizeof(uint32_t);
-	tx_buffer[index++] = tag->raw_battery_voltage;
-	tx_buffer[index++] = tag->calibrated_battery_voltage;
-	tx_buffer[index++] = tag->raw_temperature;
-	tx_buffer[index++] = tag->calibrateds_temperature;
+	*(uint16_t*) (tx_buffer + index) = tag->Voltaje_Bat;
+//	tx_buffer[index++] = tag->raw_battery_voltage;
+//	tx_buffer[index++] = tag->calibrated_battery_voltage;
+//	tx_buffer[index++] = tag->raw_temperature;
+//	tx_buffer[index++] = tag->calibrateds_temperature;
 
-	if (dwt_writetxdata(tx_buffer_size, tx_buffer, 0) == DWT_ERROR) /* Zero offset in TX buffer. */
+	if (dwt_writetxdata(tx_buffer_size, tx_buffer, 0) == DWT_ERROR) /* Zero offset in TX buffer. */ //MODIFICAR TAMAÑO DE BUFFER
 		return (TAG_TX_ERROR);
 	dwt_writetxfctrl(tx_buffer_size + 2, 0, 1);
 	/*DWT_START_TX_DELAYED DWT_START_TX_IMMEDIATE*/
@@ -125,6 +126,8 @@ TAG_STATUS_t process_response(TAG_t *tag) {
 	*(uint32_t*) (tx_buffer + index) = poll_rx_timestamp;
 	index += sizeof(uint32_t);
 	*(uint32_t*) (tx_buffer + index) = resp_tx_timestamp;
+	index += sizeof(uint32_t);
+	*(uint16_t*) (tx_buffer + index) = tag->Voltaje_Bat;
 
 	tag->poll_rx_timestamp = poll_rx_timestamp;
 	tag->resp_tx_timestamp = resp_tx_timestamp;
@@ -382,17 +385,17 @@ uint32_t create_message_and_alloc_buffer(TX_BUFFER_t *tx, TAG_t *tag) {
 	// Write resp_tx_timestamp to the buffer
 	*(uint32_t*) (tx->buffer + 1 + 2 * sizeof(uint32_t)) = resp_tx_timestamp;
 	// Write resp_tx_timestamp to the buffer
-	*(uint8_t*) (tx->buffer + 1 + 3 * sizeof(uint32_t)) =
-			tag->raw_battery_voltage;
-	// Write resp_tx_timestamp to the buffer
-	*(uint8_t*) (tx->buffer + 1 + 3 * sizeof(uint32_t) + sizeof(uint8_t)) =
-			tag->calibrated_battery_voltage;
-	// Write resp_tx_timestamp to the buffer
-	*(uint8_t*) (tx->buffer + 1 + 3 * sizeof(uint32_t) + 2 * sizeof(uint8_t)) =
-			tag->raw_temperature;
-	// Write resp_tx_timestamp to the buffer
-	*(uint8_t*) (tx->buffer + 1 + 3 * sizeof(uint32_t) + 3 * sizeof(uint8_t)) =
-			tag->calibrateds_temperature;
+//	*(uint8_t*) (tx->buffer + 1 + 3 * sizeof(uint32_t)) =
+//			tag->raw_battery_voltage;
+//	// Write resp_tx_timestamp to the buffer
+//	*(uint8_t*) (tx->buffer + 1 + 3 * sizeof(uint32_t) + sizeof(uint8_t)) =
+//			tag->calibrated_battery_voltage;
+//	// Write resp_tx_timestamp to the buffer
+//	*(uint8_t*) (tx->buffer + 1 + 3 * sizeof(uint32_t) + 2 * sizeof(uint8_t)) =
+//			tag->raw_temperature;
+//	// Write resp_tx_timestamp to the buffer
+//	*(uint8_t*) (tx->buffer + 1 + 3 * sizeof(uint32_t) + 3 * sizeof(uint8_t)) =
+//			tag->calibrateds_temperature;
 
 	tx->poll_rx_timestamp = poll_rx_timestamp;
 	tx->resp_tx_timestamp = resp_tx_timestamp;
