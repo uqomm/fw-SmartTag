@@ -41,7 +41,7 @@ typedef struct {
 	double readings[DISTANCE_READINGS/2];
 	uint16_t value;
 	uint8_t error_times;
-	uint8_t counter;
+	uint16_t counter;
 } Distance_t;
 
 //typedef struct {

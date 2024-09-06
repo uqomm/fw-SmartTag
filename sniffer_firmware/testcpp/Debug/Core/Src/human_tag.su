@@ -1,6 +1,6 @@
 ../Core/Src/human_tag.c:16:14:process_first_tag_information	64	static
 ../Core/Src/human_tag.c:76:14:process_queried_tag_information	40	static
-../Core/Src/human_tag.c:107:14:process_response	112	static
+../Core/Src/human_tag.c:107:14:process_response	104	static
 ../Core/Src/human_tag.c:145:14:send_message_with_timestamps	112	static
 ../Core/Src/human_tag.c:194:10:send_response_with_timestamps	104	static
 ../Core/Src/human_tag.c:247:9:read_human_tag_first_message	24	static

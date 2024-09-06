@@ -191,7 +191,7 @@ int main(void) {
 
 		} else if (tag_status == TAG_SEND_TIMESTAMP_QUERY) {
 			if (tag.readings < DISTANCE_READINGS) {
-				if (hw == &uwb_hw_a) {
+				if ((hw == &uwb_hw_a) && (tag.distance_b.counter < 15)){
 					hw = &uwb_hw_b;
 					tag.distance = &(tag.distance_b);
 				} else {

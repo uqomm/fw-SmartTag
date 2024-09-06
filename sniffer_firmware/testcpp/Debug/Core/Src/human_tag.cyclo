@@ -1,5 +1,5 @@
 ../Core/Src/human_tag.c:16:14:process_first_tag_information	6
-../Core/Src/human_tag.c:76:14:process_queried_tag_information	8
+../Core/Src/human_tag.c:76:14:process_queried_tag_information	7
 ../Core/Src/human_tag.c:107:14:process_response	3
 ../Core/Src/human_tag.c:145:14:send_message_with_timestamps	3
 ../Core/Src/human_tag.c:194:10:send_response_with_timestamps	3

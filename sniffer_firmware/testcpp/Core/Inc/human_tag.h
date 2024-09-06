@@ -69,7 +69,7 @@ typedef enum{
 	TAG_UNKNOWN
 
 }TAG_STATUS_t;
-#define TX_BUFFER_SIZE (sizeof(uint8_t) + 3 * sizeof(uint32_t) + 4 * sizeof(uint8_t)) //Modificar para tamaño de batería de 16bits unsigned
+#define TX_BUFFER_SIZE (sizeof(uint8_t) + 3 * sizeof(uint32_t) + sizeof(uint16_t)) //Modificar para tamaño de batería de 16bits unsigned
 #define TAG_TIMESTAMP_QUERY 0x11
 #define TAG_SET_SLEEP_MODE 0x12
 #define TAG_ID_QUERY 0x13

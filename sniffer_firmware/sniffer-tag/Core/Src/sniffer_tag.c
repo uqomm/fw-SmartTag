@@ -150,7 +150,7 @@ TAG_STATUS_t tag_send_timestamp_query(TAG_t *tag) {
 	assert_param(tag != NULL);
 
 	uint8_t tx_buffer[TX_BUFFER_SIZE] = { 0 };
-	uint8_t rx_buffer[FRAME_LEN_MAX_EX];
+	uint8_t rx_buffer[FRAME_LEN_MAX_EX]; // verificar el size del buffer de recepcion.
 	uint32_t rx_buffer_size = 0;
 
 	tx_buffer[0] = tag->command;
@@ -179,10 +179,14 @@ static TAG_STATUS_t handle_received_command(TAG_t *tag,
 	case TAG_TIMESTAMP_QUERY:
 		compute_distance(tag, (uint8_t*) rx_buffer, poll_rx_offset,
 				resp_tx_offset);
+//		if (tag->distance->counter == DISTANCE_READINGS/2)
+//			return TAG_END_READINGS;
 		return TAG_SEND_TIMESTAMP_QUERY;
 	case TAG_SET_SLEEP_MODE:
 		compute_distance(tag, (uint8_t*) rx_buffer, poll_rx_offset,
 				resp_tx_offset);
+//		if (tag->distance->counter == DISTANCE_READINGS/2)
+//			return TAG_END_READINGS;
 		return TAG_END_READINGS;
 	default:
 		return TAG_RX_NO_COMMAND;
@@ -510,12 +514,14 @@ void debug(TAG_t tag, TAG_STATUS_t status) {
 	}
 
 	size =	sprintf(dist_str,
-			"{message: %s},{ID: 0x%08X},{times: %lu},{error_a:%u},{error_b:%u},{distance_a: %0.2f},{distance_b: %0.2f},{battery_voltage: %0.2f}",
+			"{message: %s},{ID: 0x%08X},{times: %lu},{error_a:%u},{error_b:%u},{Counter_a: %lu},{Counter_b: %lu},{distance_a: %0.2f},{distance_b: %0.2f},{battery_voltage: %0.2f}",
 					TAG_MESSAGES[status],
 					(int) tag.id,
 					(unsigned long) tag.readings,
 					tag.distance_a.error_times,
 					tag.distance_b.error_times,
+					tag.distance_a.counter,
+					tag.distance_b.counter,
 					(float) tag.distance_a.readings[tag.distance_a.counter - 1],
 					(float) tag.distance_b.readings[tag.distance_b.counter - 1],
 					tag.Float_Battery_Voltage);

@@ -86,7 +86,7 @@ TAG_STATUS_t process_queried_tag_information(TAG_t *tag) {
 	uint8_t rx_buffer[5];
 	if (rx_buffer_size == 0)
 		return (TAG_RX_DATA_ZERO);
-	if ((rx_buffer_size < 5) && (tag->command != TAG_SET_SLEEP_MODE)) //Revisar
+	if ((rx_buffer_size < 5)) //Revisar && (tag->command != TAG_SET_SLEEP_MODE)
 		return (TAG_WAIT_FOR_TIMESTAMPT_QUERY);
 
 	dwt_readrxdata(rx_buffer, (uint16_t) rx_buffer_size, 0);
