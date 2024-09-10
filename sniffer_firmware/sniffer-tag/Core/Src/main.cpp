@@ -151,7 +151,6 @@ int main(void) {
 	Gpio rx_lora_rst = Gpio(LORA_RX_NRST_GPIO_Port, LORA_RX_NRST_Pin);
 
 	Txlora txlora = Txlora(tx_lora_nss, tx_lora_rst, &hspi1, &eeprom);
-	//Txlora txlora = Txlora(tx_lora_nss, tx_lora_rst, &hspi1, &eeprom);
 	Rxlora rxlora = Rxlora(rx_lora_nss, rx_lora_rst, &hspi2, &eeprom);
 
 	/* USER CODE END 2 */
