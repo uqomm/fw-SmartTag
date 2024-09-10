@@ -17,13 +17,16 @@
  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include <sniffer_tag.hpp>
-#include "SX1278.h"
+
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <sniffer_tag.hpp>
+#include "Gpio.hpp"
+#include "Rxlora.hpp"
+#include "Txlora.hpp"
+#include "Memory.hpp"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,7 +46,6 @@
 
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c3;
-
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 SPI_HandleTypeDef hspi3;
@@ -61,9 +63,6 @@ Uwb_HW_t *hw;
 dwt_local_data_t *pdw3000local;
 uint8_t crcTable[256];
 uint8_t recvChar;
-LORA_t lora;
-SX1276_HW_t sx1276_hw_tx;
-SX1276_HW_t sx1276_hw_rx;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -119,22 +118,6 @@ int main(void) {
 	/* USER CODE BEGIN 2 */
 	pdw3000local = new dwt_local_data_t;
 
-	init_sx1276_hw(&sx1276_hw_tx, &hspi1, LORA_TX_NSS_GPIO_Port,
-	LORA_TX_NSS_Pin,
-	LORA_TX_NRST_GPIO_Port, LORA_TX_NRST_Pin,
-	LORA_TX_DIO0_GPIO_Port,
-	LORA_TX_DIO0_Pin);
-
-	init_sx1276_hw(&sx1276_hw_rx, &hspi2, LORA_RX_NSS_GPIO_Port,
-	LORA_RX_NSS_Pin,
-	LORA_RX_NRST_GPIO_Port, LORA_RX_NRST_Pin,
-	LORA_RX_DIO0_GPIO_Port,
-	LORA_RX_DIO0_Pin);
-
-	HAL_GPIO_WritePin(LORA_TX_LED_GPIO_Port, LORA_TX_LED_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LORA_RX_LED_GPIO_Port, LORA_RX_LED_Pin, GPIO_PIN_SET);
-
-	lora_init(&lora, &sx1276_hw_tx, &sx1276_hw_rx);
 
 	TAG_List list = { NULL, 0 };
 
@@ -150,17 +133,26 @@ int main(void) {
 	init_uwb_device(&uwb_hw_b, &hspi3, DW3000_B_CS_GPIO_Port, DW3000_B_CS_Pin,
 			DW3000_B_RST_GPIO_Port, DW3000_B_RST_Pin);
 
-
 	TAG_t tag;
 	reset_TAG_values(&tag);
 
 	TAG_STATUS_t tag_status = TAG_DISCOVERY;
-	uint32_t lora_send_timeout = 5000;
-	uint32_t lora_send_ticks = HAL_GetTick();
 	uint32_t query_timeout = 1000;
 	uint32_t query_ticks;
 
 	RDSS_status_t rdss_status;
+
+	Memory eeprom = Memory(&hi2c3);
+
+
+	Gpio tx_lora_nss = Gpio(LORA_TX_NSS_GPIO_Port, LORA_TX_NSS_Pin);
+	Gpio tx_lora_rst = Gpio(LORA_TX_NRST_GPIO_Port, LORA_TX_NRST_Pin);
+	Gpio rx_lora_nss = Gpio(LORA_RX_NSS_GPIO_Port, LORA_RX_NSS_Pin);
+	Gpio rx_lora_rst = Gpio(LORA_RX_NRST_GPIO_Port, LORA_RX_NRST_Pin);
+
+	Txlora txlora = Txlora(tx_lora_nss, tx_lora_rst, &hspi1, &eeprom);
+	//Txlora txlora = Txlora(tx_lora_nss, tx_lora_rst, &hspi1, &eeprom);
+	Rxlora rxlora = Rxlora(rx_lora_nss, rx_lora_rst, &hspi2, &eeprom);
 
 	/* USER CODE END 2 */
 
@@ -238,71 +230,6 @@ int main(void) {
 
 		}
 
-		if (read_lora_packet(&lora) > 0) {
-			rdss_status = rdss_validation(lora.rxData, lora.rxSize, 0x00);
-			if (rdss_status == DATA_OK) {
-				uint8_t *rx = lora.rxData;
-				size_t temp_value = 1 + list.count * SERIALIZED_TAG_SIZE; // Or use uint32_t
-				uint8_t tag_bytes = (uint8_t) temp_value;
-				uint8_t response_length = calculate_frame_length(tag_bytes);
-				uint8_t tx[response_length];
-				memset(tx, 0, response_length);
-				memcpy(tx, rx, LORA_DATA_LENGHT_INDEX_1);
-				memcpy(tx + LORA_DATA_LENGHT_INDEX_1, &tag_bytes,
-						sizeof(tag_bytes));
-				uint8_t *tx_data = tx + LORA_DATA_START_INDEX;
-				tx_data[0] = list.count;
-				tx_data++;
-				serialize_tag_list(&list, tx_data);
-				uint8_t CRC_INDEX = LORA_DATA_START_INDEX
-						+ tx[LORA_DATA_LENGHT_INDEX_1];
-				uint8_t END_INDEX = CRC_INDEX + CRC_SIZE;
-				setCrc(tx, CRC_INDEX);
-				tx[END_INDEX] = LTEL_END_MARK;
-				HAL_GPIO_WritePin(LORA_TX_LED_GPIO_Port, LORA_TX_LED_Pin,
-						GPIO_PIN_RESET);
-				write_lora_RegFifo(lora.txhw, tx, response_length);
-				start_lora_transmission(lora.txhw);
-				HAL_GPIO_WritePin(LORA_TX_LED_GPIO_Port, LORA_TX_LED_Pin,
-						GPIO_PIN_SET);
-				serialize_tag_list(&list, tx_data);
-				free(tx);
-				print_all_tags(&list, tag_status);
-				print_serialized_tags(&list);
-				free_tag_list(&list);
-				restart_lora_rx_continuous_mode(&lora);
-			} else {
-				lora_reset(lora.txhw);
-				lora_reset(lora.rxhw);
-				init_lora_parameters(&lora);
-			}
-		}
-
-		if (((HAL_GetTick() - lora_send_ticks) > lora_send_timeout)
-				&& tag_status == TAG_DISCOVERY) {
-			debug_status(tag_status);
-			size_t temp_value = 1 + list.count * SERIALIZED_TAG_SIZE; // Or use uint32_t
-			uint8_t tag_bytes = (uint8_t) temp_value;
-			uint8_t response_length = calculate_frame_length(tag_bytes);
-			uint8_t tx[response_length];
-			memset(tx, 0, response_length);
-			memcpy(tx + LORA_DATA_LENGHT_INDEX_1, &tag_bytes,
-					sizeof(tag_bytes));
-			uint8_t *tx_data = tx + LORA_DATA_START_INDEX;
-			tx_data[0] = list.count;
-			tx_data++;
-			serialize_tag_list(&list, tx_data);
-			uint8_t CRC_INDEX = LORA_DATA_START_INDEX
-					+ tx[LORA_DATA_LENGHT_INDEX_1];
-			uint8_t END_INDEX = CRC_INDEX + CRC_SIZE;
-			setCrc(tx, CRC_INDEX);
-			tx[END_INDEX] = LTEL_END_MARK;
-			print_all_tags(&list, tag_status);
-			print_serialized_tags(&list);
-			print_tx_hex(tx, response_length);
-			free_tag_list(&list);
-			lora_send_ticks = HAL_GetTick();
-		}
 
 		/* USER CODE BEGIN 3 */
 	}

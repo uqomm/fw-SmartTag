@@ -14,7 +14,6 @@ extern "C" {
 
 #include "main.h"
 #include "uwb3000Fxx.h"
-#include "SX1278.h"
 #include "eeprom.h"
 #include "rdss.h"
 #include <stdio.h>
