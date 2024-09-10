@@ -191,7 +191,7 @@ int main(void) {
 
 		} else if (tag_status == TAG_SEND_TIMESTAMP_QUERY) {
 			if (tag.readings < DISTANCE_READINGS) {
-				if ((hw == &uwb_hw_a) && (tag.distance_b.counter < 15)){
+				if ((hw == &uwb_hw_a) && (tag.distance_b.counter < DISTANCE_READINGS/2)){
 					hw = &uwb_hw_b;
 					tag.distance = &(tag.distance_b);
 				} else {
@@ -200,18 +200,22 @@ int main(void) {
 				}
 				tag.command = TAG_TIMESTAMP_QUERY;
 			}
-			if ((tag.readings == DISTANCE_READINGS - 2) ) { //|| (tag.command == TAG_SET_SLEEP_MODE)
+			if ((tag.readings == DISTANCE_READINGS - 3) ) { //|| (tag.command == TAG_SET_SLEEP_MODE)
 				tag.command = TAG_SET_SLEEP_MODE;
 				tag_status = TAG_SEND_SET_SLEEP;
+				tag.Estado_Final = 1;
 			}
 			debug(tag, tag_status);
 			tag_status = tag_send_timestamp_query(&tag);
 
-			if (tag_status == TAG_SEND_TIMESTAMP_QUERY) {
+			if ((tag_status == TAG_SEND_TIMESTAMP_QUERY) || (tag.Estado_Final == 0)) {
 				tag.readings++;
 				tag_status = TAG_SEND_TIMESTAMP_QUERY;
+//				if (tag.readings == DISTANCE_READINGS - 2){ //PRUEBA PARA MANDAR A TAG DISCOVERY
+//					tag_status = TAG_END_READINGS;
+//				}
 
-			} else if (tag_status == TAG_END_READINGS) {
+			} else if (tag.Estado_Final == 1) {
 				double distance_a_sum = 0;
 				double distance_b_sum = 0;
 				for (uint8_t i = 0; i < tag.distance_a.counter; i++)

@@ -41,9 +41,9 @@ typedef struct {
 	double readings[DISTANCE_READINGS/2];
 	uint16_t value;
 	uint8_t error_times;
-	uint16_t counter;
+	uint8_t counter;
 } Distance_t;
-
+//
 //typedef struct {
 //	uint8_t calibrated;
 //	uint8_t raw;
@@ -59,6 +59,7 @@ typedef struct {
 	Distance_t distance_b;
 	uint16_t Battery_Voltage;
 	float Float_Battery_Voltage;
+	uint8_t Estado_Final;
 //	Mesurement_data_t temperature;
 //	Mesurement_data_t battery_voltage;
 } TAG_t;

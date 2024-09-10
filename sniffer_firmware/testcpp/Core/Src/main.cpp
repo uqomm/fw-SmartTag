@@ -281,7 +281,7 @@ int main(void)
 		//debug(tag, tag_status);
 		tag->readings = 0;
 		HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
-		HAL_Delay(1000);
+		HAL_Delay(3000);
 		HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_SET);
 		if (tag_init(&defatult_dwt_config, &defatult_dwt_txconfig,
 				&dwt_local_data, running_device, RATE_6M8) == 1)

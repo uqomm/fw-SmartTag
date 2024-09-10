@@ -75,6 +75,8 @@ void reset_TAG_values(TAG_t *tag) {
 	tag->readings = 0;
 	tag->command = 0;
 	tag->distance = NULL;
+	tag->Battery_Voltage = 0;
+	tag->Estado_Final = 0;
 	// Initialize Measurement_data_t variables to zero
 //	tag->temperature.calibrated = 0;
 //	tag->temperature.raw = 0;
