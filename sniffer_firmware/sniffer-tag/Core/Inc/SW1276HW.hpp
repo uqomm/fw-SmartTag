@@ -5,8 +5,8 @@
  *      Author: artur
  */
 
-#ifndef SRC_SW1276HW_HPP_
-#define SRC_SW1276HW_HPP_
+#ifndef INC_SW1276HW_HPP_
+#define INC_SW1276HW_HPP_
 #include "main.h"
 
 
@@ -49,4 +49,4 @@ private:
     uint16_t dio0Pin;
 };
 
-#endif /* SRC_SW1276HW_HPP_ */
+#endif /* INC_SW1276HW_HPP_ */

@@ -5,7 +5,7 @@
  *      Author: artur
  */
 
-#include "SW1276HW.hpp"
+#include <SW1276HW.hpp>
 
 SX1276_HW::SX1276_HW(SPI_HandleTypeDef* _hspi , GPIO_TypeDef* _nssPort, uint16_t _nssPin,
         GPIO_TypeDef* _nrstPort, uint16_t _nrstPin,

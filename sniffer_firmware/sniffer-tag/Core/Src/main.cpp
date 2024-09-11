@@ -53,16 +53,7 @@ SPI_HandleTypeDef hspi3;
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
-double *distance_ptr;
-TAG_t *tag;
-int size = 0;
-uint8_t running_device = DEV_UWB3000F27;
-Uwb_HW_t uwb_hw_a;
-Uwb_HW_t uwb_hw_b;
-Uwb_HW_t *hw;
-dwt_local_data_t *pdw3000local;
-uint8_t crcTable[256];
-uint8_t recvChar;
+uint8_t Data_trans_test[9]={0x7E,0x05,0x04,0x11,0x00,0x00,0xf5,0x9d,0x7F};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -116,34 +107,7 @@ int main(void) {
 	MX_SPI2_Init();
 	MX_SPI3_Init();
 	/* USER CODE BEGIN 2 */
-	pdw3000local = new dwt_local_data_t;
-
-
-	TAG_List list = { NULL, 0 };
-
-	HAL_GPIO_WritePin(DW3000_B_WKUP_GPIO_Port, DW3000_B_WKUP_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(DW3000_A_WKUP_GPIO_Port, DW3000_A_WKUP_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(DW3000_A_CS_GPIO_Port, DW3000_A_CS_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(DW3000_B_CS_GPIO_Port, DW3000_B_CS_Pin, GPIO_PIN_RESET);
-
-	init_uwb_device(&uwb_hw_a, &hspi3, DW3000_A_CS_GPIO_Port,
-	DW3000_A_CS_Pin,
-	DW3000_A_RST_GPIO_Port, DW3000_A_RST_Pin);
-
-	init_uwb_device(&uwb_hw_b, &hspi3, DW3000_B_CS_GPIO_Port, DW3000_B_CS_Pin,
-			DW3000_B_RST_GPIO_Port, DW3000_B_RST_Pin);
-
-	TAG_t tag;
-	reset_TAG_values(&tag);
-
-	TAG_STATUS_t tag_status = TAG_DISCOVERY;
-	uint32_t query_timeout = 1000;
-	uint32_t query_ticks;
-
-	RDSS_status_t rdss_status;
-
 	Memory eeprom = Memory(&hi2c3);
-
 
 	Gpio tx_lora_nss = Gpio(LORA_TX_NSS_GPIO_Port, LORA_TX_NSS_Pin);
 	Gpio tx_lora_rst = Gpio(LORA_TX_NRST_GPIO_Port, LORA_TX_NRST_Pin);
@@ -153,82 +117,15 @@ int main(void) {
 	Txlora txlora = Txlora(tx_lora_nss, tx_lora_rst, &hspi1, &eeprom);
 	Rxlora rxlora = Rxlora(rx_lora_nss, rx_lora_rst, &hspi2, &eeprom);
 
+
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 		/* USER CODE END WHILE */
-		if (tag_status == TAG_DISCOVERY) {
-
-			if (hw == &uwb_hw_a) {
-				hw = &uwb_hw_b;
-				tag.distance = &(tag.distance_b);
-			} else {
-				hw = &uwb_hw_a;
-				tag.distance = &(tag.distance_a);
-			}
-
-			tag_status = tag_discovery(&tag);
-
-			if (tag_status != TAG_SEND_TIMESTAMP_QUERY)
-				tag_status = TAG_DISCOVERY;
-			else
-				query_ticks = HAL_GetTick();
-//			set_battery_voltage(&(tag.battery_voltage));
-//			set_temperature(&(tag.temperature));
-			int_to_float_Tag_Battery_Voltage(&tag);
-			debug(tag, tag_status);
-
-		} else if (tag_status == TAG_SEND_TIMESTAMP_QUERY) {
-			if (tag.readings < DISTANCE_READINGS) {
-				if ((hw == &uwb_hw_a) && (tag.distance_b.counter < 15)){
-					hw = &uwb_hw_b;
-					tag.distance = &(tag.distance_b);
-				} else {
-					hw = &uwb_hw_a;
-					tag.distance = &(tag.distance_a);
-				}
-				tag.command = TAG_TIMESTAMP_QUERY;
-			}
-			if ((tag.readings == DISTANCE_READINGS - 2) ) { //|| (tag.command == TAG_SET_SLEEP_MODE)
-				tag.command = TAG_SET_SLEEP_MODE;
-				tag_status = TAG_SEND_SET_SLEEP;
-			}
-			debug(tag, tag_status);
-			tag_status = tag_send_timestamp_query(&tag);
-
-			if (tag_status == TAG_SEND_TIMESTAMP_QUERY) {
-				tag.readings++;
-				tag_status = TAG_SEND_TIMESTAMP_QUERY;
-
-			} else if (tag_status == TAG_END_READINGS) {
-				double distance_a_sum = 0;
-				double distance_b_sum = 0;
-				for (uint8_t i = 0; i < tag.distance_a.counter; i++)
-					distance_a_sum += tag.distance_a.readings[i];
-
-				for (uint8_t i = 0; i < tag.distance_b.counter; i++)
-					distance_b_sum += tag.distance_b.readings[i];
-
-				tag.distance_a.value = (uint16_t) ((distance_a_sum * 100)
-						/ tag.distance_a.counter);
-				tag.distance_b.value = (uint16_t) ((distance_b_sum * 100)
-						/ tag.distance_b.counter);
-				insert_tag(&list, tag);
-				tag_status = TAG_DISCOVERY;
-				reset_TAG_values(&tag);
-			} else {
-				tag_status = TAG_SEND_TIMESTAMP_QUERY;
-			}
-			debug(tag, tag_status);
-			if (HAL_GetTick() - query_ticks > query_timeout) {
-				tag_status = TAG_DISCOVERY;
-				reset_TAG_values(&tag);
-			}
-
-		}
-
+txlora.transmit(Data_trans_test, sizeof(uint8_t), LinkMode::UPLINK);
+HAL_GPIO_TogglePin(LORA_TX_LED_GPIO_Port, LORA_TX_LED_Pin);
 
 		/* USER CODE BEGIN 3 */
 	}
