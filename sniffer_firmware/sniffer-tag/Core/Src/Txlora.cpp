@@ -69,7 +69,7 @@ uint8_t Txlora::transmit(uint8_t *data, uint8_t data_len, LinkMode mode) {
 
 	write_tx_fifo_data(data, data_len);
 	set_low_frequency_mode(DeviceOperatingMode::TX);
-	if((wait_irq(TX_DONE_MASK, 1000)))
+	if((wait_irq(TX_DONE_MASK, 10000)))
 			return -1;
 	return 0;
 }

@@ -22,7 +22,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <sniffer_tag.hpp>
 #include "Gpio.hpp"
 #include "Rxlora.hpp"
 #include "Txlora.hpp"
@@ -54,6 +53,7 @@ UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 uint8_t Data_trans_test[9]={0x7E,0x05,0x04,0x11,0x00,0x00,0xf5,0x9d,0x7F};
+uint8_t Data_reciv_test[9]={0,0,0,0,0,0,0,0,0};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -117,15 +117,24 @@ int main(void) {
 	Txlora txlora = Txlora(tx_lora_nss, tx_lora_rst, &hspi1, &eeprom);
 	Rxlora rxlora = Rxlora(rx_lora_nss, rx_lora_rst, &hspi2, &eeprom);
 
-
+	txlora.set_lora_settings(LoraBandWidth::BW_125KHZ, CodingRate::CR_4_6, SpreadFactor::SF_10, DOWNLINK_FREQ, UPLINK_FREQ);
+	rxlora.set_lora_settings(LoraBandWidth::BW_125KHZ, CodingRate::CR_4_6, SpreadFactor::SF_10, DOWNLINK_FREQ, UPLINK_FREQ);
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
+
+		if(txlora.transmit(Data_trans_test, sizeof(uint8_t), LinkMode::UPLINK)){
+		HAL_GPIO_TogglePin(LORA_TX_LED_GPIO_Port, LORA_TX_LED_Pin);
+			}
+
+//		if(!rxlora.receive(Data_reciv_test, LinkMode::UPLINK)){
+//		HAL_GPIO_TogglePin(LORA_RX_LED_GPIO_Port, LORA_RX_LED_Pin);
+//		}
+
+
 		/* USER CODE END WHILE */
-txlora.transmit(Data_trans_test, sizeof(uint8_t), LinkMode::UPLINK);
-HAL_GPIO_TogglePin(LORA_TX_LED_GPIO_Port, LORA_TX_LED_Pin);
 
 		/* USER CODE BEGIN 3 */
 	}

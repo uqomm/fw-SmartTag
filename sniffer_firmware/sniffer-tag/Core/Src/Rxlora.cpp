@@ -9,7 +9,7 @@
 
 
 Rxlora::Rxlora(Gpio _nss, Gpio _reset, SPI_HandleTypeDef *_spi, Memory* _eeprom) :
-	Rxsx1278(nss, reset, _spi) {
+	Rxsx1278(_nss, _reset, _spi) {
 
 	spi = _spi;
 	eeprom = _eeprom;
