@@ -11,7 +11,7 @@ static const char *TAG_MESSAGES[] = { "NO_RESPONSE", "NO_RXCG_DETECTED",
 		"RX_FRAME_TIMEOUT", "RX_PREAMBLE_DETECTION_TIMEOUT", "RX_CRC_VALID",
 		"RX_ERROR", "RX_DATA_ZERO", "RX_NO_COMMAND", "TX_ERROR",
 		"HUMAN_DISTANCE_OK", "END_READINGS", "DISCOVERY",
-		"SEND_TIMESTAMP_QUERY", "TAG_SET_SLEEP_MODE", "UNKNOWN" };
+		"SEND_TIMESTAMP_QUERY", "TAG_SET_SLEEP_MODE", "TAG_ONE_DETECTION" ,"UNKNOWN" };
 
 static void compute_distance(TAG_t *tag, const uint8_t *rx_buffer,
 		int poll_rx_offset, int resp_tx_offset);
@@ -77,6 +77,7 @@ void reset_TAG_values(TAG_t *tag) {
 	tag->distance = NULL;
 	tag->Battery_Voltage = 0;
 	tag->Estado_Final = 0;
+//	tag->master_state = MASTER_ONE_DETECTION;
 	// Initialize Measurement_data_t variables to zero
 //	tag->temperature.calibrated = 0;
 //	tag->temperature.raw = 0;
@@ -109,6 +110,7 @@ TAG_STATUS_t tag_discovery(TAG_t *tag) {
 	tag->command = TAG_ID_QUERY;
 
 	tx_buffer[0] = tag->command;
+	tx_buffer[1] = tag->master_state;
 
 	TAG_STATUS_t status_reg = setup_and_transmit(tag, tx_buffer,
 	TX_DISCOVERY_SIZE, rx_buffer, &rx_buffer_size);
@@ -118,6 +120,9 @@ TAG_STATUS_t tag_discovery(TAG_t *tag) {
 
 	if (tag->command == rx_buffer[0]) {
 		parse_received_data(tag, rx_buffer);
+		if (tag->master_state ==  MASTER_ONE_DETECTION){
+			return TAG_ONE_DETECTION;
+		}
 		return (TAG_SEND_TIMESTAMP_QUERY);
 	}
 	return (TAG_RX_NO_COMMAND);
@@ -516,7 +521,7 @@ void debug(TAG_t tag, TAG_STATUS_t status) {
 	}
 
 	size =	sprintf(dist_str,
-			"{message: %s},{ID: 0x%08X},{times: %lu},{error_a:%u},{error_b:%u},{Counter_a: %lu},{Counter_b: %lu},{distance_a: %0.2f},{distance_b: %0.2f},{battery_voltage: %0.2f}",
+			"{message: %s},{ID: 0x%08X},{times: %lu},{error_a:%u},{error_b:%u},{Counter_a: %u},{Counter_b: %u},{distance_a: %0.2f},{distance_b: %0.2f},{battery_voltage: %0.2f}",
 					TAG_MESSAGES[status],
 					(int) tag.id,
 					(unsigned long) tag.readings,

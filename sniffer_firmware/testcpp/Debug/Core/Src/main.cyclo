@@ -1,14 +1,14 @@
-../Core/Src/main.cpp:101:5:int main()	18
-../Core/Src/main.cpp:320:6:void SystemClock_Config()	4
-../Core/Src/main.cpp:375:13:void MX_FLASH_Init()	3
-../Core/Src/main.cpp:404:13:void MX_I2C1_Init()	4
-../Core/Src/main.cpp:452:13:void MX_SPI2_Init()	3
-../Core/Src/main.cpp:509:13:void MX_TIM2_Init()	4
-../Core/Src/main.cpp:556:13:void MX_GPIO_Init()	1
-../Core/Src/main.cpp:631:6:void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*)	3
-../Core/Src/main.cpp:646:6:void HAL_GPIO_EXTI_Falling_Callback(uint16_t)	1
-../Core/Src/main.cpp:657:6:void Error_Handler()	1
+../Core/Src/main.cpp:107:5:int main()	22
+../Core/Src/main.cpp:356:6:void SystemClock_Config()	4
+../Core/Src/main.cpp:411:13:void MX_FLASH_Init()	3
+../Core/Src/main.cpp:440:13:void MX_I2C1_Init()	4
+../Core/Src/main.cpp:488:13:void MX_SPI2_Init()	3
+../Core/Src/main.cpp:545:13:void MX_TIM2_Init()	4
+../Core/Src/main.cpp:590:13:void MX_TIM3_Init()	4
+../Core/Src/main.cpp:638:13:void MX_GPIO_Init()	1
+../Core/Src/main.cpp:707:6:void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*)	4
+../Core/Src/main.cpp:749:6:void Error_Handler()	1
 ../Core/Inc/bq25150.hpp:18:7:Bq25155::~Bq25155()	1
-../Core/Src/main.cpp:666:1:void __static_initialization_and_destruction_0(int, int)	5
-../Core/Src/main.cpp:666:1:cpp)	1
-../Core/Src/main.cpp:666:1:cpp)	1
+../Core/Src/main.cpp:758:1:void __static_initialization_and_destruction_0(int, int)	5
+../Core/Src/main.cpp:758:1:cpp)	1
+../Core/Src/main.cpp:758:1:cpp)	1

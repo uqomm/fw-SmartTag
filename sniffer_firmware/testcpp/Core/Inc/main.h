@@ -67,9 +67,6 @@ void Error_Handler(void);
 #define LP_GPIO_Port GPIOA
 #define MR_Pin GPIO_PIN_0
 #define MR_GPIO_Port GPIOB
-#define INT_Pin GPIO_PIN_8
-#define INT_GPIO_Port GPIOE
-#define INT_EXTI_IRQn EXTI8_IRQn
 #define DW3000_RST_RCV_Pin GPIO_PIN_9
 #define DW3000_RST_RCV_GPIO_Port GPIOE
 #define LED_C_Pin GPIO_PIN_10

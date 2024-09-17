@@ -154,11 +154,13 @@ int main(void) {
 	TAG_t tag;
 	reset_TAG_values(&tag);
 
+	tag.master_state = MASTER_ONE_DETECTION; //MASTER_MULTIPLE_DETECTION      MASTER_ONE_DETECTION
 	TAG_STATUS_t tag_status = TAG_DISCOVERY;
 	uint32_t lora_send_timeout = 5000;
 	uint32_t lora_send_ticks = HAL_GetTick();
 	uint32_t query_timeout = 1000;
 	uint32_t query_ticks;
+	uint32_t debug_count = 0;
 
 	RDSS_status_t rdss_status;
 
@@ -168,8 +170,9 @@ int main(void) {
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 		/* USER CODE END WHILE */
-		if (tag_status == TAG_DISCOVERY) {
 
+		if (tag_status == TAG_DISCOVERY) {
+			debug_count ++;
 			if (hw == &uwb_hw_a) {
 				hw = &uwb_hw_b;
 				tag.distance = &(tag.distance_b);
@@ -180,14 +183,16 @@ int main(void) {
 
 			tag_status = tag_discovery(&tag);
 
-			if (tag_status != TAG_SEND_TIMESTAMP_QUERY)
+			if ((tag_status != TAG_SEND_TIMESTAMP_QUERY) && (tag_status != TAG_ONE_DETECTION))
 				tag_status = TAG_DISCOVERY;
 			else
 				query_ticks = HAL_GetTick();
 //			set_battery_voltage(&(tag.battery_voltage));
 //			set_temperature(&(tag.temperature));
 			int_to_float_Tag_Battery_Voltage(&tag);
-			debug(tag, tag_status);
+			if ((debug_count == 1) || (tag_status == TAG_ONE_DETECTION)){
+				debug(tag, tag_status);
+			}
 
 		} else if (tag_status == TAG_SEND_TIMESTAMP_QUERY) {
 			if (tag.readings < DISTANCE_READINGS) {
@@ -211,9 +216,6 @@ int main(void) {
 			if ((tag_status == TAG_SEND_TIMESTAMP_QUERY) || (tag.Estado_Final == 0)) {
 				tag.readings++;
 				tag_status = TAG_SEND_TIMESTAMP_QUERY;
-//				if (tag.readings == DISTANCE_READINGS - 2){ //PRUEBA PARA MANDAR A TAG DISCOVERY
-//					tag_status = TAG_END_READINGS;
-//				}
 
 			} else if (tag.Estado_Final == 1) {
 				double distance_a_sum = 0;
@@ -231,6 +233,7 @@ int main(void) {
 				insert_tag(&list, tag);
 				tag_status = TAG_DISCOVERY;
 				reset_TAG_values(&tag);
+				debug_count = 0;
 			} else {
 				tag_status = TAG_SEND_TIMESTAMP_QUERY;
 			}
@@ -238,9 +241,18 @@ int main(void) {
 			if (HAL_GetTick() - query_ticks > query_timeout) {
 				tag_status = TAG_DISCOVERY;
 				reset_TAG_values(&tag);
+				debug_count = 0;
 			}
 
+		}else if (tag_status == TAG_ONE_DETECTION){
+			debug(tag, tag_status);
+			insert_tag(&list, tag);
+			tag_status = TAG_DISCOVERY;
+			reset_TAG_values(&tag);
+			debug_count = 0;
 		}
+
+
 
 		if (read_lora_packet(&lora) > 0) {
 			rdss_status = rdss_validation(lora.rxData, lora.rxSize, 0x00);

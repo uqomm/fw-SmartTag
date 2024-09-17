@@ -59,9 +59,14 @@ I2C_HandleTypeDef hi2c1;
 SPI_HandleTypeDef hspi2;
 
 TIM_HandleTypeDef htim2;
-
+TIM_HandleTypeDef htim3;
 
 /* USER CODE BEGIN PV */
+
+uint32_t Counter_INT = 0;
+uint32_t Counter_Main_INT1 = 0;
+uint32_t Counter_Main_INT2 = 0;
+
 
 uint16_t adc_reg=0;
 GPIO_PinState NPG = GPIO_PIN_SET;
@@ -83,6 +88,7 @@ static void MX_FLASH_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 
 
@@ -128,6 +134,7 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI2_Init();
   MX_TIM2_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   pins.turnOn(NLP);
   pins.turnOff(NCE);
@@ -191,12 +198,16 @@ int main(void)
 	if (tag == NULL)
 		Error_Handler();
 
+  	Gpio f(LED_C_GPIO_Port,LED_C_Pin);
+  	GpioHandler g;
+
 	tag->readings = 0;
 	tag->id = 0;
 	tag->resp_tx_time = 0;
 	tag->resp_tx_timestamp = 0;
 	tag->poll_rx_timestamp = 0;
 	tag->Voltaje_Bat = 0;
+	tag->sniffer_state = MASTER_ONE_DETECTION;
 
 	tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
 	tag->id = _dwt_otpread(PARTID_ADDRESS);
@@ -211,7 +222,7 @@ int main(void)
 
 	uint32_t query_timeout = 10000;
 	uint32_t query_ticks;
-	HAL_TIM_Base_Start_IT(&htim2);
+//	HAL_TIM_Base_Start_IT(&htim2);
 	/* Time-stamps of frames transmission/reception, expressed in device time units. */
 
   /* USER CODE END 2 */
@@ -220,14 +231,14 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
+	battery_charger.manual_read_adc_bat();//manual_read_adc_bat();
 
 	if (tag_status == TAG_WAIT_FOR_FIRST_DETECTION) {
 		//debug(tag, tag_status);
-
+		tag->Voltaje_Bat = battery_charger.register_adc_bat();//register_adc_bat(0x42, 0x43);
 		tag_status = process_first_tag_information(tag);
 		//debug(tag, tag_status);
-		if (tag_status != TAG_WAIT_FOR_TIMESTAMPT_QUERY){
+		if ((tag_status != TAG_WAIT_FOR_TIMESTAMPT_QUERY) && (tag->sniffer_state != MASTER_ONE_DETECTION)){
 			tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
 			HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
 			HAL_Delay(1);
@@ -240,12 +251,20 @@ int main(void)
 			query_ticks = HAL_GetTick();
 
 	}
-	else if (tag_status == TAG_WAIT_FOR_TIMESTAMPT_QUERY) {
+	else if (tag_status == TAG_WAIT_SEND_TX){
+		HAL_Delay(1); // TODO implementar lectura de flag por transmision del módulo (si es sque existe)
+		tag_status = TAG_SLEEP;
+		Counter_INT = 0;
+	}
 
-		if(flags == 0x80){
-			flags = 0;
-			tag->Voltaje_Bat = battery_charger.register_adc_bat();//register_adc_bat(0x42, 0x43);
-		}
+	else if (tag_status == TAG_WAIT_FOR_TIMESTAMPT_QUERY) {
+		Counter_INT = 0;
+
+//		flags = battery_charger.adc_flags();//adc_flags(0x05);
+//		if(flags == 0x80){
+//			flags = 0;
+//			tag->Voltaje_Bat = battery_charger.register_adc_bat();//register_adc_bat(0x42, 0x43);
+//		}
 
 		tag_status = process_queried_tag_information(tag);
 
@@ -275,13 +294,30 @@ int main(void)
 		}
 
 	}
-	else if (tag_status == TAG_SLEEP) {
+	else if ((tag_status == TAG_SLEEP) || (tag_status == TAG_RX_TIMEOUT)) {
 
-		tag->readings++;
+//		tag->readings++;
 		//debug(tag, tag_status);
 		tag->readings = 0;
 		HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
-		HAL_Delay(3000);
+
+		if (Counter_INT < 6){
+//		  	g.turnOnWaitOff(f, 100);
+			HAL_TIM_Base_Start_IT(&htim2);
+			Counter_Main_INT1 ++;
+		}
+		else if (6 <= Counter_INT){
+			HAL_TIM_Base_Start_IT(&htim3);
+//			g.turnOnWaitOff(f, 300);
+			Counter_Main_INT2 ++;
+		  }
+
+		// Entra en modo sleep
+		HAL_SuspendTick();
+		HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+		HAL_ResumeTick();
+//		HAL_Delay(3000);
+
 		HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_SET);
 		if (tag_init(&defatult_dwt_config, &defatult_dwt_txconfig,
 				&dwt_local_data, running_device, RATE_6M8) == 1)
@@ -520,9 +556,9 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 7200-1;
+  htim2.Init.Prescaler = 32000-1;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 65535;
+  htim2.Init.Period = 4000-1;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -541,10 +577,56 @@ static void MX_TIM2_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM2_Init 2 */
-	HAL_TIM_Base_Start_IT(&htim2);
+//	HAL_TIM_Base_Start_IT(&htim2);
   /* USER CODE END TIM2_Init 2 */
 
 }
+
+/**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 32000-1;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 15000-1;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+
+}
+
 
 
 
@@ -564,7 +646,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
+//  __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOE, LED_Pin|DW3000_RST_RCV_Pin|LED_C_Pin, GPIO_PIN_RESET);
@@ -605,12 +687,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(MR_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : INT_Pin */
-  GPIO_InitStruct.Pin = INT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(INT_GPIO_Port, &GPIO_InitStruct);
-
   /*Configure GPIO pin : SPI2_CS_Pin */
   GPIO_InitStruct.Pin = SPI2_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -619,8 +695,8 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(SPI2_CS_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI8_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI8_IRQn);
+//  HAL_NVIC_SetPriority(EXTI8_IRQn, 0, 0);
+//  HAL_NVIC_EnableIRQ(EXTI8_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
@@ -631,23 +707,39 @@ static void MX_GPIO_Init(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 
-	if(NPG > 0){
-		//ADC CONV START
-		battery_charger.manual_read_adc_bat();//manual_read_adc_bat();
-	}
+    if (htim->Instance == TIM2) {
+  	  Counter_INT ++;
+  	  HAL_TIM_Base_Stop_IT(&htim3);
+  	  if (Counter_INT >= 6){
+  		HAL_TIM_Base_Stop_IT(&htim2);
+  	  }
+    }
+    if (htim->Instance == TIM3) {
+  	  Counter_INT ++;
+//  	  if (Counter_INT >= 10){
+//  		HAL_TIM_Base_Stop_IT(&htim3);
+//  	  }
+    }
+
+
+//	if(NPG > 0){
+//		//ADC CONV START
+//		battery_charger.manual_read_adc_bat();//manual_read_adc_bat();
+//	}
   // Check which version of the timer triggered this callback and toggle LED
-  if (htim == &htim2 )
-  {
-	  tag_status = TAG_SLEEP;
 
-  }
+//  if (htim == &htim2 )
+//  {
+//	  tag_status = TAG_SLEEP;
+//
+//  }
 }
 
-void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin){
-
-	flags = battery_charger.adc_flags();//adc_flags(0x05);
-
-}
+//void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin){
+//
+////	flags = battery_charger.adc_flags();//adc_flags(0x05);
+//
+//}
 /* USER CODE END 4 */
 
 /**

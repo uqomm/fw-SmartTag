@@ -50,6 +50,12 @@ typedef struct {
 //	uint16_t real;
 //} Mesurement_data_t;
 
+typedef enum {
+	MASTER_ONE_DETECTION,
+	MASTER_MULTIPLE_DETECTION
+}Sniffer_State;
+
+
 typedef struct {
 	uint32_t id;
 	int readings;
@@ -60,6 +66,7 @@ typedef struct {
 	uint16_t Battery_Voltage;
 	float Float_Battery_Voltage;
 	uint8_t Estado_Final;
+	Sniffer_State master_state;
 //	Mesurement_data_t temperature;
 //	Mesurement_data_t battery_voltage;
 } TAG_t;
@@ -100,11 +107,12 @@ typedef enum {
 	TAG_DISCOVERY,
 	TAG_SEND_TIMESTAMP_QUERY,
 	TAG_SEND_SET_SLEEP,
-	TAG_UNKNOWN,
+	TAG_ONE_DETECTION,
+	TAG_UNKNOWN
 } TAG_STATUS_t;
 
 #define TX_BUFFER_SIZE (sizeof(uint8_t) + sizeof(uint32_t))
-#define TX_DISCOVERY_SIZE (sizeof(uint8_t))
+#define TX_DISCOVERY_SIZE (sizeof(uint8_t) + sizeof(uint8_t))
 #define TX_TIMESTAMP_SIZE (sizeof(uint8_t) + sizeof(uint32_t))
 #define TAG_TIMESTAMP_QUERY 0x11
 #define TAG_SET_SLEEP_MODE 0x12

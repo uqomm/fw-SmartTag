@@ -30,6 +30,7 @@ TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 	dwt_readrxdata(rx_buffer, (uint16_t) rx_buffer_size, 0);
 
 	uint8_t received_command = rx_buffer[0];
+	tag->sniffer_state = rx_buffer[1];
 
 	if (tag->command != received_command)
 		return (TAG_RX_COMMAND_ERROR);
@@ -67,9 +68,13 @@ TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 		return (TAG_TX_ERROR);
 	dwt_writetxfctrl(tx_buffer_size + 2, 0, 1);
 	/*DWT_START_TX_DELAYED DWT_START_TX_IMMEDIATE*/
-	if (dwt_starttx(DWT_START_TX_DELAYED) == DWT_ERROR)
+	if (dwt_starttx(DWT_START_TX_DELAYED) == DWT_ERROR){
 		return (TAG_TX_ERROR);
+	}
 	//return (TAG_WAIT_FOR_FIRST_DETECTION);
+	if (tag->sniffer_state == MASTER_ONE_DETECTION){
+		return (TAG_WAIT_SEND_TX);
+	}
 	return (TAG_WAIT_FOR_TIMESTAMPT_QUERY);
 }
 
@@ -275,11 +280,11 @@ void uart_transmit_hexa_to_text(uint8_t *message, uint8_t size) {
 
 
 void uart_transmit_float_to_text(float distanceValue) {
-	/* Calculate the size needed for the formatted string
+	/ Calculate the size needed for the formatted string
 	int size = snprintf(NULL, 0, "%.2f\n\r", distanceValue);
 	size++; // Include space for the null terminator
 
-	/* Dynamically allocate memory for dist_str
+	/ Dynamically allocate memory for dist_str
 	char *dist_str = (char*) malloc(size * sizeof(char));
 	if (dist_str == NULL) {
 		// Handle allocation failure
@@ -287,22 +292,22 @@ void uart_transmit_float_to_text(float distanceValue) {
 		return;
 	}
 
-	/* Format the string into dist_str
+	/ Format the string into dist_str
 	sprintf(dist_str, "%.2f\n\r", distanceValue);
 
-	/* Transmit the formatted string
+	/ Transmit the formatted string
 	HAL_UART_Transmit(&huart1, (uint8_t*) dist_str, size, HAL_MAX_DELAY);
 
-	/* Free the dynamically allocated memory
+	/ Free the dynamically allocated memory
 	free(dist_str);
 }
 
 void uart_transmit_int_to_text(int distanceValue) {
-	/* Calculate the size needed for the formatted string
+	/ Calculate the size needed for the formatted string
 	int size = snprintf(NULL, 0, "%u\n\r", distanceValue);
 	size++; // Include space for the null terminator
 
-	/* Dynamically allocate memory for dist_str
+	/ Dynamically allocate memory for dist_str
 	char *dist_str = (char*) malloc(size * sizeof(char));
 	if (dist_str == NULL) {
 		// Handle allocation failure
@@ -310,13 +315,13 @@ void uart_transmit_int_to_text(int distanceValue) {
 		return;
 	}
 
-	/* Format the string into dist_str
+	/ Format the string into dist_str
 	sprintf(dist_str, "%u\n\r", distanceValue);
 
-	/* Transmit the formatted string
+	/ Transmit the formatted string
 	HAL_UART_Transmit(&huart1, (uint8_t*) dist_str, size, HAL_MAX_DELAY);
 
-	/* Free the dynamically allocated memory
+	/ Free the dynamically allocated memory
 	free(dist_str);
 }
 
@@ -460,6 +465,7 @@ TAG_STATUS_t wait_rx_data() {
 
 	// Clear good RX frame event in the DW IC status register
 	dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG_BIT_MASK);
+
 
 	return TAG_NO_RXCG_DETECTED;
 }

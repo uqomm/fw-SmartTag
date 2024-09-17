@@ -26,6 +26,7 @@ extern "C" {
 #define RESPONSE_TX_TIME_SHIFT_AMOUNT 8
 
 extern char *TAG_MESSAGES[];
+extern uint8_t Discovery_Counter;
 
 typedef struct {
 	uint32_t id;
@@ -39,6 +40,7 @@ typedef struct {
 	uint32_t resp_tx_timestamp;
 	uint32_t poll_rx_timestamp;
 	uint32_t resp_tx_time;
+	uint8_t sniffer_state;
 } TAG_t;
 
 typedef struct buffer {
@@ -50,6 +52,13 @@ typedef struct buffer {
 	uint64_t resp_tx_timestamp;
 	uint64_t poll_rx_timestamp;
 } TX_BUFFER_t;
+
+
+typedef enum {
+	MASTER_ONE_DETECTION,
+	MASTER_MULTIPLE_DETECTION
+}Sniffer_State;
+
 
 typedef enum{
 	TAG_NO_RESPONSE,
@@ -66,8 +75,8 @@ typedef enum{
 	TAG_WAIT_FOR_TIMESTAMPT_QUERY,
 	TAG_TX_SUCCESS,
 	TAG_WRONG_ID_MATCH,
+	TAG_WAIT_SEND_TX,
 	TAG_UNKNOWN
-
 }TAG_STATUS_t;
 #define TX_BUFFER_SIZE (sizeof(uint8_t) + 3 * sizeof(uint32_t) + sizeof(uint16_t)) //Modificar para tamaño de batería de 16bits unsigned
 #define TAG_TIMESTAMP_QUERY 0x11

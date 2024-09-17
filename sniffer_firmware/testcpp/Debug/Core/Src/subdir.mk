@@ -12,7 +12,6 @@ CPP_SRCS += \
 
 C_SRCS += \
 ../Core/Src/human_tag.c \
-../Core/Src/main.c \
 ../Core/Src/stm32u5xx_hal_msp.c \
 ../Core/Src/stm32u5xx_it.c \
 ../Core/Src/syscalls.c \
@@ -22,7 +21,6 @@ C_SRCS += \
 
 C_DEPS += \
 ./Core/Src/human_tag.d \
-./Core/Src/main.d \
 ./Core/Src/stm32u5xx_hal_msp.d \
 ./Core/Src/stm32u5xx_it.d \
 ./Core/Src/syscalls.d \
