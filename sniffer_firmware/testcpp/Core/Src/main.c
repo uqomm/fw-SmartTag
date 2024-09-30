@@ -18,32 +18,19 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-//
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "human_tag.h"
-#include "bq25150.hpp"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
-TAG_t *tag;
-int size = 0;
-uint8_t running_device = DEV_UWB3000F00;
-SPI_HW_t hw;
-dwt_local_data_t *pdw3000local;
-uint8_t crcTable[256];
-char recvChar;
-TAG_STATUS_t tag_status;
-
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define indx1 0x42
-#define indx2 0x43
-#define adc 0x05
 
 /* USER CODE END PD */
 
@@ -56,29 +43,13 @@ TAG_STATUS_t tag_status;
 
 I2C_HandleTypeDef hi2c1;
 
-SPI_HandleTypeDef hspi2;
-
 LPTIM_HandleTypeDef hlptim1;
 LPTIM_HandleTypeDef hlptim3;
 
+SPI_HandleTypeDef hspi2;
+
 /* USER CODE BEGIN PV */
 
-uint32_t Counter_INT = 0;
-uint32_t Counter_Main_INT1 = 0;
-uint32_t Counter_Main_INT2 = 0;
-
-
-uint16_t adc_reg=0;
-GPIO_PinState NPG = GPIO_PIN_SET;
-uint8_t flags;
-float vbat=0;
-Gpio NCE(CE_GPIO_Port,CE_Pin);
-Gpio NLP(LP_GPIO_Port,LP_Pin);
-Gpio MR(MR_GPIO_Port,MR_Pin);
-
-
-GpioHandler pins;
-Bq25155 battery_charger(MR, NLP, NCE, &hi2c1);
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -91,12 +62,10 @@ static void MX_LPTIM1_Init(void);
 static void MX_LPTIM3_Init(void);
 /* USER CODE BEGIN PFP */
 
-
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-// Callback: timer has rolled over
 
 /* USER CODE END 0 */
 
@@ -108,8 +77,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	HAL_DeInit();
-	HAL_RCC_DeInit();
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -136,109 +104,6 @@ int main(void)
   MX_LPTIM1_Init();
   MX_LPTIM3_Init();
   /* USER CODE BEGIN 2 */
-  pins.turnOff(NLP);
-  pins.turnOff(NCE);
-
-  __HAL_RCC_LPTIM1_CLKAM_ENABLE();
-  __HAL_RCC_LPTIM3_CLKAM_ENABLE();
-
-
-  HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN1);
-  HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN2);
-  HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN3);
-  HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN4);
-  HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN5);
-  HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN6);
-  HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN7);
-  HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN8);
-
-  HAL_PWR_DisablePVD();
-
-
-
-
-
-  //battery_charger.register_init_all();
-  battery_charger.register_init_all_2();
-  //battery_charger.register_Factory_Reset();
-
-	//HAL_GPIO_WritePin(GPIOA, DW3000_RST_Pin, GPIO_PIN_SET);
-	/*Local device data, can be an array to support multiple DW3000 testing applications/platforms */
-
-	dwt_local_data_t dwt_local_data;
-	pdw3000local = &dwt_local_data;
-	/* Default communication configuration. We use default non-STS DW mode. */
-	dwt_config_t defatult_dwt_config = { 5, /* Channel number. */
-	DWT_PLEN_128, /* Preamble length. Used in TX only. */
-	DWT_PAC8, /* Preamble acquisition chunk size. Used in RX only. */
-	9, /* TX preamble code. Used in TX only. */
-	9, /* RX preamble code. Used in RX only. */
-	1, /* 0 to use standard 8 symbol SFD, 1 to use non-standard 8 symbol, 2 for non-standard 16 symbol SFD and 3 for 4z 8 symbol SDF type */
-	DWT_BR_6M8, /* Data rate. */
-	DWT_PHRMODE_STD, /* PHY header mode. */
-	DWT_PHRRATE_STD, /* PHY header rate. */
-	(129 + 8 - 8), /* SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. */
-	DWT_STS_MODE_OFF, /* STS disabled */
-	DWT_STS_LEN_64,/* STS length see allowed values in Enum dwt_sts_lengths_e */
-	DWT_PDOA_M0 /* PDOA mode off */
-	};
-
-	/* Values for the PG_DELAY and TX_POWER registers reflect the bandwidth and power of the spectrum at the current
-	 * temperature. These values can be calibrated prior to taking reference measurements. See NOTE 8 below. */
-	static dwt_txconfig_t defatult_dwt_txconfig = { 0x34, /* PG delay. */
-	0xfdfdfdfd, /* TX power. */
-	0x0 /*PG count*/
-	};
-
-	hw.spi = &hspi2;
-	hw.nrstPin = DW3000_RST_RCV_Pin;
-	hw.nrstPort = DW3000_RST_RCV_GPIO_Port;
-	hw.nssPin = SPI2_CS_Pin;
-	hw.nssPort = SPI2_CS_GPIO_Port;
-
-
-
-
-
-	HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_SET);
-	if (tag_init(&defatult_dwt_config, &defatult_dwt_txconfig, &dwt_local_data,running_device, RATE_6M8) == 1)
-		Error_Handler();
-
-	/* Frames used in the ranging process. See NOTE 2 below. */
-
-	/* Hold copy of status register state here for reference so that it can be examined at a debug breakpoint. */
-	tag = (TAG_t *) malloc(sizeof(TAG_t));
-	if (tag == NULL)
-		Error_Handler();
-
-  	Gpio f(LED_C_GPIO_Port,LED_C_Pin);
-  	GpioHandler g;
-
-	tag->readings = 0;
-	tag->id = 0;
-	tag->resp_tx_time = 0;
-	tag->resp_tx_timestamp = 0;
-	tag->poll_rx_timestamp = 0;
-	tag->Voltaje_Bat = 0;
-	tag->sniffer_state = MASTER_ONE_DETECTION;
-
-	tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
-	tag->id = _dwt_otpread(PARTID_ADDRESS);
-//	tag->calibrateds_temperature = _dwt_otpread(VTEMP_ADDRESS);
-//	tag->calibrated_battery_voltage = _dwt_otpread(VBAT_ADDRESS);
-//	uint16_t read_temp_vbat = dwt_readtempvbat();
-//	tag->raw_temperature = (uint8_t) (read_temp_vbat >> 8);
-//	tag->raw_battery_voltage = (uint8_t) (read_temp_vbat);
-	dwt_configuresleep(DWT_RUNSAR, DWT_WAKE_WUP);
-	dwt_configuresleepcnt(4095);
-	//dwt_setsniffmode(1, 2, 200);
-
-	uint32_t query_timeout = 10000;
-	uint32_t query_ticks;
-//	HAL_TIM_Base_Start_IT(&htim2);
-	/* Time-stamps of frames transmission/reception, expressed in device time units. */
 
   /* USER CODE END 2 */
 
@@ -246,118 +111,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-
-
-
-	battery_charger.manual_read_adc_bat();//manual_read_adc_bat();
-
-	if (tag_status == TAG_WAIT_FOR_FIRST_DETECTION) {
-		tag->Voltaje_Bat = battery_charger.register_adc_bat();//register_adc_bat(0x42, 0x43);
-		tag_status = process_first_tag_information(tag);
-		if ((tag_status != TAG_WAIT_FOR_TIMESTAMPT_QUERY) && (tag->sniffer_state != MASTER_ONE_DETECTION)){
-			tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
-			HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
-			HAL_Delay(1);
-			HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_SET);
-			if (tag_init(&defatult_dwt_config, &defatult_dwt_txconfig, &dwt_local_data, running_device, RATE_6M8) == 1){
-				Error_Handler();
-			}
-		}
-		else if (tag_status == TAG_WAIT_FOR_TIMESTAMPT_QUERY)
-			query_ticks = HAL_GetTick();
-
-	}
-	else if (tag_status == TAG_WAIT_SEND_TX){
-		HAL_Delay(1); // TODO implementar lectura de flag por transmision del módulo (si es sque existe)
-		tag_status = TAG_SLEEP;
-		Counter_INT = 0;
-	}
-
-	else if (tag_status == TAG_WAIT_FOR_TIMESTAMPT_QUERY) {
-		Counter_INT = 0;
-
-		tag_status = process_queried_tag_information(tag);
-
-		if (tag_status == TAG_TX_SUCCESS) {
-			if (tag->command == TAG_TIMESTAMP_QUERY)
-				tag_status = TAG_WAIT_FOR_TIMESTAMPT_QUERY;
-			else if (tag->command == TAG_SET_SLEEP_MODE)
-				tag_status = TAG_SLEEP;
-		}
-		else if (tag_status == TAG_RX_COMMAND_ERROR){
-			HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
-			HAL_Delay(1);
-			HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_SET);
-			if (tag_init(&defatult_dwt_config, &defatult_dwt_txconfig,
-					&dwt_local_data, running_device, RATE_6M8) == 1)
-				Error_Handler();
-			tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
-		}
-
-		else if (tag_status != TAG_SLEEP)
-			tag_status = TAG_WAIT_FOR_TIMESTAMPT_QUERY;
-
-
-		if (HAL_GetTick() - query_ticks > query_timeout) {
-			tag_status = TAG_SLEEP;
-		}
-
-	}
-	else if ((tag_status == TAG_SLEEP) || (tag_status == TAG_RX_TIMEOUT)) {
-
-//		tag->readings++;
-		tag->readings = 0;
-		HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
-
-
-		  if (Counter_INT < 6){
-			  HAL_LPTIM_TimeOut_Start_IT(&hlptim1, 24000); //Cuenta hasta 24000 (LSI Periodo) y activa interrupción al final del conteo
-			  Counter_Main_INT1 ++;
-		  }
-		  else if (6 <= Counter_INT){
-			  HAL_LPTIM_TimeOut_Start_IT(&hlptim3, 30000); //Cuenta hasta 30000 (LSI Periodo) y activa interrupción al final del conteo
-			  Counter_Main_INT2 ++;
-		  }
-
-		// Entra en modo STOP
-		HAL_SuspendTick();
-		HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI);
-		HAL_ResumeTick();
-//
-		SystemClock_Config();
-//		MX_GPIO_Init();
-//		MX_FLASH_Init();
-//		MX_I2C1_Init();
-//		MX_SPI2_Init();
-//		MX_LPTIM1_Init();
-//		MX_LPTIM3_Init();
-
-
-		HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_SET);
-		if (tag_init(&defatult_dwt_config, &defatult_dwt_txconfig,
-				&dwt_local_data, running_device, RATE_6M8) == 1)
-			Error_Handler();
-		tag->sniffer_state = MASTER_ONE_DETECTION;
-		tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
-	}
-
-
-
-//	Gpio f(LED_C_GPIO_Port,LED_C_Pin);
-//	GpioHandler g;
-//	g.turnOnWaitOff(f, 200);
-//
-//	if(flags == 0x80){
-//		flags = 0;
-//		adc_reg = battery_charger.register_adc_bat();//register_adc_bat(0x42, 0x43);
-//	}
-//
-//	vbat = (adc_bat_reg*6.0)/65536.0;
-//	HAL_Delay(200);
-
-
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -436,6 +189,9 @@ static void MX_FLASH_Init(void)
   /* USER CODE BEGIN FLASH_Init 1 */
 
   /* USER CODE END FLASH_Init 1 */
+  HAL_FLASHEx_OBGetConfig(&pOBInit);
+  if ()
+  {
   if (HAL_FLASH_Unlock() != HAL_OK)
   {
     Error_Handler();
@@ -443,6 +199,7 @@ static void MX_FLASH_Init(void)
   if (HAL_FLASH_Lock() != HAL_OK)
   {
     Error_Handler();
+  }
   }
   /* USER CODE BEGIN FLASH_Init 2 */
 
@@ -465,19 +222,19 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 1 */
 
   /* USER CODE END I2C1_Init 1 */
-	  hi2c1.Instance = I2C1;
-	  hi2c1.Init.Timing = 0x00303D5B;
-	  hi2c1.Init.OwnAddress1 = 0;
-	  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-	  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-	  hi2c1.Init.OwnAddress2 = 0;
-	  hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
-	  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-	  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-	  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
-	  {
-	    Error_Handler();
-	  }
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.Timing = 0x00303D5B;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
 
   /** Configure Analogue filter
   */
@@ -624,97 +381,6 @@ static void MX_SPI2_Init(void)
   /* USER CODE END SPI2_Init 2 */
 
 }
-//
-///**
-//  * @brief TIM2 Initialization Function
-//  * @param None
-//  * @retval None
-//  */
-//static void MX_TIM2_Init(void)
-//{
-//
-//  /* USER CODE BEGIN TIM2_Init 0 */
-//
-//  /* USER CODE END TIM2_Init 0 */
-//
-//  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-//  TIM_MasterConfigTypeDef sMasterConfig = {0};
-//
-//  /* USER CODE BEGIN TIM2_Init 1 */
-//
-//  /* USER CODE END TIM2_Init 1 */
-//  htim2.Instance = TIM2;
-//  htim2.Init.Prescaler = 32000-1;
-//  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-//  htim2.Init.Period = 4000-1;
-//  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-//  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-//  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-//  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-//  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-//  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//  /* USER CODE BEGIN TIM2_Init 2 */
-////	HAL_TIM_Base_Start_IT(&htim2);
-//  /* USER CODE END TIM2_Init 2 */
-//
-//}
-//
-///**
-//  * @brief TIM3 Initialization Function
-//  * @param None
-//  * @retval None
-//  */
-//static void MX_TIM3_Init(void)
-//{
-//
-//  /* USER CODE BEGIN TIM3_Init 0 */
-//
-//  /* USER CODE END TIM3_Init 0 */
-//
-//  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-//  TIM_MasterConfigTypeDef sMasterConfig = {0};
-//
-//  /* USER CODE BEGIN TIM3_Init 1 */
-//
-//  /* USER CODE END TIM3_Init 1 */
-//  htim3.Instance = TIM3;
-//  htim3.Init.Prescaler = 32000-1;
-//  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-//  htim3.Init.Period = 15000-1;
-//  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-//  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-//  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-//  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-//  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-//  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//  /* USER CODE BEGIN TIM3_Init 2 */
-//
-//  /* USER CODE END TIM3_Init 2 */
-//
-//}
-
 
 /**
   * @brief GPIO Initialization Function
@@ -732,7 +398,6 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
-//  __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOE, LED_Pin|DW3000_RST_RCV_Pin|LED_C_Pin, GPIO_PIN_RESET);
@@ -780,52 +445,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(SPI2_CS_GPIO_Port, &GPIO_InitStruct);
 
-  /* EXTI interrupt init*/
-//  HAL_NVIC_SetPriority(EXTI8_IRQn, 0, 0);
-//  HAL_NVIC_EnableIRQ(EXTI8_IRQn);
-
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
-
-// Función de callback para manejar la interrupción
-	void HAL_LPTIM_CompareMatchCallback(LPTIM_HandleTypeDef *hlptim) {
-		HAL_LPTIM_Counter_Stop_IT(&hlptim1);
-		HAL_LPTIM_Counter_Stop_IT(&hlptim3);
-
-		if (hlptim->Instance == LPTIM1) {
-			Counter_INT ++;
-			if (Counter_INT >= 6){
-					HAL_LPTIM_Counter_Stop_IT(&hlptim1);
-			}
-		}
-		if (hlptim->Instance == LPTIM3) {
-			Counter_INT ++;
-		}
-	}
-
-
-//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-//{
-//
-//    if (htim->Instance == TIM2) {
-//  	  Counter_INT ++;
-//  	  HAL_TIM_Base_Stop_IT(&htim3);
-//  	  if (Counter_INT >= 6){
-//  		HAL_TIM_Base_Stop_IT(&htim2);
-//  	  }
-//    }
-//    if (htim->Instance == TIM3) {
-//  	  Counter_INT ++;
-//  	  if (Counter_INT >= 10){
-//  		HAL_TIM_Base_Stop_IT(&htim3);
-//  	  }
-//    }
-//
-//}
-
 
 /* USER CODE END 4 */
 

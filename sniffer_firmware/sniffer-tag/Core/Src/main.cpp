@@ -154,7 +154,7 @@ int main(void) {
 	TAG_t tag;
 	reset_TAG_values(&tag);
 
-	tag.master_state = MASTER_ONE_DETECTION; //MASTER_MULTIPLE_DETECTION      MASTER_ONE_DETECTION
+	tag.master_state = MASTER_MULTIPLE_DETECTION; //MASTER_MULTIPLE_DETECTION      MASTER_ONE_DETECTION
 	TAG_STATUS_t tag_status = TAG_DISCOVERY;
 	uint32_t lora_send_timeout = 5000;
 	uint32_t lora_send_ticks = HAL_GetTick();
@@ -189,7 +189,7 @@ int main(void) {
 				query_ticks = HAL_GetTick();
 //			set_battery_voltage(&(tag.battery_voltage));
 //			set_temperature(&(tag.temperature));
-			int_to_float_Tag_Battery_Voltage(&tag);
+			converse_Tag_Battery_Voltage(&tag);
 			if ((debug_count == 1) || (tag_status == TAG_ONE_DETECTION)){
 				debug(tag, tag_status);
 			}
@@ -294,30 +294,33 @@ int main(void) {
 			}
 		}
 
-		if (((HAL_GetTick() - lora_send_ticks) > lora_send_timeout)
-				&& tag_status == TAG_DISCOVERY) {
-			debug_status(tag_status);
-			size_t temp_value = 1 + list.count * SERIALIZED_TAG_SIZE; // Or use uint32_t
-			uint8_t tag_bytes = (uint8_t) temp_value;
-			uint8_t response_length = calculate_frame_length(tag_bytes);
-			uint8_t tx[response_length];
-			memset(tx, 0, response_length);
-			memcpy(tx + LORA_DATA_LENGHT_INDEX_1, &tag_bytes,
-					sizeof(tag_bytes));
-			uint8_t *tx_data = tx + LORA_DATA_START_INDEX;
-			tx_data[0] = list.count;
-			tx_data++;
-			serialize_tag_list(&list, tx_data);
-			uint8_t CRC_INDEX = LORA_DATA_START_INDEX
-					+ tx[LORA_DATA_LENGHT_INDEX_1];
-			uint8_t END_INDEX = CRC_INDEX + CRC_SIZE;
-			setCrc(tx, CRC_INDEX);
-			tx[END_INDEX] = LTEL_END_MARK;
-			print_all_tags(&list, tag_status);
-			print_serialized_tags(&list);
-			print_tx_hex(tx, response_length);
-			free_tag_list(&list);
-			lora_send_ticks = HAL_GetTick();
+		if (((HAL_GetTick() - lora_send_ticks) > lora_send_timeout) && tag_status == TAG_DISCOVERY) {
+//			debug_status(tag_status);
+			size_t temp_value = 1 + list.count * SERIALIZED_TAG_SIZE;
+			if (list.count > 0){// Or use uint32_t
+				uint8_t tag_bytes = (uint8_t) temp_value;
+				uint8_t response_length = calculate_frame_length(tag_bytes);
+				uint8_t tx[response_length];
+				memset(tx, 0, response_length);
+				memcpy(tx + LORA_DATA_LENGHT_INDEX_1, &tag_bytes, sizeof(tag_bytes));
+				uint8_t *tx_data = tx + LORA_DATA_START_INDEX;
+				tx_data[0] = list.count;
+				tx_data++;
+				serialize_tag_list(&list, tx_data);
+				uint8_t CRC_INDEX = LORA_DATA_START_INDEX + tx[LORA_DATA_LENGHT_INDEX_1];
+				uint8_t END_INDEX = CRC_INDEX + CRC_SIZE;
+				setCrc(tx, CRC_INDEX);
+				tx[0] = LTEL_START_MARK;
+				tx[1] = 10;
+				tx[2] = 0x44;
+				tx[3] = 0x11;
+				tx[END_INDEX] = LTEL_END_MARK;
+				print_all_tags(&list, tag_status);
+				print_serialized_tags(&list);
+				print_tx_hex(tx, response_length);
+				free_tag_list(&list);
+				lora_send_ticks = HAL_GetTick();
+			}
 		}
 
 		/* USER CODE BEGIN 3 */

@@ -26,7 +26,7 @@ TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 	if (rx_buffer_size == 0)
 		return (TAG_RX_DATA_ZERO);
 
-	uint8_t rx_buffer[3];
+	uint8_t rx_buffer[3]; // TODO Revisar RX Buffer primera recepcion
 	dwt_readrxdata(rx_buffer, (uint16_t) rx_buffer_size, 0);
 
 	uint8_t received_command = rx_buffer[0];
@@ -419,7 +419,7 @@ void start_tag_reception_inmediate(uint8_t preamble_timeout, uint8_t rx_timeout)
 	/* Poll for reception of a frame or error/timeout. See NOTE 8 below. */
 }
 
-#define RX_DATA_TIMEOUT_MS 1000 // Timeout in milliseconds
+#define RX_DATA_TIMEOUT_MS 100 // Timeout in millisecondspasé de 1000 a 100 para probar
 
 TAG_STATUS_t wait_rx_data() {
 	uint32_t status_reg;

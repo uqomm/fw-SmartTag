@@ -29,7 +29,7 @@ extern Uwb_HW_t *hw;
 /* Length of the common part of the message (up to and including the function code, see NOTE 2 below). */
 #define INITIAL_COMUNICATION_DATA_SIZE 5
 // Define the size of the serialized TAG_t structure
-#define SERIALIZED_TAG_SIZE (sizeof(uint32_t) + 4 * sizeof(uint16_t))
+#define SERIALIZED_TAG_SIZE (sizeof(uint32_t)*1 + 2 * sizeof(uint16_t) + sizeof(uint8_t)*1)
 #define POLL_RX_OFFSET 5
 #define RESP_TX_OFFSET (POLL_RX_OFFSET+sizeof(uint32_t))
 #define BATTERY_VOLTAGE_RAW_OFFSET (RESP_TX_OFFSET+sizeof(uint32_t))
@@ -64,6 +64,7 @@ typedef struct {
 	Distance_t distance_a;
 	Distance_t distance_b;
 	uint16_t Battery_Voltage;
+	uint8_t Real_Batt_Voltage;
 	float Float_Battery_Voltage;
 	uint8_t Estado_Final;
 	Sniffer_State master_state;
@@ -142,6 +143,7 @@ double distance_smooth(Distance_t *distance);
 //void set_battery_voltage(Mesurement_data_t *battery_voltage);
 //void set_temperature(Mesurement_data_t *temperature);
 void int_to_float_Tag_Battery_Voltage(TAG_t *tag);
+void converse_Tag_Battery_Voltage(TAG_t *tag);
 // Function to insert a new TAG_t node into the linked list
 void insert_tag(TAG_List *list, TAG_t new_tag);
 void delete_tag(TAG_List *list, uint32_t id);

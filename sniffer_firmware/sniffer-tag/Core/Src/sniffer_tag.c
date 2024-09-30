@@ -521,7 +521,7 @@ void debug(TAG_t tag, TAG_STATUS_t status) {
 	}
 
 	size =	sprintf(dist_str,
-			"{message: %s},{ID: 0x%08X},{times: %lu},{error_a:%u},{error_b:%u},{Counter_a: %u},{Counter_b: %u},{distance_a: %0.2f},{distance_b: %0.2f},{battery_voltage: %0.2f}",
+			"{message: %s},{ID: 0x%08X},{times: %lu},{error_a:%u},{error_b:%u},{Counter_a: %u},{Counter_b: %u},{distance_a: %0.2f},{distance_b: %0.2f},{battery_voltage_FLOAT: %0.2f},{battery_voltage_INT: %u}",
 					TAG_MESSAGES[status],
 					(int) tag.id,
 					(unsigned long) tag.readings,
@@ -531,7 +531,8 @@ void debug(TAG_t tag, TAG_STATUS_t status) {
 					tag.distance_b.counter,
 					(float) tag.distance_a.readings[tag.distance_a.counter - 1],
 					(float) tag.distance_b.readings[tag.distance_b.counter - 1],
-					tag.Float_Battery_Voltage);
+					tag.Float_Battery_Voltage,
+					tag.Real_Batt_Voltage);
 //					tag.temperature.real);
 
 	HAL_UART_Transmit(&huart1, (uint8_t*) dist_str, size, HAL_MAX_DELAY);
@@ -570,12 +571,12 @@ void debug_tag(TAG_t tag) {
 	int size = 0;
 	size =
 			sprintf(dist_str,
-					"{ID: 0x%08X},{times: %lu},{distance_a: %u},{distance_b: %u},{battery_voltage: %0.2f}",
+					"{ID: 0x%08X},{times: %lu},{distance_a: %u},{distance_b: %u},{battery_voltage: %u}",
 					(int) tag.id,
 					(unsigned long) tag.readings,
 					tag.distance_a.value,
 					tag.distance_b.value,
-					tag.Float_Battery_Voltage);
+					tag.Real_Batt_Voltage);
 //					tag.battery_voltage.real,
 //					tag.temperature.real);
 
@@ -659,6 +660,11 @@ void print_serialized_tags(TAG_List *list) {
 
 void int_to_float_Tag_Battery_Voltage(TAG_t *tag){
 	tag->Float_Battery_Voltage = ((tag->Battery_Voltage)*6.0)/65536.0;
+}
+
+void converse_Tag_Battery_Voltage(TAG_t *tag){
+	tag->Float_Battery_Voltage = ((tag->Battery_Voltage)*6.0)/65536.0;
+	tag->Real_Batt_Voltage = (int)roundf((((tag->Battery_Voltage)*6.0)/6553.6));
 }
 
 
@@ -750,6 +756,10 @@ static void serialize_tag(TAG_t *tag, uint8_t *buffer) {
 			sizeof(tag->distance_b.value));
 	offset += sizeof(tag->distance_b.value);
 
+	memcpy(buffer + offset, &tag->Real_Batt_Voltage,
+				sizeof(tag->Real_Batt_Voltage));
+		offset += sizeof(tag->Real_Batt_Voltage);
+
 //	memcpy(buffer + offset, &tag->temperature.real,
 //			sizeof(tag->temperature.real));
 //	offset += sizeof(tag->temperature.real);
@@ -767,7 +777,7 @@ void serialize_tag_list(TAG_List *list, uint8_t *buffer) {
 		offset += sizeof(current->tag.id)
 				+ sizeof(current->tag.distance_a.value)
 				+ sizeof(current->tag.distance_b.value)
-				+ sizeof(current->tag.Float_Battery_Voltage);
+				+ sizeof(current->tag.Real_Batt_Voltage);
 //				+ sizeof(current->tag.temperature.real)
 //				+ sizeof(current->tag.battery_voltage.real);
 		current = current->next;
