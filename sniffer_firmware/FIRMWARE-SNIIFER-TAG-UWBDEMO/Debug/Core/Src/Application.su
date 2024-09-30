@@ -1,4 +1,0 @@
-../Drivers/CMSIS/Include/core_cm3.h:1762:34:__NVIC_SystemReset	4	static,ignoring_inline_asm
-../Core/Src/Application.c:53:6:dwt_setting_data_init	16	static
-../Core/Src/Application.c:69:9:hmi_recv	48	static
-../Core/Src/Application.c:231:6:dwt_structs_init	80	static

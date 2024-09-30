@@ -1,9 +1,0 @@
-../Core/Src/bq25150.cpp:73:1:Bq25155::Bq25155(Gpio, Gpio, Gpio, I2C_HandleTypeDef*)	1
-../Core/Src/bq25150.cpp:79:6:void Bq25155::mr_set()	1
-../Core/Src/bq25150.cpp:82:6:void Bq25155::mr_reset()	1
-../Core/Src/bq25150.cpp:85:6:void Bq25155::manual_read_adc_bat()	1
-../Core/Src/bq25150.cpp:95:9:uint8_t Bq25155::adc_flags()	2
-../Core/Src/bq25150.cpp:108:10:uint16_t Bq25155::register_adc_bat()	3
-../Core/Src/bq25150.cpp:123:19:HAL_StatusTypeDef Bq25155::I2C_write(uint8_t, uint8_t, uint8_t, I2C_HandleTypeDef*)	1
-../Core/Src/bq25150.cpp:164:6:void Bq25155::register_init_all_2()	1
-../Core/Src/bq25150.cpp:198:6:void Bq25155::register_Factory_Reset()	1

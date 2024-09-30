@@ -1,3 +1,0 @@
-../Core/Src/Gpio.cpp:3:1:Gpio::Gpio(GPIO_TypeDef*, uint16_t)	24	static
-../Core/Src/Gpio.cpp:8:15:GPIO_TypeDef* Gpio::get_port()	16	static
-../Core/Src/Gpio.cpp:12:10:uint16_t Gpio::get_pin()	16	static
