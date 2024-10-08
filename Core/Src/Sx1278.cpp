@@ -34,9 +34,10 @@ uint8_t Sx1278::read_reg_addr(LoraRegisters reg, uint8_t reg_len) {
 }
 
 void Sx1278::write_reg_addr(uint8_t address, uint8_t *cmd, uint8_t lenght) {
-	if (lenght > 4)
+	uint8_t limit = 0;
+	if (lenght == limit)
 		return;
-	uint8_t tx_data[5] = { 0 };
+	uint8_t tx_data[255] = { 0 };
 	tx_data[0] = address | 0x80;
 	int j = 0;
 	for (int i = 1; i <= lenght; i++) {
@@ -119,10 +120,9 @@ uint8_t Sx1278::write_tx_fifo_data(uint8_t *data, uint8_t data_len) {
 	if (data_len > 0) {
 		write_8bit_reg(LoraRegisters::RegPayloadLength, data_len);
 		write_8bit_reg(LoraRegisters::RegFifoAddrPtr, DATA_BUFFER_BASE_ADDR); //DATA_BUFFER_BASE_ADDR
-		for (int i = 0; i < txSize; i++)
-			write_8bit_reg(LoraRegisters::RegFifo, data[i]);
-
-		//write_reg_addr(LoraRegisters::RegFifo,data, data_len);
+//for (int i = 0; i < data_len; i++)
+			//write_8bit_reg(LoraRegisters::RegFifo, data[i]);
+			write_reg_addr(static_cast<uint8_t> (LoraRegisters::RegFifo),data, data_len);
 	}
 	return data_len;
 }

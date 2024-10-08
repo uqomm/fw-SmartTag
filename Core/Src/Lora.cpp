@@ -28,7 +28,7 @@ Lora::Lora(Gpio _nss, Gpio _reset, SPI_HandleTypeDef *_spi, Memory* _eeprom) :
 Lora::~Lora() {
 }
 
-int8_t Lora::receive(uint8_t *data_received, LinkMode mode) {
+int8_t Lora::receive(uint8_t *data_received, LINKMODE mode) {
 	uint8_t op_mode = (read_8bit_reg(LoraRegisters::RegOpMode));
 	if (!(op_mode & static_cast<uint8_t>(DeviceOperatingMode::RX_CONTINUOUS))) {
 
@@ -53,25 +53,30 @@ int8_t Lora::receive(uint8_t *data_received, LinkMode mode) {
 		return -1;
 }
 
-void Lora::set_link_frequency(LinkMode mode) {
-	if (mode == LinkMode::DOWNLINK) {
+void Lora::set_link_frequency(LINKMODE mode) {
+	if (mode == LINKMODE::DOWNLINK) {
 		set_carrier_frquency(downlink_frequency);
-	} else if (mode == LinkMode::UPLINK) {
+	} else if (mode == LINKMODE::UPLINK) {
 		set_carrier_frquency(uplink_frequency);
 	}
 }
 
-uint8_t Lora::transmit(uint8_t *data, uint8_t data_len, LinkMode mode) {
+uint8_t Lora::transmit(uint8_t *data, uint8_t data_len, LINKMODE mode) {
 
 	set_low_frequency_mode(DeviceOperatingMode::STANDBY);
 
 	set_link_frequency(mode);
-
+	uint32_t initime = HAL_GetTick();
 	write_tx_fifo_data(data, data_len);
+
 	set_low_frequency_mode(DeviceOperatingMode::TX);
-	if((wait_irq(TX_DONE_MASK, 2500)))
+	if((wait_irq(TX_DONE_MASK, 2000))){
 			return -1;
-	return 0;
+	}else {
+		uint32_t endtime = HAL_GetTick();
+		uint32_t duracion = endtime-initime;
+		return 0;
+	}
 }
 
 void Lora::set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,

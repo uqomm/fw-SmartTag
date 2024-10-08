@@ -15,15 +15,15 @@
 #include "string.h"
 
 #define LTEL_FRAME_SIZE 14
-#define SIGMA_FRAME_SIZE 14
-#define LTEL_START_MARK 0x7e
-#define RDSS_END_MARK 0x7f
-#define RDSS_START_MARK 0x7e
-#define LTEL_END_MARK  0x7f
-#define RDSS_BUFFER_SIZE 25
+//#define SIGMA_FRAME_SIZE 14
+//#define LTEL_START_MARK 0x7e
+//#define RDSS_END_MARK 0x7f
+//#define RDSS_START_MARK 0x7e
+//#define LTEL_END_MARK  0x7f
+//#define RDSS_BUFFER_SIZE 25
 #define CRC_SIZE 2
-#define LTEL_SET_LENGTH  13
-#define LTEL_QUERY_LENGTH  9
+//#define LTEL_SET_LENGTH  13
+//#define LTEL_QUERY_LENGTH  9
 #define MINIMUM_FRAME_LEN 6
 #define ATTENUATION_VALUE_INDEX 5
 #define QUERY_STATUS_BUFFER_SIZE 34
@@ -37,19 +37,19 @@
 #define ID_BYTES_SIZE 1  // Assuming 6 bytes for the ID
 #define CRC_BYTES_SIZE 2
 
-typedef enum MODULE_FUNCTION {
-	SERVER,
-	QUAD_BAND,
-	PSU,
-	TETRA,
-	ULADR,
-	VLADR,
-	BDA,
-	LOW_NOISE_AMPLIFIER,
-	POWER_AMPLIFIER,
-	UHF_TONE,
-	SNIFFER
-} Function_t;
+//typedef enum MODULE_FUNCTION {
+//	SERVER,
+//	QUAD_BAND,
+//	PSU,
+//	TETRA,
+//	ULADR,
+//	VLADR,
+//	BDA,
+//	LOW_NOISE_AMPLIFIER,
+//	POWER_AMPLIFIER,
+//	UHF_TONE,
+//	SNIFFER
+//} Function_t;
 
 typedef enum RS485_CMD {
 	NONE,

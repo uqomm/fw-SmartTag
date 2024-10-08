@@ -42,7 +42,7 @@ constexpr uint8_t LTEL_COMPATIBLE_PREAMBLE_LENGTH_LSB = 12;
 constexpr uint8_t CLEAR_IRQ_MASK = 0xFF;
 
 
-enum class LinkMode {
+enum class LINKMODE {
 	DOWNLINK,UPLINK
 };
 
@@ -88,8 +88,8 @@ public:
 	void set_downlink_frequency(uint32_t freq);
 	void set_uplink_frequency(uint32_t freq);
 	void save_settings();
-	int8_t receive(uint8_t *data_received, LinkMode mode);
-	uint8_t transmit(uint8_t *data, uint8_t data_len, LinkMode mode);
+	int8_t receive(uint8_t *data_received, LINKMODE mode);
+	uint8_t transmit(uint8_t *data, uint8_t data_len, LINKMODE mode);
 	uint32_t read_settings();
 private:
 	Memory* eeprom;
@@ -126,8 +126,8 @@ private:
 	void set_default_configurations();
 	void save_lora_settings();
 	void set_low_frequency_mode(DeviceOperatingMode mode);
-	void changeMode(LinkMode mode);
-	void set_link_frequency(LinkMode mode);
+	void changeMode(LINKMODE mode);
+	void set_link_frequency(LINKMODE mode);
 };
 
 #endif /* INC_TXLORA_HPP_ */

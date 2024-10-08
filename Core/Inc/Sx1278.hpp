@@ -172,10 +172,6 @@ protected:
 	uint32_t lastTxTime;
 	uint32_t lastRxTime;
 	uint8_t fifo[255];
-	uint8_t *rxData;
-	uint8_t rxSize;
-	uint8_t *txData;
-	uint8_t txSize;
 	uint8_t readBytes;
 	Gpio nss;
 	Gpio reset;

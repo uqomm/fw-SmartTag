@@ -6,12 +6,13 @@
  */
 
 #include "sniffer_tag.hpp"
+// Abstract class Function
 
 static const char *TAG_MESSAGES[] = { "NO_RESPONSE", "NO_RXCG_DETECTED",
 		"RX_FRAME_TIMEOUT", "RX_PREAMBLE_DETECTION_TIMEOUT", "RX_CRC_VALID",
 		"RX_ERROR", "RX_DATA_ZERO", "RX_NO_COMMAND", "TX_ERROR",
 		"HUMAN_DISTANCE_OK", "END_READINGS", "DISCOVERY",
-		"SEND_TIMESTAMP_QUERY", "TAG_SET_SLEEP_MODE", "UNKNOWN" };
+		"SEND_TIMESTAMP_QUERY", "TAG_SET_SLEEP_MODE", "TAG_ONE_DETECTION" ,"UNKNOWN" };
 
 static void compute_distance(TAG_t *tag, const uint8_t *rx_buffer,
 		int poll_rx_offset, int resp_tx_offset);
@@ -75,6 +76,9 @@ void reset_TAG_values(TAG_t *tag) {
 	tag->readings = 0;
 	tag->command = 0;
 	tag->distance = NULL;
+	tag->Battery_Voltage = 0;
+	tag->Estado_Final = 0;
+//	tag->master_state = MASTER_ONE_DETECTION;
 	// Initialize Measurement_data_t variables to zero
 //	tag->temperature.calibrated = 0;
 //	tag->temperature.raw = 0;
@@ -107,18 +111,25 @@ TAG_STATUS_t tag_discovery(TAG_t *tag) {
 	tag->command = TAG_ID_QUERY;
 
 	tx_buffer[0] = tag->command;
+	tx_buffer[1] = tag->master_state;
+	tx_buffer[2] = DEV_UWB3000F27;
 
 	TAG_STATUS_t status_reg = setup_and_transmit(tag, tx_buffer,
 	TX_DISCOVERY_SIZE, rx_buffer, &rx_buffer_size);
 	if (status_reg != TAG_RX_CRC_VALID) {
 		return status_reg;
 	}
-
+	if(rx_buffer[2] != DEV_UWB3000F27){
 	if (tag->command == rx_buffer[0]) {
 		parse_received_data(tag, rx_buffer);
+		if (tag->master_state ==  MASTER_ONE_DETECTION){
+			return TAG_ONE_DETECTION;
+		}
 		return (TAG_SEND_TIMESTAMP_QUERY);
 	}
 	return (TAG_RX_NO_COMMAND);
+	}
+	return TAG_DISCOVERY;
 }
 
 static TAG_STATUS_t setup_and_transmit(TAG_t *tag, uint8_t *tx_buffer,
@@ -514,7 +525,7 @@ void debug(TAG_t tag, TAG_STATUS_t status) {
 	}
 
 	size =	sprintf(dist_str,
-			"{message: %s},{ID: 0x%08X},{times: %lu},{error_a:%u},{error_b:%u},{Counter_a: %lu},{Counter_b: %lu},{distance_a: %0.2f},{distance_b: %0.2f},{battery_voltage: %0.2f}",
+			"{message: %s},{ID: 0x%08X},{times: %lu},{error_a:%u},{error_b:%u},{Counter_a: %u},{Counter_b: %u},{distance_a: %0.2f},{distance_b: %0.2f},{battery_voltage_FLOAT: %0.2f},{battery_voltage_INT: %u}",
 					TAG_MESSAGES[status],
 					(int) tag.id,
 					(unsigned long) tag.readings,
@@ -524,7 +535,8 @@ void debug(TAG_t tag, TAG_STATUS_t status) {
 					tag.distance_b.counter,
 					(float) tag.distance_a.readings[tag.distance_a.counter - 1],
 					(float) tag.distance_b.readings[tag.distance_b.counter - 1],
-					tag.Float_Battery_Voltage);
+					tag.Float_Battery_Voltage,
+					tag.Real_Batt_Voltage);
 //					tag.temperature.real);
 
 	HAL_UART_Transmit(&huart1, (uint8_t*) dist_str, size, HAL_MAX_DELAY);
@@ -563,12 +575,12 @@ void debug_tag(TAG_t tag) {
 	int size = 0;
 	size =
 			sprintf(dist_str,
-					"{ID: 0x%08X},{times: %lu},{distance_a: %u},{distance_b: %u},{battery_voltage: %0.2f}",
+					"{ID: 0x%08X},{times: %lu},{distance_a: %u},{distance_b: %u},{battery_voltage: %u}",
 					(int) tag.id,
 					(unsigned long) tag.readings,
 					tag.distance_a.value,
 					tag.distance_b.value,
-					tag.Float_Battery_Voltage);
+					tag.Real_Batt_Voltage);
 //					tag.battery_voltage.real,
 //					tag.temperature.real);
 
@@ -652,6 +664,11 @@ void print_serialized_tags(TAG_List *list) {
 
 void int_to_float_Tag_Battery_Voltage(TAG_t *tag){
 	tag->Float_Battery_Voltage = ((tag->Battery_Voltage)*6.0)/65536.0;
+}
+
+void converse_Tag_Battery_Voltage(TAG_t *tag){
+	tag->Float_Battery_Voltage = ((tag->Battery_Voltage)*6.0)/65536.0;
+	tag->Real_Batt_Voltage = (int)roundf((((tag->Battery_Voltage)*6.0)/6553.6));
 }
 
 
@@ -743,6 +760,10 @@ static void serialize_tag(TAG_t *tag, uint8_t *buffer) {
 			sizeof(tag->distance_b.value));
 	offset += sizeof(tag->distance_b.value);
 
+	memcpy(buffer + offset, &tag->Real_Batt_Voltage,
+				sizeof(tag->Real_Batt_Voltage));
+		offset += sizeof(tag->Real_Batt_Voltage);
+
 //	memcpy(buffer + offset, &tag->temperature.real,
 //			sizeof(tag->temperature.real));
 //	offset += sizeof(tag->temperature.real);
@@ -760,7 +781,7 @@ void serialize_tag_list(TAG_List *list, uint8_t *buffer) {
 		offset += sizeof(current->tag.id)
 				+ sizeof(current->tag.distance_a.value)
 				+ sizeof(current->tag.distance_b.value)
-				+ sizeof(current->tag.Float_Battery_Voltage);
+				+ sizeof(current->tag.Real_Batt_Voltage);
 //				+ sizeof(current->tag.temperature.real)
 //				+ sizeof(current->tag.battery_voltage.real);
 		current = current->next;

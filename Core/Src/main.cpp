@@ -23,8 +23,12 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <sniffer_tag.hpp>
 #include "Gpio.hpp"
 #include "Memory.hpp"
+//#include "SX1278.h"
+
+#include "CommandMessage.hpp"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -57,9 +61,52 @@ uint8_t Data_tx_1[11] = { 0x7E, 0x01, 0x04, 0x13, 0x00, 0x02, 0x15, 0x50, 0x5B, 
 uint8_t Data_tx_2[11] = { 0x7E, 0x03, 0x02, 0x13, 0x00, 0x02, 0x15, 0x50, 0x59, 0x71, 0x7F};
 uint8_t Data_tx_3[11] = { 0x7E, 0x05, 0x07, 0x13, 0x00, 0x02, 0x15, 0x50, 0x7D, 0x93, 0x7F};
 
+uint8_t exampleFrame[] = {
+		  0x7e, 0x10, 0x01, 0x11, 0xd9, 0x00, 0x18, 0x00, 0x00, 0x00, 0x00, 0x49, 0x02, 0x53, 0x02, 0x29,
+		  0x01, 0x00, 0x00, 0x00, 0x31, 0x25, 0x38, 0x25, 0x21, 0x02, 0x00, 0x00, 0x00, 0x92, 0x17, 0x81,
+		  0x17, 0x22, 0x03, 0x00, 0x00, 0x00, 0xb4, 0x09, 0xb4, 0x09, 0x21, 0x04, 0x00, 0x00, 0x00, 0x4f,
+		  0x0a, 0x4d, 0x0a, 0x22, 0x05, 0x00, 0x00, 0x00, 0x52, 0x18, 0x46, 0x18, 0x1e, 0x06, 0x00, 0x00,
+		  0x00, 0xea, 0x26, 0xe3, 0x26, 0x29, 0x07, 0x00, 0x00, 0x00, 0x8a, 0x1b, 0x81, 0x1b, 0x27, 0x08,
+		  0x00, 0x00, 0x00, 0x28, 0x1b, 0x38, 0x1b, 0x1e, 0x09, 0x00, 0x00, 0x00, 0x2c, 0x07, 0x2b, 0x07,
+		  0x25, 0x0a, 0x00, 0x00, 0x00, 0x59, 0x19, 0x63, 0x19, 0x27, 0x0b, 0x00, 0x00, 0x00, 0xd9, 0x10,
+		  0xdc, 0x10, 0x1b, 0x0c, 0x00, 0x00, 0x00, 0xf5, 0x05, 0xfd, 0x05, 0x24, 0x0d, 0x00, 0x00, 0x00,
+		  0x67, 0x26, 0x64, 0x26, 0x26, 0x0e, 0x00, 0x00, 0x00, 0xf6, 0x04, 0xfa, 0x04, 0x19, 0x0f, 0x00,
+		  0x00, 0x00, 0x72, 0x20, 0x6e, 0x20, 0x1f, 0x10, 0x00, 0x00, 0x00, 0x2b, 0x26, 0x37, 0x26, 0x24,
+		  0x11, 0x00, 0x00, 0x00, 0x85, 0x23, 0x96, 0x23, 0x28, 0x12, 0x00, 0x00, 0x00, 0xd7, 0x1b, 0xc7,
+		  0x1b, 0x22, 0x13, 0x00, 0x00, 0x00, 0x32, 0x08, 0x3a, 0x08, 0x28, 0x14, 0x00, 0x00, 0x00, 0xbc,
+		  0x15, 0xbd, 0x15, 0x1b, 0x15, 0x00, 0x00, 0x00, 0xa1, 0x07, 0x9c, 0x07, 0x21, 0x16, 0x00, 0x00,
+		  0x00, 0xfe, 0x1f, 0xfa, 0x1f, 0x1f, 0x17, 0x00, 0x00, 0x00, 0xea, 0x26, 0xdf, 0x26, 0x1b, 0x1e,
+		  0xa4, 0x7f
+};
+
+std::vector<uint8_t> data_compose;
+
+
+
 uint8_t *data_tx[3] = { Data_tx_1, Data_tx_2, Data_tx_3 };
 
-uint8_t Data_reciv_test[11] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+uint8_t Data_reciv_test[256] = { 0 };
+
+
+
+double *distance_ptr;
+TAG_t *tag;
+int size = 0;
+uint8_t running_device = DEV_UWB3000F27;
+Uwb_HW_t uwb_hw_a;
+Uwb_HW_t uwb_hw_b;
+Uwb_HW_t *hw;
+dwt_local_data_t *pdw3000local;
+uint8_t crcTable[256];
+uint8_t recvChar;
+//LORA_t lora;
+//SX1276_HW_t sx1276_hw_tx;
+//SX1276_HW_t sx1276_hw_rx;
+
+
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -113,7 +160,41 @@ int main(void) {
 	MX_SPI2_Init();
 	MX_SPI3_Init();
 	/* USER CODE BEGIN 2 */
+	pdw3000local = new dwt_local_data_t;
+	TAG_List list = { NULL, 0 };
+
+	HAL_GPIO_WritePin(DW3000_B_WKUP_GPIO_Port, DW3000_B_WKUP_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(DW3000_A_WKUP_GPIO_Port, DW3000_A_WKUP_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(DW3000_A_CS_GPIO_Port, DW3000_A_CS_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(DW3000_B_CS_GPIO_Port, DW3000_B_CS_Pin, GPIO_PIN_RESET);
+
+
+
+	init_uwb_device(&uwb_hw_a, &hspi3, DW3000_A_CS_GPIO_Port,
+	DW3000_A_CS_Pin,
+	DW3000_A_RST_GPIO_Port, DW3000_A_RST_Pin);
+
+	init_uwb_device(&uwb_hw_b, &hspi3, DW3000_B_CS_GPIO_Port, DW3000_B_CS_Pin,
+			DW3000_B_RST_GPIO_Port, DW3000_B_RST_Pin);
+
+	TAG_t tag;
+	reset_TAG_values(&tag);
+
+	uint32_t query_timeout = 1000;
+	uint32_t query_ticks;
+	uint32_t debug_count = 0;
+
+	tag.master_state = MASTER_MULTIPLE_DETECTION; //MASTER_MULTIPLE_DETECTION      MASTER_ONE_DETECTION
+	TAG_STATUS_t tag_status = TAG_DISCOVERY;
+	uint32_t lora_send_timeout = 500;
+	uint32_t lora_send_ticks = HAL_GetTick();
+	RDSS_status_t rdss_status;
+
+
 	Memory eeprom = Memory(&hi2c3);
+
+	CommandMessage cmd = CommandMessage(
+			static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER), 0x00);
 
 	Gpio rx_lora_nss = Gpio(LORA_RX_NSS_GPIO_Port, LORA_RX_NSS_Pin);
 	Gpio rx_lora_rst = Gpio(LORA_RX_NRST_GPIO_Port, LORA_RX_NRST_Pin);
@@ -135,20 +216,150 @@ int main(void) {
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-		for (int i = 0; i < 3; i++) {
-			txlora.transmit(data_tx[i], leng, LinkMode::UPLINK);
-			HAL_GPIO_TogglePin(LORA_TX_LED_GPIO_Port, LORA_TX_LED_Pin);
-			HAL_Delay(5000);
-			if (i == 3)
-				i = 0;
+
+		if (tag_status == TAG_DISCOVERY) {
+			debug_count++;
+			if (hw == &uwb_hw_a) {
+				hw = &uwb_hw_b;
+				tag.distance = &(tag.distance_b);
+			} else {
+				hw = &uwb_hw_a;
+				tag.distance = &(tag.distance_a);
+			}
+
+			tag_status = tag_discovery(&tag);
+
+			if ((tag_status != TAG_SEND_TIMESTAMP_QUERY)
+					&& (tag_status != TAG_ONE_DETECTION))
+				tag_status = TAG_DISCOVERY;
+			else
+				query_ticks = HAL_GetTick();
+			//			set_battery_voltage(&(tag.battery_voltage));
+			//			set_temperature(&(tag.temperature));
+			converse_Tag_Battery_Voltage(&tag);
+			if ((debug_count == 1) || (tag_status == TAG_ONE_DETECTION)) {
+				debug(tag, tag_status);
+			}
+
+		} else if (tag_status == TAG_SEND_TIMESTAMP_QUERY) {
+			if (tag.readings < DISTANCE_READINGS) {
+				if ((hw == &uwb_hw_a)
+						&& (tag.distance_b.counter < DISTANCE_READINGS / 2)) {
+					hw = &uwb_hw_b;
+					tag.distance = &(tag.distance_b);
+				} else {
+					hw = &uwb_hw_a;
+					tag.distance = &(tag.distance_a);
+				}
+				tag.command = TAG_TIMESTAMP_QUERY;
+			}
+			if ((tag.readings == DISTANCE_READINGS - 3)) { //|| (tag.command == TAG_SET_SLEEP_MODE)
+				tag.command = TAG_SET_SLEEP_MODE;
+				tag_status = TAG_SEND_SET_SLEEP;
+				tag.Estado_Final = 1;
+			}
+			debug(tag, tag_status);
+			tag_status = tag_send_timestamp_query(&tag);
+
+			if ((tag_status == TAG_SEND_TIMESTAMP_QUERY)
+					|| (tag.Estado_Final == 0)) {
+				tag.readings++;
+				tag_status = TAG_SEND_TIMESTAMP_QUERY;
+
+			} else if (tag.Estado_Final == 1) {
+				double distance_a_sum = 0;
+				double distance_b_sum = 0;
+				for (uint8_t i = 0; i < tag.distance_a.counter; i++)
+					distance_a_sum += tag.distance_a.readings[i];
+
+				for (uint8_t i = 0; i < tag.distance_b.counter; i++)
+					distance_b_sum += tag.distance_b.readings[i];
+
+				tag.distance_a.value = (uint16_t) ((distance_a_sum * 100)
+						/ tag.distance_a.counter);
+				tag.distance_b.value = (uint16_t) ((distance_b_sum * 100)
+						/ tag.distance_b.counter);
+				insert_tag(&list, tag);
+				tag_status = TAG_DISCOVERY;
+				reset_TAG_values(&tag);
+				debug_count = 0;
+			} else {
+				tag_status = TAG_SEND_TIMESTAMP_QUERY;
+			}
+			debug(tag, tag_status);
+			if (HAL_GetTick() - query_ticks > query_timeout) {
+				tag_status = TAG_DISCOVERY;
+				reset_TAG_values(&tag);
+				debug_count = 0;
+			}
+
+		} else if (tag_status == TAG_ONE_DETECTION) {
+			debug(tag, tag_status);
+			insert_tag(&list, tag);
+			tag_status = TAG_DISCOVERY;
+			reset_TAG_values(&tag);
+			debug_count = 0;
 		}
-			rxlora.receive(Data_reciv_test, LinkMode::DOWNLINK);
+
+
+//				 uint8_t rx_bytes = rxlora.receive(Data_reciv_test, LinkMode::DOWNLINK);
+//		if (rx_bytes > 0) {
+//			STATUS status_data = command.validate(Data_reciv_test, rx_bytes);
+//			if (status_data == STATUS::VALID_FRAME) {
+//				uint8_t *rx = Data_reciv_test;
+//				size_t temp_value = 1 + list.count * SERIALIZED_TAG_SIZE; // Or use uint32_t
+//				uint8_t tag_bytes = (uint8_t) temp_value;
+//				uint8_t response_length = calculate_frame_length(tag_bytes);
+//				uint8_t tx[response_length];
+//				memset(tx, 0, response_length);
+//				memcpy(tx, rx, LORA_DATA_LENGHT_INDEX_1);
+//				memcpy(tx + LORA_DATA_LENGHT_INDEX_1, &tag_bytes,
+//						sizeof(tag_bytes));
+//				uint8_t *tx_data = tx + LORA_DATA_START_INDEX;
+//				tx_data[0] = list.count;
+//				tx_data++;
+//				serialize_tag_list(&list, tx_data);
+//				uint8_t CRC_INDEX = LORA_DATA_START_INDEX
+//						+ tx[LORA_DATA_LENGHT_INDEX_1];
+//				uint8_t END_INDEX = CRC_INDEX + CRC_SIZE;
+//				setCrc(tx, CRC_INDEX);
+//				tx[END_INDEX] = LTEL_END_MARK;
+//				HAL_GPIO_WritePin(LORA_TX_LED_GPIO_Port, LORA_TX_LED_Pin,
+//						GPIO_PIN_RESET);
+//				txlora.transmit(tx, response_length, LinkMode::UPLINK);
+//				HAL_GPIO_WritePin(LORA_TX_LED_GPIO_Port, LORA_TX_LED_Pin,
+//						GPIO_PIN_SET);
+//				serialize_tag_list(&list, tx_data);
+//				free(tx);
+//				print_all_tags(&list, tag_status);
+//				print_serialized_tags(&list);
+//				free_tag_list(&list);
+//			}
+
+
+		if (((HAL_GetTick() - lora_send_ticks) > lora_send_timeout)
+				&& tag_status == TAG_DISCOVERY) {
+
+			if (list.count > 0) { // Or use uint32_t
+				size_t temp_value = list.count * SERIALIZED_TAG_SIZE;
+				uint8_t tx[temp_value];
+				serialize_tag_list(&list, tx);
+				std::vector<uint8_t> tx_data_s(tx, tx + temp_value);
+				cmd.composeMessage(&tx_data_s);
+				std::vector<uint8_t> data_compose = cmd.get_composed_vector();
+				txlora.transmit(data_compose.data(),data_compose.size(), LINKMODE::UPLINK);
+				lora_send_ticks = HAL_GetTick();
+			}
+		}
+
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
 	}
 	/* USER CODE END 3 */
 }
+
+
 
 /**
  * @brief System Clock Configuration

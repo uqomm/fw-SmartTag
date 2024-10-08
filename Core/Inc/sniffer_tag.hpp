@@ -14,6 +14,8 @@ extern "C" {
 
 #include "main.h"
 #include "uwb3000Fxx.h"
+
+//#include "SX1278.h"
 #include "eeprom.h"
 #include "rdss.h"
 #include <stdio.h>
@@ -28,7 +30,7 @@ extern Uwb_HW_t *hw;
 /* Length of the common part of the message (up to and including the function code, see NOTE 2 below). */
 #define INITIAL_COMUNICATION_DATA_SIZE 5
 // Define the size of the serialized TAG_t structure
-#define SERIALIZED_TAG_SIZE (sizeof(uint32_t) + 4 * sizeof(uint16_t))
+#define SERIALIZED_TAG_SIZE (sizeof(uint32_t)*1 + 2 * sizeof(uint16_t) + sizeof(uint8_t)*1)
 #define POLL_RX_OFFSET 5
 #define RESP_TX_OFFSET (POLL_RX_OFFSET+sizeof(uint32_t))
 #define BATTERY_VOLTAGE_RAW_OFFSET (RESP_TX_OFFSET+sizeof(uint32_t))
@@ -40,14 +42,20 @@ typedef struct {
 	double readings[DISTANCE_READINGS/2];
 	uint16_t value;
 	uint8_t error_times;
-	uint16_t counter;
+	uint8_t counter;
 } Distance_t;
-
+//
 //typedef struct {
 //	uint8_t calibrated;
 //	uint8_t raw;
 //	uint16_t real;
 //} Mesurement_data_t;
+
+typedef enum {
+	MASTER_ONE_DETECTION,
+	MASTER_MULTIPLE_DETECTION
+}Sniffer_State;
+
 
 typedef struct {
 	uint32_t id;
@@ -57,7 +65,10 @@ typedef struct {
 	Distance_t distance_a;
 	Distance_t distance_b;
 	uint16_t Battery_Voltage;
+	uint8_t Real_Batt_Voltage;
 	float Float_Battery_Voltage;
+	uint8_t Estado_Final;
+	Sniffer_State master_state;
 //	Mesurement_data_t temperature;
 //	Mesurement_data_t battery_voltage;
 } TAG_t;
@@ -98,11 +109,12 @@ typedef enum {
 	TAG_DISCOVERY,
 	TAG_SEND_TIMESTAMP_QUERY,
 	TAG_SEND_SET_SLEEP,
-	TAG_UNKNOWN,
+	TAG_ONE_DETECTION,
+	TAG_UNKNOWN
 } TAG_STATUS_t;
 
 #define TX_BUFFER_SIZE (sizeof(uint8_t) + sizeof(uint32_t))
-#define TX_DISCOVERY_SIZE (sizeof(uint8_t))
+#define TX_DISCOVERY_SIZE (sizeof(uint8_t) + sizeof(uint8_t) + sizeof(uint8_t))
 #define TX_TIMESTAMP_SIZE (sizeof(uint8_t) + sizeof(uint32_t))
 #define TAG_TIMESTAMP_QUERY 0x11
 #define TAG_SET_SLEEP_MODE 0x12
@@ -132,6 +144,7 @@ double distance_smooth(Distance_t *distance);
 //void set_battery_voltage(Mesurement_data_t *battery_voltage);
 //void set_temperature(Mesurement_data_t *temperature);
 void int_to_float_Tag_Battery_Voltage(TAG_t *tag);
+void converse_Tag_Battery_Voltage(TAG_t *tag);
 // Function to insert a new TAG_t node into the linked list
 void insert_tag(TAG_List *list, TAG_t new_tag);
 void delete_tag(TAG_List *list, uint32_t id);

@@ -17,63 +17,63 @@ RDSS_status_t rs485_check_CRC_module(UART1_t *uart1) {
 	return CRC_ERROR;
 }
 
-RDSS_status_t checkModuleValidity(uint8_t *frame, uint8_t lenght) {
-	if (frame[1] == VLADR) {
-		for (int i = 3; i < lenght; i++)
-			if (frame[i] == LTEL_END_MARK)
-				return (VALID_MODULE);
-	} else
-		return (WRONG_MODULE_FUNCTION);
-	return (WRONG_MODULE_FUNCTION);
-}
-
-RDSS_status_t checkFrameValidity(uint8_t *frame, uint8_t lenght) {
-
-	if (lenght > (MINIMUM_FRAME_LEN)) {
-		if (frame[0] == LTEL_START_MARK) {
-			if (frame[lenght - 1] == LTEL_END_MARK)
-				return (VALID_FRAME);
-			else
-				return (START_READING);
-		} else
-			return (NOT_VALID_FRAME);
-	} else
-		return (WAITING);
-}
-
-RDSS_status_t checkCRCValidity(uint8_t *frame, uint8_t len) {
-	uint16_t calculatedCrc;
-	uint16_t savedCrc;
-	savedCrc = ((uint16_t) frame[len - 2] << 8);
-	savedCrc |= (uint16_t) frame[len - 3];
-	calculatedCrc = crc_get(&frame[1], len - 4);
-	return ((calculatedCrc == savedCrc) ? DATA_OK : CRC_ERROR);
-}
-
-RDSS_status_t rdss_validation(uint8_t *data_received, uint8_t len, uint8_t id) {
-	if (len < MINIMUM_FRAME_LEN)
-		return (NOT_VALID_FRAME);
-
-	if (data_received[LORA_START_INDEX] != RDSS_START_MARK)
-		return (NOT_VALID_FRAME);
-
-	if (data_received[len - 1] != RDSS_END_MARK)
-		return (NOT_VALID_FRAME);
-
-	if (data_received[LORA_MODULE_TYPE_INDEX] != SNIFFER)
-		return (WRONG_MODULE_FUNCTION);
-
-	if (checkCRCValidity(data_received, len) != DATA_OK)
-		return (CRC_ERROR);
-
-	if (data_received[LORA_MODULE_ID_INDEX] != id)
-		return (WRONG_MODULE_ID);
-
-	if (data_received[LORA_CMD_INDEX] == 0)
-		return (WRONG_CMD_NUMBER);
-
-	return (DATA_OK);
-}
+//RDSS_status_t checkModuleValidity(uint8_t *frame, uint8_t lenght) {
+//	if (frame[1] == VLADR) {
+//		for (int i = 3; i < lenght; i++)
+//			if (frame[i] == LTEL_END_MARK)
+//				return (VALID_MODULE);
+//	} else
+//		return (WRONG_MODULE_FUNCTION);
+//	return (WRONG_MODULE_FUNCTION);
+//}
+//
+//RDSS_status_t checkFrameValidity(uint8_t *frame, uint8_t lenght) {
+//
+//	if (lenght > (MINIMUM_FRAME_LEN)) {
+//		if (frame[0] == LTEL_START_MARK) {
+//			if (frame[lenght - 1] == LTEL_END_MARK)
+//				return (VALID_FRAME);
+//			else
+//				return (START_READING);
+//		} else
+//			return (NOT_VALID_FRAME);
+//	} else
+//		return (WAITING);
+//}
+//
+//RDSS_status_t checkCRCValidity(uint8_t *frame, uint8_t len) {
+//	uint16_t calculatedCrc;
+//	uint16_t savedCrc;
+//	savedCrc = ((uint16_t) frame[len - 2] << 8);
+//	savedCrc |= (uint16_t) frame[len - 3];
+//	calculatedCrc = crc_get(&frame[1], len - 4);
+//	return ((calculatedCrc == savedCrc) ? DATA_OK : CRC_ERROR);
+//}
+//
+//RDSS_status_t rdss_validation(uint8_t *data_received, uint8_t len, uint8_t id) {
+//	if (len < MINIMUM_FRAME_LEN)
+//		return (NOT_VALID_FRAME);
+//
+//	if (data_received[LORA_START_INDEX] != RDSS_START_MARK)
+//		return (NOT_VALID_FRAME);
+//
+//	if (data_received[len - 1] != RDSS_END_MARK)
+//		return (NOT_VALID_FRAME);
+//
+//	if (data_received[LORA_MODULE_TYPE_INDEX] != SNIFFER)
+//		return (WRONG_MODULE_FUNCTION);
+//
+//	if (checkCRCValidity(data_received, len) != DATA_OK)
+//		return (CRC_ERROR);
+//
+//	if (data_received[LORA_MODULE_ID_INDEX] != id)
+//		return (WRONG_MODULE_ID);
+//
+//	if (data_received[LORA_CMD_INDEX] == 0)
+//		return (WRONG_CMD_NUMBER);
+//
+//	return (DATA_OK);
+//}
 
 void encodeVlad(uint8_t *buff) {
 	uint16_t lineVoltage = (uint16_t) rand() % 610;
@@ -135,9 +135,11 @@ uint8_t calculate_frame_length(uint8_t structure_size) {
 	assert(structure_size >= 0);  // Ensure structure_size is valid
 
 	// Calculate the total frame length
-	uint8_t frame_length = START_BYTES_SIZE + END_BYTES_SIZE
-			+ DATA_LENGTH_BYTES_SIZE + DEVICE_BYTES_SIZE + FUNCTION_BYTES_SIZE
-			+ ID_BYTES_SIZE + CRC_BYTES_SIZE + structure_size;
+//	uint8_t frame_length = START_BYTES_SIZE + END_BYTES_SIZE
+//			+ DATA_LENGTH_BYTES_SIZE + DEVICE_BYTES_SIZE + FUNCTION_BYTES_SIZE
+//			+ ID_BYTES_SIZE + CRC_BYTES_SIZE + structure_size;
+
+	uint8_t frame_length =  structure_size;
 
 	return frame_length;
 
