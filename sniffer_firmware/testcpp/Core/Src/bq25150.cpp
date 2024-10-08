@@ -77,10 +77,10 @@ Bq25155::Bq25155(Gpio rst, Gpio lp, Gpio ce,I2C_HandleTypeDef* _i2c){
 	i2c = _i2c;
 }
 void Bq25155::mr_set(){
-	_gpio.turnOn(reset);
+	_gpio.on(reset);
 }
 void Bq25155::mr_reset(){
-	_gpio.turnOff(reset);
+	_gpio.off(reset);
 }
 void Bq25155::manual_read_adc_bat(){
 	this->mr_reset();
@@ -102,7 +102,20 @@ uint8_t Bq25155::adc_flags(){
 	else{
 		return 1;
 	}
+}
 
+
+uint8_t Bq25155::register_STAT0(){
+	HAL_StatusTypeDef rw;
+	this->mr_reset();
+		rw = HAL_I2C_Mem_Read(i2c, (BQ25155_ADDR<<1), BQ25155_STAT0, 1, &data[0], 1, 1000);
+	this->mr_set();
+	if(rw == HAL_OK){
+		return (data[0]);
+	}
+	else{
+		  return 1;
+	  }
 }
 
 uint16_t Bq25155::register_adc_bat(){
@@ -119,6 +132,8 @@ uint16_t Bq25155::register_adc_bat(){
 		  return 1;
 	  }
 }
+
+
 
 HAL_StatusTypeDef Bq25155::I2C_write(uint8_t deviceAddress, uint8_t registerAddress, uint8_t registerData, I2C_HandleTypeDef* i2c){
 	  uint8_t buffer[2] = {registerAddress, registerData};

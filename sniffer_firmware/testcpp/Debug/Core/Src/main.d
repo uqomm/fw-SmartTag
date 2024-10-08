@@ -28,10 +28,13 @@ Core/Src/main.o: ../Core/Src/main.cpp ../Core/Inc/main.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_pwr_ex.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi_ex.h \
+ ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_tim.h \
+ ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_tim_ex.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_exti.h \
  ../Core/Inc/human_tag.h ../Core/Inc/main.h ../Core/Inc/uwb3000Fxx.h \
  ../Core/Inc/deca_regs.h ../Core/Inc/deca_vals.h ../Core/Inc/bq25150.hpp \
- ../Core/Inc/GpioHandler.hpp ../Core/Inc/Gpio.hpp
+ ../Core/Inc/GpioHandler.hpp ../Core/Inc/Gpio.hpp ../Core/Inc/PcbLed.hpp \
+ ../Core/Inc/Ws2812Color.hpp
 ../Core/Inc/main.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal.h:
 ../Core/Inc/stm32u5xx_hal_conf.h:
@@ -62,6 +65,8 @@ Core/Src/main.o: ../Core/Src/main.cpp ../Core/Inc/main.h \
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_pwr_ex.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi_ex.h:
+../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_tim.h:
+../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_tim_ex.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_exti.h:
 ../Core/Inc/human_tag.h:
 ../Core/Inc/main.h:
@@ -71,3 +76,5 @@ Core/Src/main.o: ../Core/Src/main.cpp ../Core/Inc/main.h \
 ../Core/Inc/bq25150.hpp:
 ../Core/Inc/GpioHandler.hpp:
 ../Core/Inc/Gpio.hpp:
+../Core/Inc/PcbLed.hpp:
+../Core/Inc/Ws2812Color.hpp:

@@ -1,7 +1,9 @@
 ../Core/Src/GpioHandler.cpp:11:1:GpioHandler::GpioHandler()	1
 ../Core/Src/GpioHandler.cpp:16:1:GpioHandler::~GpioHandler()	1
 ../Core/Src/GpioHandler.cpp:16:1:virtual GpioHandler::~GpioHandler()	1
-../Core/Src/GpioHandler.cpp:21:6:void GpioHandler::switch_state(Gpio, GPIO_PinState)	1
-../Core/Src/GpioHandler.cpp:25:6:void GpioHandler::turnOn(Gpio)	1
-../Core/Src/GpioHandler.cpp:29:6:void GpioHandler::turnOff(Gpio)	1
-../Core/Src/GpioHandler.cpp:33:6:void GpioHandler::turnOnWaitOff(Gpio, int)	1
+../Core/Src/GpioHandler.cpp:20:6:void GpioHandler::blink(Gpio, int, int)	3
+../Core/Src/GpioHandler.cpp:32:6:void GpioHandler::switch_state(Gpio, GPIO_PinState)	1
+../Core/Src/GpioHandler.cpp:36:6:void GpioHandler::on(Gpio)	1
+../Core/Src/GpioHandler.cpp:40:6:void GpioHandler::off(Gpio)	1
+../Core/Src/GpioHandler.cpp:44:6:void GpioHandler::turnOnWaitOff(Gpio, int)	1
+../Core/Src/GpioHandler.cpp:50:6:bool GpioHandler::state(Gpio)	1

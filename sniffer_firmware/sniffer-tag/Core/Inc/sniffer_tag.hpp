@@ -43,12 +43,7 @@ typedef struct {
 	uint8_t error_times;
 	uint8_t counter;
 } Distance_t;
-//
-//typedef struct {
-//	uint8_t calibrated;
-//	uint8_t raw;
-//	uint16_t real;
-//} Mesurement_data_t;
+
 
 typedef enum {
 	MASTER_ONE_DETECTION,
@@ -113,7 +108,7 @@ typedef enum {
 } TAG_STATUS_t;
 
 #define TX_BUFFER_SIZE (sizeof(uint8_t) + sizeof(uint32_t))
-#define TX_DISCOVERY_SIZE (sizeof(uint8_t) + sizeof(uint8_t))
+#define TX_DISCOVERY_SIZE (sizeof(uint8_t) + sizeof(uint8_t) + sizeof(uint8_t))
 #define TX_TIMESTAMP_SIZE (sizeof(uint8_t) + sizeof(uint32_t))
 #define TAG_TIMESTAMP_QUERY 0x11
 #define TAG_SET_SLEEP_MODE 0x12
@@ -138,6 +133,7 @@ int start_transmission_inmediate_with_response_expected(TX_BUFFER_t tx);
 TAG_STATUS_t wait_rx_data();
 void debug_status(TAG_STATUS_t status);
 void debug(TAG_t tag, TAG_STATUS_t status);
+void debug_distance(TAG_t tag, TAG_STATUS_t status, double d_a, double d_b);
 void debug_tag(TAG_t tag);
 double distance_smooth(Distance_t *distance);
 //void set_battery_voltage(Mesurement_data_t *battery_voltage);
@@ -157,6 +153,11 @@ void process_discovery(TAG_t *tag, TAG_STATUS_t *tag_status, uint32_t *query_tic
 void process_timestamp_query(TAG_t *tag, TAG_STATUS_t *tag_status);
 
 void print_tx_hex(uint8_t *tx, uint16_t length);
+double calculate_media(double  *values, uint8_t size);
+void tag_save_distance(TAG_t *tag,const uint8_t * rx_buffer);
+TAG_STATUS_t tag_receive_cmd(TAG_t *tag,uint8_t *rx_buffer);
+TAG_STATUS_t handle_received_command(TAG_t *tag,
+		const uint8_t *rx_buffer);
 #ifdef __cplusplus
 } // End of extern "C" block
 #endif

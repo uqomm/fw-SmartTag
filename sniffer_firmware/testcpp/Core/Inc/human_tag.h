@@ -84,6 +84,8 @@ typedef enum{
 #define TAG_ID_QUERY 0x13
 #define WAIT_FOR_TIMESTAMP_QUERY_TIMEOUT_MS 2000 // Timeout for transitioning from WAIT_FOR_TIMESTAMP_QUERY to WAIT_FOR_FIRST_DETECTION state in milliseconds
 
+
+void setDutyCycle(TIM_HandleTypeDef* const htim, uint32_t channel, float duty_cycle);
 TAG_STATUS_t tag_discovery(TAG_t *tag);
 TAG_STATUS_t process_queried_tag_information(TAG_t *tag);
 TAG_STATUS_t process_first_tag_information(TAG_t *tag);

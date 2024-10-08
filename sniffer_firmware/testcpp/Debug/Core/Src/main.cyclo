@@ -1,14 +1,19 @@
-../Core/Src/main.cpp:107:5:int main()	22
-../Core/Src/main.cpp:372:6:void SystemClock_Config()	4
-../Core/Src/main.cpp:429:13:void MX_FLASH_Init()	3
-../Core/Src/main.cpp:458:13:void MX_I2C1_Init()	4
-../Core/Src/main.cpp:506:13:void MX_LPTIM1_Init()	2
-../Core/Src/main.cpp:541:13:void MX_LPTIM3_Init()	2
-../Core/Src/main.cpp:576:13:void MX_SPI2_Init()	3
-../Core/Src/main.cpp:724:13:void MX_GPIO_Init()	1
-../Core/Src/main.cpp:794:7:void HAL_LPTIM_CompareMatchCallback(LPTIM_HandleTypeDef*)	4
-../Core/Src/main.cpp:836:6:void Error_Handler()	1
+../Core/Src/main.cpp:115:5:int main()	29
+../Core/Src/main.cpp:391:6:void SystemClock_Config()	4
+../Core/Src/main.cpp:448:13:void MX_FLASH_Init()	3
+../Core/Src/main.cpp:478:13:void MX_GPDMA1_Init()	1
+../Core/Src/main.cpp:506:13:void MX_I2C1_Init()	4
+../Core/Src/main.cpp:554:13:void MX_LPTIM1_Init()	2
+../Core/Src/main.cpp:589:13:void MX_LPTIM3_Init()	2
+../Core/Src/main.cpp:624:13:void MX_SPI2_Init()	3
+../Core/Src/main.cpp:681:13:void MX_TIM3_Init()	6
+../Core/Src/main.cpp:743:13:void MX_GPIO_Init()	1
+../Core/Src/main.cpp:823:7:void HAL_LPTIM_CompareMatchCallback(LPTIM_HandleTypeDef*)	4
+../Core/Src/main.cpp:838:7:void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef*)	1
+../Core/Src/main.cpp:842:7:void HAL_GPIO_EXTI_Falling_Callback(uint16_t)	1
+../Core/Src/main.cpp:846:7:void HAL_GPIO_EXTI_Rising_Callback(uint16_t)	1
+../Core/Src/main.cpp:856:6:void Error_Handler()	1
 ../Core/Inc/bq25150.hpp:18:7:Bq25155::~Bq25155()	1
-../Core/Src/main.cpp:845:1:void __static_initialization_and_destruction_0(int, int)	5
-../Core/Src/main.cpp:845:1:cpp)	1
-../Core/Src/main.cpp:845:1:cpp)	1
+../Core/Src/main.cpp:865:1:void __static_initialization_and_destruction_0(int, int)	5
+../Core/Src/main.cpp:865:1:cpp)	1
+../Core/Src/main.cpp:865:1:cpp)	1

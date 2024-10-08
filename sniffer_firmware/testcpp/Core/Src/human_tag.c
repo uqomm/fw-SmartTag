@@ -13,6 +13,17 @@ char *TAG_MESSAGES[] = { "NO_RESPONSE", "NO_RXCG_DETECTED", "RX_TIMEOUT",
 		"WAIT_FOR_TIMESTAMP_QUERY",	"TAG_TX_SUCCESS",
 		"TAG_WRONG_ID_MATCH" };
 
+void setDutyCycle(TIM_HandleTypeDef* const htim, uint32_t channel, float duty_cycle) {
+	if (duty_cycle > 100) duty_cycle = 100;
+	if (duty_cycle < 0) duty_cycle = 0;
+
+	float pw_resolution = (((float)(*htim).Init.Period + 1.0f) / 100.0f);
+
+	uint16_t pw_desired = pw_resolution * duty_cycle;
+	__HAL_TIM_SET_COMPARE(htim, channel, pw_desired);
+}
+
+
 TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 	TAG_STATUS_t status_reg = 0;
 	tag->command = TAG_ID_QUERY;

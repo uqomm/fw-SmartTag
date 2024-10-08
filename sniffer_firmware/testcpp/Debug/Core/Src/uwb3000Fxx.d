@@ -28,6 +28,8 @@ Core/Src/uwb3000Fxx.o: ../Core/Src/uwb3000Fxx.c ../Core/Inc/uwb3000Fxx.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_pwr_ex.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi_ex.h \
+ ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_tim.h \
+ ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_tim_ex.h \
  ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_exti.h \
  ../Core/Inc/deca_regs.h ../Core/Inc/deca_vals.h ../Core/Inc/deca_regs.h
 ../Core/Inc/uwb3000Fxx.h:
@@ -61,6 +63,8 @@ Core/Src/uwb3000Fxx.o: ../Core/Src/uwb3000Fxx.c ../Core/Inc/uwb3000Fxx.h \
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_pwr_ex.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_spi_ex.h:
+../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_tim.h:
+../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_tim_ex.h:
 ../Drivers/STM32U5xx_HAL_Driver/Inc/stm32u5xx_hal_exti.h:
 ../Core/Inc/deca_regs.h:
 ../Core/Inc/deca_vals.h:

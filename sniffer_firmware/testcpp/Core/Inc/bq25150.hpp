@@ -29,6 +29,7 @@ public:
 	void manual_read_adc_bat();
 	uint8_t adc_flags();
 	uint16_t register_adc_bat();
+	uint8_t register_STAT0();
 	void register_init_all();
 	void register_Factory_Reset();
 	void register_init_all_2();

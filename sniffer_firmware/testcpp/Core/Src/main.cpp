@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "human_tag.h"
 #include "bq25150.hpp"
+#include "PcbLed.hpp"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,12 +61,15 @@ SPI_HandleTypeDef hspi2;
 
 LPTIM_HandleTypeDef hlptim1;
 LPTIM_HandleTypeDef hlptim3;
+TIM_HandleTypeDef htim3;
 
+DMA_HandleTypeDef handle_GPDMA1_Channel2;
 /* USER CODE BEGIN PV */
 
 uint32_t Counter_INT = 0;
 uint32_t Counter_Main_INT1 = 0;
 uint32_t Counter_Main_INT2 = 0;
+bool Power_Good = 0;
 
 
 uint16_t adc_reg=0;
@@ -75,7 +79,7 @@ float vbat=0;
 Gpio NCE(CE_GPIO_Port,CE_Pin);
 Gpio NLP(LP_GPIO_Port,LP_Pin);
 Gpio MR(MR_GPIO_Port,MR_Pin);
-
+Gpio PG(PG_GPIO_Port,PG_Pin);
 
 GpioHandler pins;
 Bq25155 battery_charger(MR, NLP, NCE, &hi2c1);
@@ -89,6 +93,8 @@ static void MX_I2C1_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_LPTIM1_Init(void);
 static void MX_LPTIM3_Init(void);
+static void MX_TIM3_Init(void);
+static void MX_GPDMA1_Init(void);
 /* USER CODE BEGIN PFP */
 
 
@@ -97,6 +103,8 @@ static void MX_LPTIM3_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 // Callback: timer has rolled over
+
+uint16_t pwmData2[24];
 
 /* USER CODE END 0 */
 
@@ -131,13 +139,17 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_FLASH_Init();
+  MX_GPDMA1_Init();
   MX_I2C1_Init();
   MX_SPI2_Init();
   MX_LPTIM1_Init();
   MX_LPTIM3_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  pins.turnOff(NLP);
-  pins.turnOff(NCE);
+
+
+  pins.on(NLP);
+  pins.off(NCE);
 
   __HAL_RCC_LPTIM1_CLKAM_ENABLE();
   __HAL_RCC_LPTIM3_CLKAM_ENABLE();
@@ -196,10 +208,6 @@ int main(void)
 	hw.nssPin = SPI2_CS_Pin;
 	hw.nssPort = SPI2_CS_GPIO_Port;
 
-
-
-
-
 	HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
 	HAL_Delay(1);
 	HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_SET);
@@ -214,7 +222,12 @@ int main(void)
 		Error_Handler();
 
   	Gpio f(LED_C_GPIO_Port,LED_C_Pin);
-  	GpioHandler g;
+  	GpioHandler g = GpioHandler();
+  	PcbLed pcb_led = PcbLed(&htim3, TIM_CHANNEL_2);
+  	Ws2812Color led[1] = {Ws2812Color()};
+  	Gpio VddLed(LED_BAT_GPIO_Port,LED_BAT_Pin);
+
+
 
 	tag->readings = 0;
 	tag->id = 0;
@@ -223,22 +236,19 @@ int main(void)
 	tag->poll_rx_timestamp = 0;
 	tag->Voltaje_Bat = 0;
 	tag->sniffer_state = MASTER_ONE_DETECTION;
-
 	tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
 	tag->id = _dwt_otpread(PARTID_ADDRESS);
-//	tag->calibrateds_temperature = _dwt_otpread(VTEMP_ADDRESS);
-//	tag->calibrated_battery_voltage = _dwt_otpread(VBAT_ADDRESS);
-//	uint16_t read_temp_vbat = dwt_readtempvbat();
-//	tag->raw_temperature = (uint8_t) (read_temp_vbat >> 8);
-//	tag->raw_battery_voltage = (uint8_t) (read_temp_vbat);
 	dwt_configuresleep(DWT_RUNSAR, DWT_WAKE_WUP);
 	dwt_configuresleepcnt(4095);
-	//dwt_setsniffmode(1, 2, 200);
+
+
+	uint8_t STAT0_Reg = 0;
+	uint8_t charge_done = 0x20;
+	uint8_t charge_const = 0x40;
 
 	uint32_t query_timeout = 10000;
 	uint32_t query_ticks;
-//	HAL_TIM_Base_Start_IT(&htim2);
-	/* Time-stamps of frames transmission/reception, expressed in device time units. */
+
 
   /* USER CODE END 2 */
 
@@ -246,115 +256,124 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-
-
-
-	battery_charger.manual_read_adc_bat();//manual_read_adc_bat();
-
-	if (tag_status == TAG_WAIT_FOR_FIRST_DETECTION) {
-		tag->Voltaje_Bat = battery_charger.register_adc_bat();//register_adc_bat(0x42, 0x43);
-		tag_status = process_first_tag_information(tag);
-		if ((tag_status != TAG_WAIT_FOR_TIMESTAMPT_QUERY) && (tag->sniffer_state != MASTER_ONE_DETECTION)){
-			tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
-			HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
-			HAL_Delay(1);
-			HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_SET);
-			if (tag_init(&defatult_dwt_config, &defatult_dwt_txconfig, &dwt_local_data, running_device, RATE_6M8) == 1){
-				Error_Handler();
+//	Power_Good = pins.state(PG);
+	if (Power_Good == false){
+		battery_charger.register_init_all_2();
+		HAL_Delay(1);
+		pins.off(NCE);
+		pins.on(VddLed);
+		STAT0_Reg = battery_charger.register_STAT0();
+		if ((charge_const & STAT0_Reg) || (charge_done & STAT0_Reg)){
+			if (charge_const & STAT0_Reg){
+				led[0].off();
+				led[0].set_green_bright(255);
+				led[0].set_red_bright(255);
+				pcb_led.set_and_send_led(led, 1);
+				HAL_Delay(1000);
+			}
+			else if (charge_done & STAT0_Reg){
+				led[0].off();
+				led[0].set_green_bright(255);
+				pcb_led.set_and_send_led(led, 1);
+				HAL_Delay(1000);
 			}
 		}
-		else if (tag_status == TAG_WAIT_FOR_TIMESTAMPT_QUERY)
-			query_ticks = HAL_GetTick();
-
-	}
-	else if (tag_status == TAG_WAIT_SEND_TX){
-		HAL_Delay(1); // TODO implementar lectura de flag por transmision del módulo (si es sque existe)
-		tag_status = TAG_SLEEP;
-		Counter_INT = 0;
+		else{
+				led[0].off();
+				led[0].set_red_bright(255);
+				pcb_led.set_and_send_led(led, 1);
+				HAL_Delay(1000);
+			}
 	}
 
-	else if (tag_status == TAG_WAIT_FOR_TIMESTAMPT_QUERY) {
-		Counter_INT = 0;
+	else {
+		pins.off(VddLed);
+		battery_charger.manual_read_adc_bat();//manual_read_adc_bat();
+		if (tag_status == TAG_WAIT_FOR_FIRST_DETECTION) {
+			tag->Voltaje_Bat = battery_charger.register_adc_bat();//register_adc_bat(0x42, 0x43);
+			tag_status = process_first_tag_information(tag);
+			if ((tag_status != TAG_WAIT_FOR_TIMESTAMPT_QUERY) && (tag->sniffer_state != MASTER_ONE_DETECTION)){
+				tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
+				HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
+				HAL_Delay(1);
+				HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_SET);
+				if (tag_init(&defatult_dwt_config, &defatult_dwt_txconfig, &dwt_local_data, running_device, RATE_6M8) == 1){
+					Error_Handler();
+				}
+			}
+			else if (tag_status == TAG_WAIT_FOR_TIMESTAMPT_QUERY)
+				query_ticks = HAL_GetTick();
 
-		tag_status = process_queried_tag_information(tag);
-
-		if (tag_status == TAG_TX_SUCCESS) {
-			if (tag->command == TAG_TIMESTAMP_QUERY)
-				tag_status = TAG_WAIT_FOR_TIMESTAMPT_QUERY;
-			else if (tag->command == TAG_SET_SLEEP_MODE)
-				tag_status = TAG_SLEEP;
 		}
-		else if (tag_status == TAG_RX_COMMAND_ERROR){
+		else if (tag_status == TAG_WAIT_SEND_TX){
+			HAL_Delay(1); // TODO implementar lectura de flag por transmision del módulo (si es sque existe)
+			tag_status = TAG_SLEEP;
+			Counter_INT = 0;
+		}
+
+		else if (tag_status == TAG_WAIT_FOR_TIMESTAMPT_QUERY) {
+			Counter_INT = 0;
+
+			tag_status = process_queried_tag_information(tag);
+
+			if (tag_status == TAG_TX_SUCCESS) {
+				if (tag->command == TAG_TIMESTAMP_QUERY)
+					tag_status = TAG_WAIT_FOR_TIMESTAMPT_QUERY;
+				else if (tag->command == TAG_SET_SLEEP_MODE)
+					tag_status = TAG_SLEEP;
+			}
+			else if (tag_status == TAG_RX_COMMAND_ERROR){
+				HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
+				HAL_Delay(1);
+				HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_SET);
+				if (tag_init(&defatult_dwt_config, &defatult_dwt_txconfig,
+						&dwt_local_data, running_device, RATE_6M8) == 1)
+					Error_Handler();
+				tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
+			}
+
+			else if (tag_status != TAG_SLEEP)
+				tag_status = TAG_WAIT_FOR_TIMESTAMPT_QUERY;
+
+
+			if (HAL_GetTick() - query_ticks > query_timeout) {
+				tag_status = TAG_SLEEP;
+			}
+
+		}
+		else if ((tag_status == TAG_SLEEP) || (tag_status == TAG_RX_TIMEOUT) ||
+				(tag_status == TAG_TX_ERROR) || (tag_status == TAG_RX_ERROR)) {
+
+
+			tag->readings = 0;
 			HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
-			HAL_Delay(1);
+
+
+			  if (Counter_INT < 6){
+				  HAL_LPTIM_TimeOut_Start_IT(&hlptim1, 24000); //Cuenta hasta 24000 (LSI Periodo) y activa interrupción al final del conteo
+				  Counter_Main_INT1 ++;
+			  }
+			  else if (6 <= Counter_INT){
+				  HAL_LPTIM_TimeOut_Start_IT(&hlptim3, 30000); //Cuenta hasta 30000 (LSI Periodo) y activa interrupción al final del conteo
+				  Counter_Main_INT2 ++;
+			  }
+
+			// Entra en modo STOP
+			HAL_SuspendTick();
+			HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+			HAL_ResumeTick();
+
+			SystemClock_Config();
+
+
 			HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_SET);
 			if (tag_init(&defatult_dwt_config, &defatult_dwt_txconfig,
 					&dwt_local_data, running_device, RATE_6M8) == 1)
 				Error_Handler();
+			tag->sniffer_state = MASTER_ONE_DETECTION;
 			tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
 		}
-
-		else if (tag_status != TAG_SLEEP)
-			tag_status = TAG_WAIT_FOR_TIMESTAMPT_QUERY;
-
-
-		if (HAL_GetTick() - query_ticks > query_timeout) {
-			tag_status = TAG_SLEEP;
-		}
-
 	}
-	else if ((tag_status == TAG_SLEEP) || (tag_status == TAG_RX_TIMEOUT)) {
-
-//		tag->readings++;
-		tag->readings = 0;
-		HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
-
-
-		  if (Counter_INT < 6){
-			  HAL_LPTIM_TimeOut_Start_IT(&hlptim1, 24000); //Cuenta hasta 24000 (LSI Periodo) y activa interrupción al final del conteo
-			  Counter_Main_INT1 ++;
-		  }
-		  else if (6 <= Counter_INT){
-			  HAL_LPTIM_TimeOut_Start_IT(&hlptim3, 30000); //Cuenta hasta 30000 (LSI Periodo) y activa interrupción al final del conteo
-			  Counter_Main_INT2 ++;
-		  }
-
-		// Entra en modo STOP
-		HAL_SuspendTick();
-		HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI);
-		HAL_ResumeTick();
-//
-		SystemClock_Config();
-//		MX_GPIO_Init();
-//		MX_FLASH_Init();
-//		MX_I2C1_Init();
-//		MX_SPI2_Init();
-//		MX_LPTIM1_Init();
-//		MX_LPTIM3_Init();
-
-
-		HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_SET);
-		if (tag_init(&defatult_dwt_config, &defatult_dwt_txconfig,
-				&dwt_local_data, running_device, RATE_6M8) == 1)
-			Error_Handler();
-		tag->sniffer_state = MASTER_ONE_DETECTION;
-		tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
-	}
-
-
-
-//	Gpio f(LED_C_GPIO_Port,LED_C_Pin);
-//	GpioHandler g;
-//	g.turnOnWaitOff(f, 200);
-//
-//	if(flags == 0x80){
-//		flags = 0;
-//		adc_reg = battery_charger.register_adc_bat();//register_adc_bat(0x42, 0x43);
-//	}
-//
-//	vbat = (adc_bat_reg*6.0)/65536.0;
-//	HAL_Delay(200);
 
 
 
@@ -447,6 +466,35 @@ static void MX_FLASH_Init(void)
   /* USER CODE BEGIN FLASH_Init 2 */
 
   /* USER CODE END FLASH_Init 2 */
+
+}
+
+
+/**
+  * @brief GPDMA1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_GPDMA1_Init(void)
+{
+
+  /* USER CODE BEGIN GPDMA1_Init 0 */
+
+  /* USER CODE END GPDMA1_Init 0 */
+
+  /* Peripheral clock enable */
+  __HAL_RCC_GPDMA1_CLK_ENABLE();
+
+  /* GPDMA1 interrupt Init */
+    HAL_NVIC_SetPriority(GPDMA1_Channel2_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(GPDMA1_Channel2_IRQn);
+
+  /* USER CODE BEGIN GPDMA1_Init 1 */
+
+  /* USER CODE END GPDMA1_Init 1 */
+  /* USER CODE BEGIN GPDMA1_Init 2 */
+
+  /* USER CODE END GPDMA1_Init 2 */
 
 }
 
@@ -624,96 +672,67 @@ static void MX_SPI2_Init(void)
   /* USER CODE END SPI2_Init 2 */
 
 }
-//
-///**
-//  * @brief TIM2 Initialization Function
-//  * @param None
-//  * @retval None
-//  */
-//static void MX_TIM2_Init(void)
-//{
-//
-//  /* USER CODE BEGIN TIM2_Init 0 */
-//
-//  /* USER CODE END TIM2_Init 0 */
-//
-//  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-//  TIM_MasterConfigTypeDef sMasterConfig = {0};
-//
-//  /* USER CODE BEGIN TIM2_Init 1 */
-//
-//  /* USER CODE END TIM2_Init 1 */
-//  htim2.Instance = TIM2;
-//  htim2.Init.Prescaler = 32000-1;
-//  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-//  htim2.Init.Period = 4000-1;
-//  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-//  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-//  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-//  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-//  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-//  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//  /* USER CODE BEGIN TIM2_Init 2 */
-////	HAL_TIM_Base_Start_IT(&htim2);
-//  /* USER CODE END TIM2_Init 2 */
-//
-//}
-//
-///**
-//  * @brief TIM3 Initialization Function
-//  * @param None
-//  * @retval None
-//  */
-//static void MX_TIM3_Init(void)
-//{
-//
-//  /* USER CODE BEGIN TIM3_Init 0 */
-//
-//  /* USER CODE END TIM3_Init 0 */
-//
-//  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-//  TIM_MasterConfigTypeDef sMasterConfig = {0};
-//
-//  /* USER CODE BEGIN TIM3_Init 1 */
-//
-//  /* USER CODE END TIM3_Init 1 */
-//  htim3.Instance = TIM3;
-//  htim3.Init.Prescaler = 32000-1;
-//  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-//  htim3.Init.Period = 15000-1;
-//  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-//  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-//  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-//  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-//  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-//  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//  /* USER CODE BEGIN TIM3_Init 2 */
-//
-//  /* USER CODE END TIM3_Init 2 */
-//
-//}
+
+/**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 0;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 39;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+  HAL_TIM_MspPostInit(&htim3);
+
+}
 
 
 /**
@@ -741,10 +760,13 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, CE_Pin|LP_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(MR_GPIO_Port, MR_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MR_GPIO_Port, MR_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(LED_BAT_GPIO_Port, LED_BAT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : LED_Pin DW3000_RST_RCV_Pin LED_C_Pin */
   GPIO_InitStruct.Pin = LED_Pin|DW3000_RST_RCV_Pin|LED_C_Pin;
@@ -762,7 +784,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : PG_Pin */
   GPIO_InitStruct.Pin = PG_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(PG_GPIO_Port, &GPIO_InitStruct);
 
@@ -780,10 +802,17 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(SPI2_CS_GPIO_Port, &GPIO_InitStruct);
 
-  /* EXTI interrupt init*/
-//  HAL_NVIC_SetPriority(EXTI8_IRQn, 0, 0);
-//  HAL_NVIC_EnableIRQ(EXTI8_IRQn);
+  /*Configure GPIO pin : LED_BAT_Pin */
+  GPIO_InitStruct.Pin = LED_BAT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LED_BAT_GPIO_Port, &GPIO_InitStruct);
 
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI6_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI6_IRQn);
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
 }
@@ -806,26 +835,17 @@ static void MX_GPIO_Init(void)
 		}
 	}
 
+	void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim) {
+		HAL_TIM_PWM_Stop_DMA(&htim3, TIM_CHANNEL_2);
+	}
 
-//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-//{
-//
-//    if (htim->Instance == TIM2) {
-//  	  Counter_INT ++;
-//  	  HAL_TIM_Base_Stop_IT(&htim3);
-//  	  if (Counter_INT >= 6){
-//  		HAL_TIM_Base_Stop_IT(&htim2);
-//  	  }
-//    }
-//    if (htim->Instance == TIM3) {
-//  	  Counter_INT ++;
-//  	  if (Counter_INT >= 10){
-//  		HAL_TIM_Base_Stop_IT(&htim3);
-//  	  }
-//    }
-//
-//}
+	void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin){
+		Power_Good = 0;
+	}
 
+	void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin){
+		Power_Good = 1;
+	}
 
 /* USER CODE END 4 */
 

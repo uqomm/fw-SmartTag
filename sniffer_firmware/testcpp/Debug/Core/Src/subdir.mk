@@ -7,6 +7,8 @@
 CPP_SRCS += \
 ../Core/Src/Gpio.cpp \
 ../Core/Src/GpioHandler.cpp \
+../Core/Src/PcbLed.cpp \
+../Core/Src/Ws2812Color.cpp \
 ../Core/Src/bq25150.cpp \
 ../Core/Src/main.cpp 
 
@@ -33,6 +35,8 @@ C_DEPS += \
 OBJS += \
 ./Core/Src/Gpio.o \
 ./Core/Src/GpioHandler.o \
+./Core/Src/PcbLed.o \
+./Core/Src/Ws2812Color.o \
 ./Core/Src/bq25150.o \
 ./Core/Src/human_tag.o \
 ./Core/Src/main.o \
@@ -46,6 +50,8 @@ OBJS += \
 CPP_DEPS += \
 ./Core/Src/Gpio.d \
 ./Core/Src/GpioHandler.d \
+./Core/Src/PcbLed.d \
+./Core/Src/Ws2812Color.d \
 ./Core/Src/bq25150.d \
 ./Core/Src/main.d 
 
@@ -59,7 +65,7 @@ Core/Src/%.o Core/Src/%.su Core/Src/%.cyclo: ../Core/Src/%.c Core/Src/subdir.mk
 clean: clean-Core-2f-Src
 
 clean-Core-2f-Src:
-	-$(RM) ./Core/Src/Gpio.cyclo ./Core/Src/Gpio.d ./Core/Src/Gpio.o ./Core/Src/Gpio.su ./Core/Src/GpioHandler.cyclo ./Core/Src/GpioHandler.d ./Core/Src/GpioHandler.o ./Core/Src/GpioHandler.su ./Core/Src/bq25150.cyclo ./Core/Src/bq25150.d ./Core/Src/bq25150.o ./Core/Src/bq25150.su ./Core/Src/human_tag.cyclo ./Core/Src/human_tag.d ./Core/Src/human_tag.o ./Core/Src/human_tag.su ./Core/Src/main.cyclo ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/stm32u5xx_hal_msp.cyclo ./Core/Src/stm32u5xx_hal_msp.d ./Core/Src/stm32u5xx_hal_msp.o ./Core/Src/stm32u5xx_hal_msp.su ./Core/Src/stm32u5xx_it.cyclo ./Core/Src/stm32u5xx_it.d ./Core/Src/stm32u5xx_it.o ./Core/Src/stm32u5xx_it.su ./Core/Src/syscalls.cyclo ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.cyclo ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_stm32u5xx.cyclo ./Core/Src/system_stm32u5xx.d ./Core/Src/system_stm32u5xx.o ./Core/Src/system_stm32u5xx.su ./Core/Src/uwb3000Fxx.cyclo ./Core/Src/uwb3000Fxx.d ./Core/Src/uwb3000Fxx.o ./Core/Src/uwb3000Fxx.su
+	-$(RM) ./Core/Src/Gpio.cyclo ./Core/Src/Gpio.d ./Core/Src/Gpio.o ./Core/Src/Gpio.su ./Core/Src/GpioHandler.cyclo ./Core/Src/GpioHandler.d ./Core/Src/GpioHandler.o ./Core/Src/GpioHandler.su ./Core/Src/PcbLed.cyclo ./Core/Src/PcbLed.d ./Core/Src/PcbLed.o ./Core/Src/PcbLed.su ./Core/Src/Ws2812Color.cyclo ./Core/Src/Ws2812Color.d ./Core/Src/Ws2812Color.o ./Core/Src/Ws2812Color.su ./Core/Src/bq25150.cyclo ./Core/Src/bq25150.d ./Core/Src/bq25150.o ./Core/Src/bq25150.su ./Core/Src/human_tag.cyclo ./Core/Src/human_tag.d ./Core/Src/human_tag.o ./Core/Src/human_tag.su ./Core/Src/main.cyclo ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/stm32u5xx_hal_msp.cyclo ./Core/Src/stm32u5xx_hal_msp.d ./Core/Src/stm32u5xx_hal_msp.o ./Core/Src/stm32u5xx_hal_msp.su ./Core/Src/stm32u5xx_it.cyclo ./Core/Src/stm32u5xx_it.d ./Core/Src/stm32u5xx_it.o ./Core/Src/stm32u5xx_it.su ./Core/Src/syscalls.cyclo ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.cyclo ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_stm32u5xx.cyclo ./Core/Src/system_stm32u5xx.d ./Core/Src/system_stm32u5xx.o ./Core/Src/system_stm32u5xx.su ./Core/Src/uwb3000Fxx.cyclo ./Core/Src/uwb3000Fxx.d ./Core/Src/uwb3000Fxx.o ./Core/Src/uwb3000Fxx.su
 
 .PHONY: clean-Core-2f-Src
 

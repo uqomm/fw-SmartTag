@@ -1,5 +1,7 @@
 "./Core/Src/Gpio.o"
 "./Core/Src/GpioHandler.o"
+"./Core/Src/PcbLed.o"
+"./Core/Src/Ws2812Color.o"
 "./Core/Src/bq25150.o"
 "./Core/Src/human_tag.o"
 "./Core/Src/main.o"
