@@ -1,9 +1,0 @@
-../Core/Src/eeprom.c:41:10:bytestowrite	16	static
-../Core/Src/eeprom.c:53:6:EEPROM_Write	64	static
-../Core/Src/eeprom.c:87:6:float2Bytes	24	static
-../Core/Src/eeprom.c:102:7:Bytes2float	32	static
-../Core/Src/eeprom.c:124:6:EEPROM_Write_NUM	16	static
-../Core/Src/eeprom.c:138:7:EEPROM_Read_NUM	24	static
-../Core/Src/eeprom.c:153:6:EEPROM_Read	64	static
-../Core/Src/eeprom.c:179:6:EEPROM_PageErase	72	static
-../Core/Src/eeprom.c:196:6:escribir_uint32_en_eeprom	24	static

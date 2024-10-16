@@ -1,2 +1,0 @@
-../Core/Src/hmi_uart.c:23:6:HMISends	16	static
-../Core/Src/hmi_uart.c:32:6:HAL_UART_RxCpltCallback	16	static
