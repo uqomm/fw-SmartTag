@@ -40,17 +40,17 @@ int8_t Lora::receive(uint8_t *data_received, LINKMODE mode) {
 		write_8bit_reg(LoraRegisters::RegFifoAddrPtr, DATA_BUFFER_BASE_ADDR);
 		set_low_frequency_mode(DeviceOperatingMode::RX_CONTINUOUS);
 	}
-	if (!wait_irq(RX_DONE_MASK, 2000)) {
+	if (!wait_irq(RX_DONE_MASK, 1)) {
 		uint8_t rx_nb_bytes = read_8bit_reg(LoraRegisters::RegRxNbBytes); //Number for received bytes
 		if (read_reg_addr(LoraRegisters::RegFifo, rx_nb_bytes) == 0) {
 			memcpy(data_received, fifo, rx_nb_bytes);
 			return rx_nb_bytes;
 		} else {
 			data_received = NULL;
-			return -1;
+			return 0;
 		}
 	} else
-		return -1;
+		return 0;
 }
 
 void Lora::set_link_frequency(LINKMODE mode) {
@@ -62,19 +62,20 @@ void Lora::set_link_frequency(LINKMODE mode) {
 }
 
 uint8_t Lora::transmit(uint8_t *data, uint8_t data_len, LINKMODE mode) {
-
+	uint32_t initime = HAL_GetTick();
 	set_low_frequency_mode(DeviceOperatingMode::STANDBY);
 
 	set_link_frequency(mode);
-	uint32_t initime = HAL_GetTick();
+
 	write_tx_fifo_data(data, data_len);
 
 	set_low_frequency_mode(DeviceOperatingMode::TX);
+
 	if((wait_irq(TX_DONE_MASK, 2000))){
 			return -1;
 	}else {
 		uint32_t endtime = HAL_GetTick();
-		uint32_t duracion = endtime-initime;
+		uint32_t duracion = endtime - initime;
 		return 0;
 	}
 }

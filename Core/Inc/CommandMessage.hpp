@@ -182,7 +182,7 @@ public:
 		return max_message_size;
 	}
 
-	std::vector<uint8_t> get_composed_vector() {
+	std::vector<uint8_t> get_composed_message() {
 		return message;
 	}
 

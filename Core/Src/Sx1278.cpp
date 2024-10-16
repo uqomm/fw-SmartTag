@@ -14,6 +14,7 @@ Sx1278::Sx1278(Gpio _nss, Gpio _reset, SPI_HandleTypeDef *_spi) {
 	HAL_GPIO_WritePin(nss.get_port(), nss.get_pin(), GPIO_PIN_SET);
 	HAL_GPIO_WritePin(reset.get_port(), reset.get_pin(), GPIO_PIN_SET);
 	spi = _spi;
+	lastTxTime = 10000;
 }
 
 Sx1278::~Sx1278() {
@@ -106,7 +107,7 @@ int8_t Sx1278::wait_irq(uint8_t mask, uint16_t timeout) {
 			read_8bit_reg(LoraRegisters::RegOcp);
 			return 0;
 		}
-		if (HAL_GetTick() - timeStart > timeout) {
+		if (HAL_GetTick() - timeStart > lastTxTime+10) {
 			//hw_reset();
 			read_8bit_reg(LoraRegisters::RegOcp);
 			return -1;

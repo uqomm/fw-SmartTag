@@ -49,12 +49,30 @@ I2C_HandleTypeDef hi2c3;
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 SPI_HandleTypeDef hspi3;
-
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 
-std::vector<uint8_t> data_compose;
+uint8_t data[226] = {
+  0x7e, 0x10, 0x01, 0x11, 0xd9, 0x00, 0x18, 0x00, 0x00, 0x00, 0x00, 0x49, 0x02, 0x53, 0x02, 0x29,
+  0x01, 0x00, 0x00, 0x00, 0x31, 0x25, 0x38, 0x25, 0x21, 0x02, 0x00, 0x00, 0x00, 0x92, 0x17, 0x81,
+  0x17, 0x22, 0x03, 0x00, 0x00, 0x00, 0xb4, 0x09, 0xb4, 0x09, 0x21, 0x04, 0x00, 0x00, 0x00, 0x4f,
+  0x0a, 0x4d, 0x0a, 0x22, 0x05, 0x00, 0x00, 0x00, 0x52, 0x18, 0x46, 0x18, 0x1e, 0x06, 0x00, 0x00,
+  0x00, 0xea, 0x26, 0xe3, 0x26, 0x29, 0x07, 0x00, 0x00, 0x00, 0x8a, 0x1b, 0x81, 0x1b, 0x27, 0x08,
+  0x00, 0x00, 0x00, 0x28, 0x1b, 0x38, 0x1b, 0x1e, 0x09, 0x00, 0x00, 0x00, 0x2c, 0x07, 0x2b, 0x07,
+  0x25, 0x0a, 0x00, 0x00, 0x00, 0x59, 0x19, 0x63, 0x19, 0x27, 0x0b, 0x00, 0x00, 0x00, 0xd9, 0x10,
+  0xdc, 0x10, 0x1b, 0x0c, 0x00, 0x00, 0x00, 0xf5, 0x05, 0xfd, 0x05, 0x24, 0x0d, 0x00, 0x00, 0x00,
+  0x67, 0x26, 0x64, 0x26, 0x26, 0x0e, 0x00, 0x00, 0x00, 0xf6, 0x04, 0xfa, 0x04, 0x19, 0x0f, 0x00,
+  0x00, 0x00, 0x72, 0x20, 0x6e, 0x20, 0x1f, 0x10, 0x00, 0x00, 0x00, 0x2b, 0x26, 0x37, 0x26, 0x24,
+  0x11, 0x00, 0x00, 0x00, 0x85, 0x23, 0x96, 0x23, 0x28, 0x12, 0x00, 0x00, 0x00, 0xd7, 0x1b, 0xc7,
+  0x1b, 0x22, 0x13, 0x00, 0x00, 0x00, 0x32, 0x08, 0x3a, 0x08, 0x28, 0x14, 0x00, 0x00, 0x00, 0xbc,
+  0x15, 0xbd, 0x15, 0x1b, 0x15, 0x00, 0x00, 0x00, 0xa1, 0x07, 0x9c, 0x07, 0x21, 0x16, 0x00, 0x00,
+  0x00, 0xfe, 0x1f, 0xfa, 0x1f, 0x1f, 0x17, 0x00, 0x00, 0x00, 0xea, 0x26, 0xdf, 0x26, 0x1b, 0x1e,
+  0xa4, 0x7f
+};
+
+
+
 
 uint8_t Data_reciv_test[256] = { 0 };
 
@@ -67,7 +85,7 @@ Uwb_HW_t uwb_hw_b;
 Uwb_HW_t *hw;
 dwt_local_data_t *pdw3000local;
 uint8_t crcTable[256];
-uint8_t recvChar;
+uint8_t recvChar[10] = {0};
 
 /* USER CODE END PV */
 
@@ -146,7 +164,7 @@ int main(void) {
 
 	tag.master_state = MASTER_MULTIPLE_DETECTION; //MASTER_MULTIPLE_DETECTION      MASTER_ONE_DETECTION
 	TAG_STATUS_t tag_status = TAG_DISCOVERY;
-	uint32_t lora_send_timeout = 500;
+	uint32_t lora_send_timeout = 1000;
 	uint32_t lora_send_ticks = HAL_GetTick();
 
 	Memory eeprom = Memory(&hi2c3);
@@ -255,57 +273,34 @@ int main(void) {
 			debug_count = 0;
 		}
 
+//----------------ENVIO DE FRAME CON DATA DE TAGS----------------
 
-//				 uint8_t rx_bytes = rxlora.receive(Data_reciv_test, LinkMode::DOWNLINK);
-//		if (rx_bytes > 0) {
-//			STATUS status_data = command.validate(Data_reciv_test, rx_bytes);
-//			if (status_data == STATUS::VALID_FRAME) {
-//				uint8_t *rx = Data_reciv_test;
-//				size_t temp_value = 1 + list.count * SERIALIZED_TAG_SIZE; // Or use uint32_t
-//				uint8_t tag_bytes = (uint8_t) temp_value;
-//				uint8_t response_length = calculate_frame_length(tag_bytes);
-//				uint8_t tx[response_length];
-//				memset(tx, 0, response_length);
-//				memcpy(tx, rx, LORA_DATA_LENGHT_INDEX_1);
-//				memcpy(tx + LORA_DATA_LENGHT_INDEX_1, &tag_bytes,
-//						sizeof(tag_bytes));
-//				uint8_t *tx_data = tx + LORA_DATA_START_INDEX;
-//				tx_data[0] = list.count;
-//				tx_data++;
-//				serialize_tag_list(&list, tx_data);
-//				uint8_t CRC_INDEX = LORA_DATA_START_INDEX
-//						+ tx[LORA_DATA_LENGHT_INDEX_1];
-//				uint8_t END_INDEX = CRC_INDEX + CRC_SIZE;
-//				setCrc(tx, CRC_INDEX);
-//				tx[END_INDEX] = LTEL_END_MARK;
-//				HAL_GPIO_WritePin(LORA_TX_LED_GPIO_Port, LORA_TX_LED_Pin,
-//						GPIO_PIN_RESET);
-//				txlora.transmit(tx, response_length, LinkMode::UPLINK);
-//				HAL_GPIO_WritePin(LORA_TX_LED_GPIO_Port, LORA_TX_LED_Pin,
-//						GPIO_PIN_SET);
-//				serialize_tag_list(&list, tx_data);
-//				free(tx);
-//				print_all_tags(&list, tag_status);
-//				print_serialized_tags(&list);
-//				free_tag_list(&list);
-//			}
+		if (list.count > 0) { // Or use uint32_t
 
+			size_t tags_size = list.count * SERIALIZED_TAG_SIZE;
+			uint8_t tx_arr[tags_size];
+			serialize_tag_list(&list, tx_arr);
+			std::vector<uint8_t> tx_vect(tx_arr, tx_arr + tags_size);
+			cmd.composeMessage(&tx_vect);
+			std::vector<uint8_t> message_composed = cmd.get_composed_message();
 
-		if (((HAL_GetTick() - lora_send_ticks) > lora_send_timeout)
-				&& tag_status == TAG_DISCOVERY) {
+			uint8_t size_bytes = txlora.receive(recvChar, LINKMODE::UPLINK);
+//			uint8_t size_bytes = 0;
+//			uint8_t leng = 226;
+			if (size_bytes < 5) {
+				STATUS status_data = cmd.validate(message_composed.data(),
+						message_composed.size());
+				txlora.transmit(message_composed.data(),
+						message_composed.size(), LINKMODE::UPLINK);
 
-			if (list.count > 0) { // Or use uint32_t
-				size_t temp_value = list.count * SERIALIZED_TAG_SIZE;
-				uint8_t tx[temp_value];
-				serialize_tag_list(&list, tx);
-				std::vector<uint8_t> tx_data_s(tx, tx + temp_value);
-				cmd.composeMessage(&tx_data_s);
-				std::vector<uint8_t> data_compose = cmd.get_composed_vector();
-				txlora.transmit(data_compose.data(),data_compose.size(), LINKMODE::UPLINK);
-				lora_send_ticks = HAL_GetTick();
+//				txlora.transmit(data,leng , LINKMODE::UPLINK);
+			}else{
+				STATUS status_data = cmd.validate(message_composed.data(),
+										message_composed.size());
 			}
+			tx_vect.clear();
+//			HAL_Delay(10);
 		}
-
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
