@@ -70,10 +70,7 @@ TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 	*(uint32_t*) (tx_buffer + index) = tag->resp_tx_timestamp;
 	index += sizeof(uint32_t);
 	*(uint16_t*) (tx_buffer + index) = tag->Voltaje_Bat;
-//	tx_buffer[index++] = tag->raw_battery_voltage;
-//	tx_buffer[index++] = tag->calibrated_battery_voltage;
-//	tx_buffer[index++] = tag->raw_temperature;
-//	tx_buffer[index++] = tag->calibrateds_temperature;
+
 
 	if (dwt_writetxdata(tx_buffer_size, tx_buffer, 0) == DWT_ERROR) /* Zero offset in TX buffer. */ //MODIFICAR TAMAÑO DE BUFFER
 		return (TAG_TX_ERROR);

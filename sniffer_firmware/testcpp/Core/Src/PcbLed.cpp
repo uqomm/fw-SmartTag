@@ -22,7 +22,8 @@ void PcbLed::set_data_flag(bool data_sent_flat) {
 	datasentflag = data_sent_flat;
 }
 
-uint32_t PcbLed::createPwmSequence(Ws2812Color *led, uint8_t led_number,uint16_t *pwmData) {
+uint32_t PcbLed::createPwmSequence(Ws2812Color *led, uint8_t led_number,
+		uint16_t *pwmData) {
 	uint32_t indx = 0;
 	uint32_t color = 0;
 
@@ -49,22 +50,49 @@ void PcbLed::set_and_send_led(Ws2812Color *led, uint8_t led_number) {
 	//uint16_t *pwmData = new uint16_t[(24 * led_number) + 280 * 2];
 
 //	uint16_t *pwmData = reinterpret_cast<uint16_t*>(malloc(24 * led_number + 280 * 2));
-	memset(pwmData,0,sizeof(pwmData));
-	indx = createPwmSequence(led,led_number,pwmData);
-	HAL_TIM_PWM_Start_DMA(timer_handler, timer_channel,(uint32_t*) (pwmData), indx+10);
+	memset(pwmData, 0, sizeof(pwmData));
+	indx = createPwmSequence(led, led_number, pwmData);
+	HAL_TIM_PWM_Start_DMA(timer_handler, timer_channel, (uint32_t*) (pwmData),
+			indx + 10);
 }
 
+void PcbLed::set_and_send_led_color(Ws2812Color *led, uint8_t led_number,
+		uint32_t delay, Color color) {
+	uint32_t indx;
 
-void PcbLed::wait_for_data_send(){
+	led->off();
+	switch (color) {
+	case Color::RED:
+		led->set_red_bright(255);
+		break;
+	case Color::YELLOW:
+		led->set_green_bright(255);
+		led->set_red_bright(255);
+		break;
+	case Color::GREEN:
+		led->set_green_bright(255);
+		break;
+	default:
+		break;
+	}
+
+	memset(pwmData, 0, sizeof(pwmData));
+	indx = createPwmSequence(led, led_number, pwmData);
+	HAL_TIM_PWM_Start_DMA(timer_handler, timer_channel, (uint32_t*) (pwmData),
+			indx + 10);
+
+	HAL_Delay(delay);
+}
+
+void PcbLed::wait_for_data_send() {
 	while (datasentflag == false) {
-		}
-		;
-		datasentflag = false;
+	}
+	;
+	datasentflag = false;
 }
 
-
-void PcbLed::spiralAnimation(Ws2812Color *led,uint8_t led_number, uint8_t step_ms, uint8_t green, uint8_t red,
-		uint8_t blue) {
+void PcbLed::spiralAnimation(Ws2812Color *led, uint8_t led_number,
+		uint8_t step_ms, uint8_t green, uint8_t red, uint8_t blue) {
 
 	for (int j = 0; j < led_number; j++) {
 		led[j].set_green_bright(green);
@@ -80,18 +108,17 @@ void PcbLed::spiralAnimation(Ws2812Color *led,uint8_t led_number, uint8_t step_m
 		} else {
 			led[j - 1].off();
 		}
-		set_and_send_led(led,led_number);
+		set_and_send_led(led, led_number);
 		HAL_Delay(step_ms);
 	}
 	led[led_number - 1].off();
 
-	set_and_send_led(led,led_number);
+	set_and_send_led(led, led_number);
 }
 
-void PcbLed::off(Ws2812Color * led, uint8_t led_number) {
+void PcbLed::off(Ws2812Color *led, uint8_t led_number) {
 	for (int i = 0; i < led_number; i++)
 		led[i].off();
-	set_and_send_led(led,led_number);
+	set_and_send_led(led, led_number);
 }
-
 

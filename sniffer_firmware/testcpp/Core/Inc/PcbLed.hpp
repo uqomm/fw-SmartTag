@@ -14,6 +14,13 @@
 #include "string.h"
 
 
+enum class Color {
+    RED,
+	YELLOW,
+    GREEN
+};
+
+
 class PcbLed {
 public:
     PcbLed(TIM_HandleTypeDef *_timer_handler, uint32_t _timer_channel);
@@ -21,10 +28,13 @@ public:
 
     void set_data_flag(bool data_sent_flag);
     void set_and_send_led(Ws2812Color *led, uint8_t led_number);
+    void set_and_send_led_color(Ws2812Color *led, uint8_t led_number, uint32_t delay, Color color);
     void spiralAnimation(Ws2812Color *led,uint8_t led_number, uint8_t step_ms, uint8_t green, uint8_t red,
     		uint8_t blue);
     void off(Ws2812Color * led, uint8_t led_number);
     void wait_for_data_send();
+
+
 
 protected:
 	TIM_HandleTypeDef *timer_handler;
@@ -49,6 +59,10 @@ protected:
 		center1,
 		none
 	} WS2812_Name_t;
+
+
+
+
 
 	void set_downlink_power_led(uint16_t downlink_power_level);
 	void set_input_voltage_led(uint16_t vin);

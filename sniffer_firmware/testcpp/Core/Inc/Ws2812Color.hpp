@@ -10,6 +10,9 @@
 #ifndef INC_WS2812COLOR_HPP_
 #define INC_WS2812COLOR_HPP_
 
+
+
+
 class Ws2812Color {
 public:
 	Ws2812Color();
@@ -24,7 +27,6 @@ public:
 	void set_green_bright(uint8_t _bright);
 	void set_bright(uint8_t _bright);
 	uint32_t get_rgb_color();
-
 
 
 private:
