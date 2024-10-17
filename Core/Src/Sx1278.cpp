@@ -45,7 +45,7 @@ void Sx1278::write_reg_addr(uint8_t address, uint8_t *cmd, uint8_t lenght) {
 		tx_data[i] = cmd[j++];
 	}
 	HAL_GPIO_WritePin(nss.get_port(), nss.get_pin(), GPIO_PIN_RESET);  // pull the pin low
-	HAL_SPI_Transmit(spi, tx_data, lenght + 1, 1000);
+	HAL_StatusTypeDef a = HAL_SPI_Transmit(spi, tx_data, lenght + 1, 1000);
 	HAL_GPIO_WritePin(nss.get_port(), nss.get_pin(), GPIO_PIN_SET);  // pull the pin high
 	HAL_Delay(10);
 }
@@ -107,7 +107,7 @@ int8_t Sx1278::wait_irq(uint8_t mask, uint16_t timeout) {
 			read_8bit_reg(LoraRegisters::RegOcp);
 			return 0;
 		}
-		if (HAL_GetTick() - timeStart > lastTxTime+10) {
+		if (HAL_GetTick() - timeStart > timeout) {
 			//hw_reset();
 			read_8bit_reg(LoraRegisters::RegOcp);
 			return -1;

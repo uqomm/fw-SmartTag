@@ -40,7 +40,7 @@ int8_t Lora::receive(uint8_t *data_received, LINKMODE mode) {
 		write_8bit_reg(LoraRegisters::RegFifoAddrPtr, DATA_BUFFER_BASE_ADDR);
 		set_low_frequency_mode(DeviceOperatingMode::RX_CONTINUOUS);
 	}
-	if (!wait_irq(RX_DONE_MASK, 1)) {
+	if (!wait_irq(RX_DONE_MASK, 100)) {
 		uint8_t rx_nb_bytes = read_8bit_reg(LoraRegisters::RegRxNbBytes); //Number for received bytes
 		if (read_reg_addr(LoraRegisters::RegFifo, rx_nb_bytes) == 0) {
 			memcpy(data_received, fifo, rx_nb_bytes);
@@ -71,7 +71,7 @@ uint8_t Lora::transmit(uint8_t *data, uint8_t data_len, LINKMODE mode) {
 
 	set_low_frequency_mode(DeviceOperatingMode::TX);
 
-	if((wait_irq(TX_DONE_MASK, 2000))){
+	if((wait_irq(TX_DONE_MASK, 1000))){
 			return -1;
 	}else {
 		uint32_t endtime = HAL_GetTick();

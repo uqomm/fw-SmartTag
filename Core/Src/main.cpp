@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include <sniffer_tag.hpp>
 #include "Gpio.hpp"
+#include "DistanceHandler.hpp"
 #include "Memory.hpp"
 #include "CommandMessage.hpp"
 #include <Lora.hpp>
@@ -85,7 +86,10 @@ Uwb_HW_t uwb_hw_b;
 Uwb_HW_t *hw;
 dwt_local_data_t *pdw3000local;
 uint8_t crcTable[256];
-uint8_t recvChar[10] = {0};
+uint8_t recvChar[255] = {0};
+TAG_t *tag_ptr;
+DistanceHandler distance_a = DistanceHandler(DISTANCE_READINGS);
+DistanceHandler distance_b = DistanceHandler(DISTANCE_READINGS);
 
 /* USER CODE END PV */
 
@@ -143,8 +147,10 @@ int main(void) {
 	pdw3000local = new dwt_local_data_t;
 	TAG_List list = { NULL, 0 };
 
-	HAL_GPIO_WritePin(DW3000_B_WKUP_GPIO_Port, DW3000_B_WKUP_Pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(DW3000_A_WKUP_GPIO_Port, DW3000_A_WKUP_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(DW3000_B_WKUP_GPIO_Port, DW3000_B_WKUP_Pin,
+			GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(DW3000_A_WKUP_GPIO_Port, DW3000_A_WKUP_Pin,
+			GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(DW3000_A_CS_GPIO_Port, DW3000_A_CS_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(DW3000_B_CS_GPIO_Port, DW3000_B_CS_Pin, GPIO_PIN_RESET);
 
@@ -153,19 +159,20 @@ int main(void) {
 	DW3000_A_RST_GPIO_Port, DW3000_A_RST_Pin);
 
 	init_uwb_device(&uwb_hw_b, &hspi3, DW3000_B_CS_GPIO_Port, DW3000_B_CS_Pin,
-			DW3000_B_RST_GPIO_Port, DW3000_B_RST_Pin);
+	DW3000_B_RST_GPIO_Port, DW3000_B_RST_Pin);
 
 	TAG_t tag;
 	reset_TAG_values(&tag);
+	tag_ptr = &tag;
 
+
+	tag.master_state = MASTER_MULTIPLE_DETECTION; //MASTER_MULTIPLE_DETECTION      MASTER_ONE_DETECTION
+	TAG_STATUS_t tag_status = TAG_DISCOVERY;
 	uint32_t query_timeout = 1000;
 	uint32_t query_ticks;
 	uint32_t debug_count = 0;
 
-	tag.master_state = MASTER_MULTIPLE_DETECTION; //MASTER_MULTIPLE_DETECTION      MASTER_ONE_DETECTION
-	TAG_STATUS_t tag_status = TAG_DISCOVERY;
-	uint32_t lora_send_timeout = 1000;
-	uint32_t lora_send_ticks = HAL_GetTick();
+	DistanceHandler *distance_ptr;
 
 	Memory eeprom = Memory(&hi2c3);
 
@@ -194,9 +201,11 @@ int main(void) {
 			if (hw == &uwb_hw_a) {
 				hw = &uwb_hw_b;
 				tag.distance = &(tag.distance_b);
+				distance_ptr = &distance_b;
 			} else {
 				hw = &uwb_hw_a;
 				tag.distance = &(tag.distance_a);
+				distance_ptr = &distance_a;
 			}
 
 			tag_status = tag_discovery(&tag);
@@ -210,55 +219,115 @@ int main(void) {
 			//			set_temperature(&(tag.temperature));
 			converse_Tag_Battery_Voltage(&tag);
 			if ((debug_count == 1) || (tag_status == TAG_ONE_DETECTION)) {
-				debug(tag, tag_status);
 			}
 
 		} else if (tag_status == TAG_SEND_TIMESTAMP_QUERY) {
-			if (tag.readings < DISTANCE_READINGS) {
+			if (tag.readings < DISTANCE_READINGS - 1) {
 				if ((hw == &uwb_hw_a)
 						&& (tag.distance_b.counter < DISTANCE_READINGS / 2)) {
 					hw = &uwb_hw_b;
 					tag.distance = &(tag.distance_b);
+					distance_ptr = &distance_b;
 				} else {
 					hw = &uwb_hw_a;
 					tag.distance = &(tag.distance_a);
+					distance_ptr = &distance_a;
 				}
 				tag.command = TAG_TIMESTAMP_QUERY;
-			}
-			if ((tag.readings == DISTANCE_READINGS - 3)) { //|| (tag.command == TAG_SET_SLEEP_MODE)
-				tag.command = TAG_SET_SLEEP_MODE;
-				tag_status = TAG_SEND_SET_SLEEP;
-				tag.Estado_Final = 1;
-			}
-			debug(tag, tag_status);
-			tag_status = tag_send_timestamp_query(&tag);
-
-			if ((tag_status == TAG_SEND_TIMESTAMP_QUERY)
-					|| (tag.Estado_Final == 0)) {
-				tag.readings++;
-				tag_status = TAG_SEND_TIMESTAMP_QUERY;
-
-			} else if (tag.Estado_Final == 1) {
-				double distance_a_sum = 0;
-				double distance_b_sum = 0;
-				for (uint8_t i = 0; i < tag.distance_a.counter; i++)
-					distance_a_sum += tag.distance_a.readings[i];
-
-				for (uint8_t i = 0; i < tag.distance_b.counter; i++)
-					distance_b_sum += tag.distance_b.readings[i];
-
-				tag.distance_a.value = (uint16_t) ((distance_a_sum * 100)
-						/ tag.distance_a.counter);
-				tag.distance_b.value = (uint16_t) ((distance_b_sum * 100)
-						/ tag.distance_b.counter);
-				insert_tag(&list, tag);
-				tag_status = TAG_DISCOVERY;
-				reset_TAG_values(&tag);
-				debug_count = 0;
 			} else {
-				tag_status = TAG_SEND_TIMESTAMP_QUERY;
+				tag.command = TAG_SET_SLEEP_MODE;
+				if ((hw == &uwb_hw_a)
+						&& (tag.distance_b.counter < DISTANCE_READINGS / 2)) {
+					hw = &uwb_hw_b;
+					tag.distance = &(tag.distance_b);
+					distance_ptr = &distance_b;
+				} else {
+					hw = &uwb_hw_a;
+					tag.distance = &(tag.distance_a);
+					distance_ptr = &distance_a;
+				}
 			}
-			debug(tag, tag_status);
+
+			uint8_t rx_buffer[FRAME_LEN_MAX_EX] = { 0 }; // verificar el size del buffer de recepcion.
+
+			tag_status = tag_receive_cmd(&tag, rx_buffer);
+
+			if (tag_status == TAG_RX_CRC_VALID) {
+				tag.command = rx_buffer[0];
+
+				const int poll_rx_offset = 1;
+				const int resp_tx_offset = 1 + 4;
+
+				// Get timestamps embedded in response message
+				uint32_t poll_rx_timestamp = *(uint32_t*) (rx_buffer
+						+ poll_rx_offset);
+				uint32_t resp_tx_timestamp = *(uint32_t*) (rx_buffer
+						+ resp_tx_offset);
+				uint64_t rtd_init = get_rx_timestamp_u64()
+						- get_tx_timestamp_u64();
+				uint64_t rtd_resp = resp_tx_timestamp - poll_rx_timestamp;
+
+				// Read carrier integrator value and calculate clock offset ratio
+				float clockOffsetRatio = dwt_readclockoffset()
+						/ (float) (1 << 26);
+
+				switch (tag.command) {
+				case TAG_TIMESTAMP_QUERY:
+
+					distance_ptr->save(rtd_init, rtd_resp, clockOffsetRatio);
+					//					tag_save_distance(&tag, rx_buffer);
+					tag_status = TAG_SEND_TIMESTAMP_QUERY;
+					break;
+				case TAG_SET_SLEEP_MODE:
+					distance_ptr->save(rtd_init, rtd_resp, clockOffsetRatio);
+					//					tag_save_distance(&tag, rx_buffer);
+					tag_status = TAG_END_READINGS;
+					break;
+				default:
+					tag_status = TAG_RX_NO_COMMAND;
+					break;
+				}
+				if ((tag_status == TAG_END_READINGS)) {
+
+					debug_distance(tag, tag_status,
+							distance_a.get_last_distance(),
+							distance_b.get_last_distance());
+					tag.distance_a.value = distance_a.get_media_multipier(100);
+					tag.distance_b.value = distance_b.get_media_multipier(100);
+
+					insert_tag(&list, tag);
+					tag_status = TAG_DISCOVERY;
+					reset_TAG_values(&tag);
+					distance_a.clear();
+					distance_b.clear();
+					debug_count = 0;
+				} else if (tag_status == TAG_SEND_TIMESTAMP_QUERY) {
+					debug_distance(tag, tag_status,
+							distance_a.get_last_distance(),
+							distance_b.get_last_distance());
+					tag.readings++;
+					tag_status = TAG_SEND_TIMESTAMP_QUERY;
+				} else {
+					tag_status = TAG_DISCOVERY;
+					reset_TAG_values(&tag);
+					distance_a.clear();
+					distance_b.clear();
+				}
+
+			} else {
+				//				debug(tag, tag_status);
+				tag.distance->error_times++;
+				tag_status = TAG_SEND_TIMESTAMP_QUERY;
+				if (tag.distance->counter == DISTANCE_READINGS / 2) {
+					tag_status = TAG_DISCOVERY;
+					reset_TAG_values(&tag);
+					distance_a.clear();
+					distance_b.clear();
+					debug_count = 0;
+				}
+			}
+
+			//			debug(tag, tag_status);
 			if (HAL_GetTick() - query_ticks > query_timeout) {
 				tag_status = TAG_DISCOVERY;
 				reset_TAG_values(&tag);
@@ -294,9 +363,9 @@ int main(void) {
 						message_composed.size(), LINKMODE::UPLINK);
 
 //				txlora.transmit(data,leng , LINKMODE::UPLINK);
-			}else{
+			} else {
 				STATUS status_data = cmd.validate(message_composed.data(),
-										message_composed.size());
+						message_composed.size());
 			}
 			tx_vect.clear();
 //			HAL_Delay(10);
