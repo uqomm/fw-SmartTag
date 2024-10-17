@@ -368,6 +368,7 @@ int main(void) {
 						message_composed.size());
 			}
 			tx_vect.clear();
+			free_tag_list(&list);
 //			HAL_Delay(10);
 		}
 		/* USER CODE END WHILE */
