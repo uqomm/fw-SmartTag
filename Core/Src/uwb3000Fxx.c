@@ -90,7 +90,7 @@ uint8_t tag_init(dwt_config_t *dwt_config, dwt_txconfig_t *dwt_txconfig,
 	 return (1);
 	 }
 
-	dwt_txconfig->power = GAIN_30DB;
+	dwt_txconfig->power = GAIN_27DB;
 
 	if (dwt_config2(dwt_config, dwt_local_data)) /* if the dwt_configure returns DWT_ERROR either the PLL or RX calibration has failed the host should reset the device */
 	{
@@ -1246,6 +1246,8 @@ uint32_t dwt_readdevid(void) {
  *
  * no return value
  */
+uint32_t potencia_registro=3;
+
 void dwt_configuretxrf(dwt_txconfig_t *config) {
 	if (config->PGcount == 0) {
 		// Configure RF TX PG_DELAY
@@ -1260,6 +1262,7 @@ void dwt_configuretxrf(dwt_txconfig_t *config) {
 
 	// Configure TX power
 	dwt_write32bitreg(TX_POWER_ID, config->power);
+	uint32_t potencia_registro = dwt_read32bitreg(TX_POWER_ID);
 }
 
 /*! ------------------------------------------------------------------------------------------------------------------

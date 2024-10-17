@@ -76,7 +76,6 @@ uint8_t data[226] = {
 
 
 uint8_t Data_reciv_test[256] = { 0 };
-
 double *distance_ptr;
 TAG_t *tag;
 int size = 0;
@@ -158,6 +157,7 @@ int main(void) {
 	DW3000_A_CS_Pin,
 	DW3000_A_RST_GPIO_Port, DW3000_A_RST_Pin);
 
+
 	init_uwb_device(&uwb_hw_b, &hspi3, DW3000_B_CS_GPIO_Port, DW3000_B_CS_Pin,
 	DW3000_B_RST_GPIO_Port, DW3000_B_RST_Pin);
 
@@ -166,8 +166,10 @@ int main(void) {
 	tag_ptr = &tag;
 
 
-	tag.master_state = MASTER_MULTIPLE_DETECTION; //MASTER_MULTIPLE_DETECTION      MASTER_ONE_DETECTION
+	tag.master_state = MASTER_ONE_DETECTION; //MASTER_MULTIPLE_DETECTION      MASTER_ONE_DETECTION
 	TAG_STATUS_t tag_status = TAG_DISCOVERY;
+	uint32_t lora_send_timeout = 5000;
+	uint32_t lora_send_ticks = HAL_GetTick();
 	uint32_t query_timeout = 1000;
 	uint32_t query_ticks;
 	uint32_t debug_count = 0;
@@ -344,7 +346,13 @@ int main(void) {
 
 //----------------ENVIO DE FRAME CON DATA DE TAGS----------------
 
-		if (list.count > 0) { // Or use uint32_t
+		if (((HAL_GetTick() - lora_send_ticks) > lora_send_timeout) && (list.count > 0)) { // list.count > 2 Or use uint32_t
+//			potencia_registro = dwt_read32bitoffsetreg(0x01, 0x0C);
+//			dwt_write32bitoffsetreg(0x01, 0x0C, 0x88000000);
+//			potencia_registro = dwt_read32bitoffsetreg(0x01, 0x0C);
+			print_all_tags(&list, tag_status);
+			print_serialized_tags(&list);
+
 
 			size_t tags_size = list.count * SERIALIZED_TAG_SIZE;
 			uint8_t tx_arr[tags_size];
@@ -369,6 +377,7 @@ int main(void) {
 			}
 			tx_vect.clear();
 			free_tag_list(&list);
+			lora_send_ticks = HAL_GetTick();
 //			HAL_Delay(10);
 		}
 		/* USER CODE END WHILE */
