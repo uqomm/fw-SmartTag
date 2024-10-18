@@ -90,7 +90,7 @@ uint8_t tag_init(dwt_config_t *dwt_config, dwt_txconfig_t *dwt_txconfig,
 	 return (1);
 	 }
 
-	dwt_txconfig->power = GAIN_27DB;
+	dwt_txconfig->power = GAIN_9DB;
 
 	if (dwt_config2(dwt_config, dwt_local_data)) /* if the dwt_configure returns DWT_ERROR either the PLL or RX calibration has failed the host should reset the device */
 	{

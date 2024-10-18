@@ -113,6 +113,11 @@ TAG_STATUS_t tag_discovery(TAG_t *tag) {
 		return status_reg;
 	}
 
+	if (rx_buffer[2] == DEV_UWB3000F27){
+		return TAG_DISCOVERY;
+	}
+
+
 	if (rx_buffer[2] != DEV_UWB3000F27) {
 		if (tag->command == rx_buffer[0]) {
 			parse_received_data(tag, rx_buffer);
