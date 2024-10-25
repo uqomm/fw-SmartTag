@@ -19,12 +19,24 @@ static double compute_distance(const uint8_t *rx_buffer, int poll_rx_offset,
 static void serialize_tag(TAG_t *tag, uint8_t *buffer);
 static TAG_STATUS_t transmit_and_receive(uint8_t *tx_buffer,
 		uint8_t tx_buffer_size, uint8_t *rx_buffer, uint32_t *rx_buffer_size);
+
+
+static TAG_STATUS_t transmit_(uint8_t *tx_buffer,
+		uint8_t tx_buffer_size);
+
+
 static void parse_received_data(TAG_t *tag, const uint8_t *rx_buffer);
 static TAG_STATUS_t setup_and_transmit(TAG_t *tag, uint8_t *tx_buffer,
 		uint8_t tx_buffer_size, uint8_t *rx_buffer, uint32_t *rx_buffer_size);
 
 static TAG_STATUS_t setup_and_transmit_for_timestamp_query(TAG_t *tag,
 		uint8_t *tx_buffer, uint8_t *rx_buffer, uint32_t *rx_buffer_size);
+
+
+
+
+
+
 
 void init_uwb_device(Uwb_HW_t *uwb_hw, SPI_HandleTypeDef *hspi,
 		GPIO_TypeDef *nssPort, uint16_t nssPin, GPIO_TypeDef *nrstPort,
@@ -206,6 +218,19 @@ TAG_STATUS_t tag_receive_cmd(TAG_t *tag, uint8_t *rx_buffer) {
 	return status_reg;
 }
 
+TAG_STATUS_t tag_response(TAG_t *tag){
+	assert_param(tag != NULL);
+
+		uint8_t tx_buffer[TX_BUFFER_SIZE] = { 0 };
+
+		tx_buffer[0] = tag->command;
+		*(uint32_t*) (tx_buffer + sizeof(tag->command)) = tag->id;
+
+		TAG_STATUS_t status_reg = transmit_(tx_buffer, TX_BUFFER_SIZE);
+
+		return status_reg;
+}
+
 TAG_STATUS_t handle_received_command(TAG_t *tag, const uint8_t *rx_buffer) {
 
 	switch (tag->command) {
@@ -235,6 +260,8 @@ static TAG_STATUS_t setup_and_transmit_for_timestamp_query(TAG_t *tag,
 			rx_buffer_size);
 }
 
+
+
 static TAG_STATUS_t transmit_and_receive(uint8_t *tx_buffer,
 		uint8_t tx_buffer_size, uint8_t *rx_buffer, uint32_t *rx_buffer_size) {
 	dwt_writetxdata(tx_buffer_size, tx_buffer, 0); /* Zero offset in TX buffer. */
@@ -258,6 +285,20 @@ static TAG_STATUS_t transmit_and_receive(uint8_t *tx_buffer,
 	}
 
 	dwt_readrxdata(rx_buffer, (uint16_t) *rx_buffer_size, 0);
+	return TAG_RX_CRC_VALID;
+}
+
+static TAG_STATUS_t transmit_(uint8_t *tx_buffer,
+		uint8_t tx_buffer_size) {
+	dwt_writetxdata(tx_buffer_size, tx_buffer, 0); /* Zero offset in TX buffer. */
+	dwt_writetxfctrl(tx_buffer_size + FCS_LEN, 0, 1); /* Zero offset in TX buffer, ranging. */
+
+	if (dwt_starttx(DWT_START_TX_IMMEDIATE) == DWT_ERROR) {
+		/* Clear RX error/timeout events in the DW IC status register. */
+		dwt_write32bitreg(SYS_STATUS_ID,
+				SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR | SYS_STATUS_TXFRS_BIT_MASK);
+		return TAG_TX_ERROR;
+	}
 	return TAG_RX_CRC_VALID;
 }
 

@@ -337,6 +337,10 @@ int main(void) {
 			}
 
 		} else if (tag_status == TAG_ONE_DETECTION) {
+			tag.command = TAG_SET_SLEEP_MODE;
+			HAL_Delay(1);
+			tag_status = tag_response(&tag);
+
 			debug(tag, tag_status);
 			insert_tag(&list, tag);
 			tag_status = TAG_DISCOVERY;

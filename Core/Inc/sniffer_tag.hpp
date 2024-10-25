@@ -155,6 +155,15 @@ void print_tx_hex(uint8_t *tx, uint16_t length);
 double calculate_media(double  *values, uint8_t size);
 void tag_save_distance(TAG_t *tag,const uint8_t * rx_buffer);
 TAG_STATUS_t tag_receive_cmd(TAG_t *tag,uint8_t *rx_buffer);
+
+
+TAG_STATUS_t tag_response(TAG_t *tag);
+
+
+
+
+
+
 TAG_STATUS_t handle_received_command(TAG_t *tag,
 		const uint8_t *rx_buffer);
 #ifdef __cplusplus
