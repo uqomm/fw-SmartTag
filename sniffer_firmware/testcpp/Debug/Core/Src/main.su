@@ -1,19 +1,19 @@
 ../Core/Src/main.cpp:114:5:int main()	1760	static
-../Core/Src/main.cpp:379:6:void SystemClock_Config()	128	static
-../Core/Src/main.cpp:433:13:void MX_FLASH_Init()	8	static
-../Core/Src/main.cpp:459:13:void MX_GPDMA1_Init()	16	static
-../Core/Src/main.cpp:486:13:void MX_I2C1_Init()	8	static
-../Core/Src/main.cpp:531:13:void MX_LPTIM1_Init()	8	static
-../Core/Src/main.cpp:564:13:void MX_LPTIM3_Init()	8	static
-../Core/Src/main.cpp:597:13:void MX_SPI2_Init()	24	static
-../Core/Src/main.cpp:654:13:void MX_TIM3_Init()	64	static
-../Core/Src/main.cpp:710:13:void MX_GPIO_Init()	48	static
-../Core/Src/main.cpp:789:6:void HAL_LPTIM_CompareMatchCallback(LPTIM_HandleTypeDef*)	16	static
-../Core/Src/main.cpp:805:6:void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef*)	16	static
-../Core/Src/main.cpp:809:6:void HAL_GPIO_EXTI_Falling_Callback(uint16_t)	16	static
-../Core/Src/main.cpp:813:6:void HAL_GPIO_EXTI_Rising_Callback(uint16_t)	16	static
-../Core/Src/main.cpp:823:6:void Error_Handler()	4	static,ignoring_inline_asm
+../Core/Src/main.cpp:382:6:void SystemClock_Config()	128	static
+../Core/Src/main.cpp:436:13:void MX_FLASH_Init()	8	static
+../Core/Src/main.cpp:462:13:void MX_GPDMA1_Init()	16	static
+../Core/Src/main.cpp:489:13:void MX_I2C1_Init()	8	static
+../Core/Src/main.cpp:534:13:void MX_LPTIM1_Init()	8	static
+../Core/Src/main.cpp:567:13:void MX_LPTIM3_Init()	8	static
+../Core/Src/main.cpp:600:13:void MX_SPI2_Init()	24	static
+../Core/Src/main.cpp:657:13:void MX_TIM3_Init()	64	static
+../Core/Src/main.cpp:713:13:void MX_GPIO_Init()	48	static
+../Core/Src/main.cpp:792:6:void HAL_LPTIM_CompareMatchCallback(LPTIM_HandleTypeDef*)	16	static
+../Core/Src/main.cpp:808:6:void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef*)	16	static
+../Core/Src/main.cpp:812:6:void HAL_GPIO_EXTI_Falling_Callback(uint16_t)	16	static
+../Core/Src/main.cpp:816:6:void HAL_GPIO_EXTI_Rising_Callback(uint16_t)	16	static
+../Core/Src/main.cpp:826:6:void Error_Handler()	4	static,ignoring_inline_asm
 ../Core/Inc/bq25150.hpp:18:7:Bq25155::~Bq25155()	16	static
-../Core/Src/main.cpp:830:1:void __static_initialization_and_destruction_0(int, int)	40	static
-../Core/Src/main.cpp:830:1:cpp)	8	static
-../Core/Src/main.cpp:830:1:cpp)	8	static
+../Core/Src/main.cpp:833:1:void __static_initialization_and_destruction_0(int, int)	40	static
+../Core/Src/main.cpp:833:1:cpp)	8	static
+../Core/Src/main.cpp:833:1:cpp)	8	static

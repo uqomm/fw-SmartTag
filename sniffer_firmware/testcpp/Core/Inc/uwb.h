@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "deca_types.h"
+//#include "deca_types.h"
 #include "main.h"
 
 #define DWT_SUCCESS                 	(0)

@@ -89,6 +89,7 @@ void setDutyCycle(TIM_HandleTypeDef* const htim, uint32_t channel, float duty_cy
 TAG_STATUS_t tag_discovery(TAG_t *tag);
 TAG_STATUS_t process_queried_tag_information(TAG_t *tag);
 TAG_STATUS_t process_first_tag_information(TAG_t *tag);
+TAG_STATUS_t process_second(TAG_t *tag);
 TAG_STATUS_t send_message_with_timestamps();
 uint32_t send_response_with_timestamps(uint8_t *tx_resp_msg, uint8_t size,uint32_t frame_seq_nb);
 uint8_t read_human_tag_first_message(uint8_t *rx_buffer);

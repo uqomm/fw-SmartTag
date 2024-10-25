@@ -86,6 +86,39 @@ TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 	return (TAG_WAIT_FOR_TIMESTAMPT_QUERY);
 }
 
+TAG_STATUS_t process_second(TAG_t *tag) {
+	TAG_STATUS_t status_reg = 0;
+	tag->command = TAG_SET_SLEEP_MODE;
+
+	start_tag_reception_inmediate(0, 0);
+	status_reg = wait_rx_data();
+	if (status_reg != TAG_RX_CRC_VALID)
+		return (status_reg);
+
+	uint32_t rx_buffer_size = dwt_read32bitreg(RX_FINFO_ID) & FRAME_LEN_MAX_EX;
+
+	if (rx_buffer_size == 0)
+		return (TAG_RX_DATA_ZERO);
+
+	if ((rx_buffer_size < 5))
+		return (TAG_WAIT_FOR_FIRST_DETECTION);
+
+
+	uint8_t rx_buffer[5];
+	dwt_readrxdata(rx_buffer, (uint16_t) rx_buffer_size, 0);
+
+	uint8_t received_command = rx_buffer[0];
+	uint32_t received_id = *(uint32_t*) (rx_buffer + 1);
+
+	if (tag->command != received_command)
+		return (TAG_RX_COMMAND_ERROR);
+
+	if (tag->id != received_id)
+		return (TAG_RX_COMMAND_ERROR);
+
+	return (TAG_SLEEP);
+}
+
 TAG_STATUS_t process_queried_tag_information(TAG_t *tag) {
 	TAG_STATUS_t status_reg = 0;
 
