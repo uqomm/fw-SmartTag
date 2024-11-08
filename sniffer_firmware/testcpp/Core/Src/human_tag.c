@@ -13,16 +13,6 @@ char *TAG_MESSAGES[] = { "NO_RESPONSE", "NO_RXCG_DETECTED", "RX_TIMEOUT",
 		"WAIT_FOR_TIMESTAMP_QUERY",	"TAG_TX_SUCCESS",
 		"TAG_WRONG_ID_MATCH" };
 
-void setDutyCycle(TIM_HandleTypeDef* const htim, uint32_t channel, float duty_cycle) {
-	if (duty_cycle > 100) duty_cycle = 100;
-	if (duty_cycle < 0) duty_cycle = 0;
-
-	float pw_resolution = (((float)(*htim).Init.Period + 1.0f) / 100.0f);
-
-	uint16_t pw_desired = pw_resolution * duty_cycle;
-	__HAL_TIM_SET_COMPARE(htim, channel, pw_desired);
-}
-
 
 TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 	TAG_STATUS_t status_reg = 0;
@@ -42,6 +32,7 @@ TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 
 	uint8_t received_command = rx_buffer[0];
 	tag->sniffer_state = rx_buffer[1];
+	tag->sleep_time = rx_buffer[2];
 
 	if (tag->command != received_command)
 		return (TAG_RX_COMMAND_ERROR);
@@ -114,7 +105,7 @@ TAG_STATUS_t process_second(TAG_t *tag) {
 		return (TAG_RX_COMMAND_ERROR);
 
 	if (tag->id != received_id)
-		return (TAG_RX_COMMAND_ERROR);
+		return (TAG_WRONG_ID_MATCH);
 
 	return (TAG_SLEEP);
 }
@@ -188,55 +179,6 @@ TAG_STATUS_t process_response(TAG_t *tag) {
 	return (TAG_TX_SUCCESS);
 }
 
-TAG_STATUS_t send_message_with_timestamps() {
-
-	uint64_t poll_tx_timestamp;
-	uint64_t resp_rx_timestamp;
-	uint64_t final_tx_timestamp;
-	uint32_t final_tx_time;
-	uint8_t tx_final_msg[13];
-
-	//uint8_t timestamp_data[20] = { 0 };
-	int ret;
-	tx_final_msg[0] = 0x11;
-	/* Retrieve poll transmission and response reception timestamp. */
-	poll_tx_timestamp = get_tx_timestamp_u64();
-	resp_rx_timestamp = get_rx_timestamp_u64();
-	final_tx_time = (resp_rx_timestamp
-			+ (RESP_RX_TO_FINAL_TX_DLY_UUS_6M8 * UUS_TO_DWT_TIME)) >> 8;
-	dwt_setdelayedtrxtime(final_tx_time);
-
-	/* Final TX timestamp is the transmission time we programmed plus the TX antenna delay. */
-	final_tx_timestamp = (((uint64_t) (final_tx_time & 0xFFFFFFFEUL)) << 8)
-			+ TX_ANT_DLY_HP;
-
-	uint32_t timestamps[3] = { poll_tx_timestamp, resp_rx_timestamp,
-			final_tx_timestamp };
-	// Copy timestamps to final message using memcpy
-	memcpy(tx_final_msg + 1, timestamps, sizeof(timestamps));
-
-	/* Write and send final message. See NOTE 9 below. */
-
-	dwt_writetxdata(sizeof(tx_final_msg), tx_final_msg, 0); /* Zero offset in TX buffer. */
-	dwt_writetxfctrl(sizeof(tx_final_msg) + FCS_LEN, 0, 1); /* Zero offset in TX buffer, ranging bit set. */
-
-	ret = dwt_starttx(DWT_START_TX_DELAYED);
-	/* If dwt_starttx() returns an error, abandon this ranging exchange and proceed to the next one. See NOTE 13 below. */
-
-	if (ret == DWT_SUCCESS) {
-		/* Poll DW IC until TX frame sent event set. See NOTE 10 below. */
-		while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS_BIT_MASK)) {
-		};
-
-		/* Clear TXFRS event. */
-		dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS_BIT_MASK);
-
-		/* Increment frame sequence number after transmission of the final message (modulo 256). */
-		return (0);
-	}
-	return (1);
-}
-
 uint32_t send_response_with_timestamps(uint8_t *tx_resp_msg, uint8_t size,
 		uint32_t frame_seq_nb) {
 	uint32_t resp_tx_time;
@@ -290,165 +232,6 @@ uint32_t send_response_with_timestamps(uint8_t *tx_resp_msg, uint8_t size,
 	return (status_reg);
 }
 
-uint8_t read_human_tag_first_message(uint8_t *rx_buffer) {
-
-	uint32_t frame_len = 0;
-
-	/* A frame has been received, read it into the local buffer. */
-	frame_len =
-	dwt_read32bitreg(RX_FINFO_ID) & FRAME_LEN_MAX_EX;
-	if (frame_len <= RX_BUF_LEN)
-		dwt_readrxdata(rx_buffer, (uint16_t) frame_len, 0);
-
-	return (frame_len);
-
-}
-
-
-/*
-void uart_transmit_hexa_to_text(uint8_t *message, uint8_t size) {
-	uint8_t *hexa_text = (uint8_t*) malloc(sizeof(uint8_t) * size);
-	for (int i = 0; i < size; i++) {
-		sprintf((char*) hexa_text, "%02X ", message[i]); // Print with leading zeros for 2-digit format
-		HAL_UART_Transmit(&huart1, hexa_text, (uint16_t) 2,
-		HAL_MAX_DELAY);
-	}
-	sprintf((char*) hexa_text, "\n\r");
-	HAL_UART_Transmit(&huart1, hexa_text, (uint16_t) 2,
-	HAL_MAX_DELAY);
-	free(hexa_text);
-}
-
-
-void uart_transmit_float_to_text(float distanceValue) {
-	/ Calculate the size needed for the formatted string
-	int size = snprintf(NULL, 0, "%.2f\n\r", distanceValue);
-	size++; // Include space for the null terminator
-
-	/ Dynamically allocate memory for dist_str
-	char *dist_str = (char*) malloc(size * sizeof(char));
-	if (dist_str == NULL) {
-		// Handle allocation failure
-		// For example: return an error code or exit the function
-		return;
-	}
-
-	/ Format the string into dist_str
-	sprintf(dist_str, "%.2f\n\r", distanceValue);
-
-	/ Transmit the formatted string
-	HAL_UART_Transmit(&huart1, (uint8_t*) dist_str, size, HAL_MAX_DELAY);
-
-	/ Free the dynamically allocated memory
-	free(dist_str);
-}
-
-void uart_transmit_int_to_text(int distanceValue) {
-	/ Calculate the size needed for the formatted string
-	int size = snprintf(NULL, 0, "%u\n\r", distanceValue);
-	size++; // Include space for the null terminator
-
-	/ Dynamically allocate memory for dist_str
-	char *dist_str = (char*) malloc(size * sizeof(char));
-	if (dist_str == NULL) {
-		// Handle allocation failure
-		// For example: return an error code or exit the function
-		return;
-	}
-
-	/ Format the string into dist_str
-	sprintf(dist_str, "%u\n\r", distanceValue);
-
-	/ Transmit the formatted string
-	HAL_UART_Transmit(&huart1, (uint8_t*) dist_str, size, HAL_MAX_DELAY);
-
-	/ Free the dynamically allocated memory
-	free(dist_str);
-}
-
-int uart_transmit_string(char *message) {
-	uint16_t message_size = strlen(message) + 1; // Include space for the null terminator
-
-	// Dynamically allocate memory for the message
-	char *dynamic_message = (char*) malloc(message_size * sizeof(char));
-	if (dynamic_message == NULL) {
-		// Handle allocation failure
-		return -1; // Return an error code
-	}
-
-	// Copy the message to the dynamically allocated memory
-	strcpy(dynamic_message, message);
-
-	// Transmit the dynamic message
-	HAL_UART_Transmit(&huart1, (uint8_t*) dynamic_message, message_size,
-	HAL_MAX_DELAY);
-
-	// Free the dynamically allocated memory
-	free(dynamic_message);
-
-	return (2);
-}
-*/
-
-uint32_t create_message_and_alloc_buffer(TX_BUFFER_t *tx, TAG_t *tag) {
-	uint32_t resp_tx_time = 0;
-	uint64_t resp_tx_timestamp = 0;
-	uint64_t poll_rx_timestamp = 0;
-
-	/** Retrieve poll reception timestamp */
-	poll_rx_timestamp = get_rx_timestamp_u64();
-
-	/** Set send time for response */
-	resp_tx_time = (uint32_t) ((poll_rx_timestamp
-			+ ((POLL_RX_TO_RESP_TX_DLY_UUS_6M8) * UUS_TO_DWT_TIME))
-			>> RESPONSE_TX_TIME_SHIFT_AMOUNT);
-	dwt_setdelayedtrxtime(resp_tx_time);
-
-	/** Calculate the response TX timestamp */
-	resp_tx_timestamp =
-			(((uint64_t) (resp_tx_time & RESPONSE_TX_TIME_MASK_VALUE))
-					<< RESPONSE_TX_TIME_SHIFT_AMOUNT) + TX_ANT_DLY_LP;
-	/** Calculate the size needed for the response message buffer */
-	tx->buffer_size = sizeof(uint8_t) + 3 * sizeof(uint32_t)
-			+ 4 * sizeof(uint8_t);
-
-	/** Allocate memory for the response message buffer */
-	tx->buffer = (uint8_t*) malloc(tx->buffer_size);
-	if (tx->buffer == NULL) {
-		/** Handle memory allocation failure */
-		return (0);
-	}
-
-	// Set the first byte of the buffer to TAG_TIMESTAMP_QUERY
-	tx->buffer[0] = tag->command;
-
-	// Write tag_id to the buffer starting from the second byte
-	*(uint32_t*) (tx->buffer + 1) = _dwt_otpread(PARTID_ADDRESS);
-
-	// Write poll_rx_timestamp to the buffer
-	*(uint32_t*) (tx->buffer + 1 + sizeof(uint32_t)) = poll_rx_timestamp;
-
-	// Write resp_tx_timestamp to the buffer
-	*(uint32_t*) (tx->buffer + 1 + 2 * sizeof(uint32_t)) = resp_tx_timestamp;
-	// Write resp_tx_timestamp to the buffer
-//	*(uint8_t*) (tx->buffer + 1 + 3 * sizeof(uint32_t)) =
-//			tag->raw_battery_voltage;
-//	// Write resp_tx_timestamp to the buffer
-//	*(uint8_t*) (tx->buffer + 1 + 3 * sizeof(uint32_t) + sizeof(uint8_t)) =
-//			tag->calibrated_battery_voltage;
-//	// Write resp_tx_timestamp to the buffer
-//	*(uint8_t*) (tx->buffer + 1 + 3 * sizeof(uint32_t) + 2 * sizeof(uint8_t)) =
-//			tag->raw_temperature;
-//	// Write resp_tx_timestamp to the buffer
-//	*(uint8_t*) (tx->buffer + 1 + 3 * sizeof(uint32_t) + 3 * sizeof(uint8_t)) =
-//			tag->calibrateds_temperature;
-
-	tx->poll_rx_timestamp = poll_rx_timestamp;
-	tx->resp_tx_timestamp = resp_tx_timestamp;
-
-	return (tx->buffer_size);
-}
-
 void start_tag_reception_inmediate(uint8_t preamble_timeout, uint8_t rx_timeout) {
 
 	/* Loop forever responding to ranging requests. */
@@ -460,7 +243,7 @@ void start_tag_reception_inmediate(uint8_t preamble_timeout, uint8_t rx_timeout)
 	/* Poll for reception of a frame or error/timeout. See NOTE 8 below. */
 }
 
-#define RX_DATA_TIMEOUT_MS 100 // Timeout in millisecondspasé de 1000 a 100 para probar
+#define RX_DATA_TIMEOUT_MS 50 // Timeout in millisecondspasé de 1000 a 100 para probar
 
 TAG_STATUS_t wait_rx_data() {
 	uint32_t status_reg;
@@ -511,72 +294,6 @@ TAG_STATUS_t wait_rx_data() {
 	return TAG_NO_RXCG_DETECTED;
 }
 
-uint32_t allocate_and_read_received_frame(uint8_t **rx_buffer) {
-	uint32_t rx_buffer_size = 0;
-
-	/* Read the frame information and extract the frame length. */
-	rx_buffer_size = dwt_read32bitreg(RX_FINFO_ID) & FRAME_LEN_MAX_EX;
-
-	/* Check if the frame length is non-zero. */
-	if (rx_buffer_size > 0) {
-		/* Allocate memory dynamically for the buffer. */
-		*rx_buffer = (uint8_t*) malloc(rx_buffer_size * sizeof(uint8_t));
-
-		if (*rx_buffer != NULL) {
-			/* Read the received data into the dynamically allocated buffer. */
-			dwt_readrxdata(*rx_buffer, (uint16_t) rx_buffer_size, 0);
-
-			/* Add any additional processing here if needed. */
-
-			return rx_buffer_size;
-		} else {
-			/* Memory allocation failed. */
-			return 0; // Return 0 to indicate failure
-		}
-	}
-
-	/* No data received, return 0. */
-	return 0;
-}
-
-int start_transmission_delayed_with_response_expected(TX_BUFFER_t tx) {
-	/* Set expected delay and timeout for final message reception. See NOTE 4 and 5 below. */
-	dwt_setrxaftertxdelay(tx.delay);
-	/* FINAL_RX_TIMEOUT_UUS. */
-	dwt_setrxtimeout(tx.rx_timeout);
-	/* Set preamble timeout for expected frames. See NOTE 6 below. */
-	dwt_setpreambledetecttimeout(tx.preamble_timeout);
-	/* Write and send the response message. See NOTE 10 below.*/
-	if (dwt_writetxdata(tx.buffer_size, tx.buffer, 0) == DWT_ERROR) /* Zero offset in TX buffer. */
-		return (DWT_ERROR);
-	dwt_writetxfctrl(tx.buffer_size + 2, 0, 1);
-	/*DWT_START_TX_DELAYED DWT_START_TX_IMMEDIATE*/
-	if (dwt_starttx(DWT_START_TX_DELAYED) == DWT_ERROR)
-		return (DWT_ERROR);
-	/* If dwt_starttx() returns an error, abandon this ranging exchange and proceed to the next one. See NOTE 11 below. */
-	return (DWT_SUCCESS);
-
-}
-
-/*
-void debug(TAG_t *tag, TAG_STATUS_t status) {
-
-	char dist_str[300] = { 0 };
-	int size = 0;
-	if (status < TAG_NO_RESPONSE || status > TAG_WAIT_FOR_TIMESTAMPT_QUERY) {
-		status = TAG_UNKNOWN;
-	}
-	size =
-			sprintf(dist_str,
-					"{message: %s},{ID: 0x%08X},{command: 0x%02X },{times: %lu},{poll_rx_ts: 0x%08X },{resp_tx_ts: 0x%08X}\n\r",
-					TAG_MESSAGES[status], (unsigned long) tag->id,
-					(int) tag->command, (unsigned long) tag->readings,
-					(unsigned long) tag->poll_rx_timestamp,
-					(unsigned long) tag->resp_tx_timestamp);
-
-	HAL_UART_Transmit(&huart1, (uint8_t*) dist_str, size, HAL_MAX_DELAY);
-}
-*/
 
 void sleep_config(uint16_t sleep_mode, uint16_t mode, uint8_t wake) {
 	// Add predefined sleep settings before writing the mode

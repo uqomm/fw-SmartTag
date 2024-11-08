@@ -21,9 +21,16 @@ extern "C" {
 //extern UART_HandleTypeDef huart1;
 
 /* Length of the common part of the message (up to and including the function code, see NOTE 2 below). */
-#define INITIAL_COMUNICATION_DATA_SIZE 5
 #define RESPONSE_TX_TIME_MASK_VALUE 0xFFFFFFFEUL
 #define RESPONSE_TX_TIME_SHIFT_AMOUNT 8
+
+#define TX_BUFFER_SIZE (sizeof(uint8_t) + 3 * sizeof(uint32_t) + sizeof(uint16_t)) //Modificar para tamaño de batería de 16bits unsigned
+#define TAG_TIMESTAMP_QUERY 0x11
+#define TAG_SET_SLEEP_MODE 0x12
+#define TAG_ID_QUERY 0x13
+#define WAIT_FOR_TIMESTAMP_QUERY_TIMEOUT_MS 2000 // Timeout for transitioning from WAIT_FOR_TIMESTAMP_QUERY to WAIT_FOR_FIRST_DETECTION state in milliseconds
+#define LSI_CLOCK 32000
+#define CLK_DIVIDER 128
 
 extern char *TAG_MESSAGES[];
 extern uint8_t Discovery_Counter;
@@ -33,14 +40,11 @@ typedef struct {
 	uint64_t readings;
 	uint8_t command;
 	uint16_t Voltaje_Bat;
-//	uint16_t raw_battery_voltage; // IC V bat read during production and stored in OTP (Vmeas @ 3V3)
-//	uint8_t raw_temperature; // IC temp read during production and stored in OTP (Tmeas @ 23C)
-//	uint8_t calibrated_battery_voltage; // IC V bat read during production and stored in OTP (Vmeas @ 3V3)
-//	uint8_t calibrateds_temperature; // IC temp read during production and stored in OTP (Tmeas @ 23C)
 	uint32_t resp_tx_timestamp;
 	uint32_t poll_rx_timestamp;
 	uint32_t resp_tx_time;
 	uint8_t sniffer_state;
+	uint8_t sleep_time;
 } TAG_t;
 
 typedef struct buffer {
@@ -59,6 +63,10 @@ typedef enum {
 	MASTER_MULTIPLE_DETECTION
 }Sniffer_State;
 
+typedef enum {
+	NOT_DETECTED,
+	DETECTED
+}DETECTION;
 
 typedef enum{
 	TAG_NO_RESPONSE,
@@ -76,33 +84,18 @@ typedef enum{
 	TAG_TX_SUCCESS,
 	TAG_WRONG_ID_MATCH,
 	TAG_WAIT_SEND_TX,
+	TAG_SLEEP_RECIVED,
 	TAG_UNKNOWN
 }TAG_STATUS_t;
-#define TX_BUFFER_SIZE (sizeof(uint8_t) + 3 * sizeof(uint32_t) + sizeof(uint16_t)) //Modificar para tamaño de batería de 16bits unsigned
-#define TAG_TIMESTAMP_QUERY 0x11
-#define TAG_SET_SLEEP_MODE 0x12
-#define TAG_ID_QUERY 0x13
-#define WAIT_FOR_TIMESTAMP_QUERY_TIMEOUT_MS 2000 // Timeout for transitioning from WAIT_FOR_TIMESTAMP_QUERY to WAIT_FOR_FIRST_DETECTION state in milliseconds
 
 
-void setDutyCycle(TIM_HandleTypeDef* const htim, uint32_t channel, float duty_cycle);
 TAG_STATUS_t tag_discovery(TAG_t *tag);
 TAG_STATUS_t process_queried_tag_information(TAG_t *tag);
 TAG_STATUS_t process_first_tag_information(TAG_t *tag);
 TAG_STATUS_t process_second(TAG_t *tag);
-TAG_STATUS_t send_message_with_timestamps();
 uint32_t send_response_with_timestamps(uint8_t *tx_resp_msg, uint8_t size,uint32_t frame_seq_nb);
-uint8_t read_human_tag_first_message(uint8_t *rx_buffer);
-//void uart_transmit_hexa_to_text(uint8_t *message,uint8_t size);
-//void uart_transmit_float_to_text(float distanceValue);
-//void uart_transmit_int_to_text(int distanceValue);
-//int uart_transmit_string(char *message);
 void start_tag_reception_inmediate(uint8_t preamble_timeout,uint8_t rx_timeout);
 TAG_STATUS_t wait_rx_data();
-uint32_t allocate_and_read_received_frame(uint8_t **rx_buffer);
-uint32_t create_message_and_alloc_buffer(TX_BUFFER_t *tx,TAG_t *tag);
-int start_transmission_delayed_with_response_expected(TX_BUFFER_t tx);
-//void debug(TAG_t *tag,TAG_STATUS_t status);
 TAG_STATUS_t process_response(TAG_t *tag);
 
 #ifdef __cplusplus

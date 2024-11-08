@@ -66,11 +66,10 @@ TIM_HandleTypeDef htim3;
 DMA_HandleTypeDef handle_GPDMA1_Channel2;
 /* USER CODE BEGIN PV */
 
+DETECTION detection_flag = NOT_DETECTED; //bandera de deteccion
 uint32_t Counter_INT = 0;
+uint32_t Time1 = 15;
 uint8_t Counter_INT_Led3 = 0;
-uint8_t Counter_INT_Led15 = 0;
-uint32_t Counter_Main_INT1 = 0;
-uint32_t Counter_Main_INT2 = 0;
 bool Power_Good = 1;
 
 uint16_t adc_reg = 0;
@@ -231,12 +230,14 @@ int main(void) {
 	tag->id = _dwt_otpread(PARTID_ADDRESS);
 	dwt_configuresleep(DWT_RUNSAR, DWT_WAKE_WUP);
 	dwt_configuresleepcnt(4095);
+	tag->sleep_time = 15;
+
 
 	uint8_t STAT0_Reg = 0;
 	uint8_t charge_done = 0x20;
 	uint8_t charge_const = 0x40;
 
-	uint32_t query_timeout = 10000;
+	uint32_t query_timeout = 1000;
 	uint32_t query_ticks;
 
 	/* USER CODE END 2 */
@@ -244,7 +245,6 @@ int main(void) {
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-//	Power_Good = pins.state(PG);
 		if (Power_Good == false) {
 			battery_charger.register_init_all_2();
 			HAL_Delay(1);
@@ -270,7 +270,7 @@ int main(void) {
 			switch (tag_status) {
 			case TAG_WAIT_FOR_FIRST_DETECTION:
 				tag_status = process_first_tag_information(tag);
-//			if ((tag_status != TAG_WAIT_FOR_TIMESTAMPT_QUERY) && (tag->sniffer_state == MASTER_MULTIPLE_DETECTION)){
+//				if ((tag_status != TAG_WAIT_FOR_TIMESTAMPT_QUERY) && (tag->sniffer_state == MASTER_MULTIPLE_DETECTION)){
 //				tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
 //				tag->sniffer_state = MASTER_ONE_DETECTION;
 //				HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
@@ -282,29 +282,32 @@ int main(void) {
 //			}
 				if (tag_status == TAG_WAIT_FOR_TIMESTAMPT_QUERY)
 					query_ticks = HAL_GetTick();
+
+				if ((tag_status != TAG_WAIT_FOR_TIMESTAMPT_QUERY)
+						&& (tag_status != TAG_WAIT_SEND_TX)) {
+					tag_status = TAG_SLEEP;
+				}
 				break;
 
 			case TAG_WAIT_SEND_TX:
 				HAL_Delay(1); // TODO implementar lectura de flag por transmision del módulo (si es sque existe)
 				tag_status = process_second(tag);
-				if (tag_status != TAG_SLEEP){
-					tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
-				}
-				Counter_INT = 0;
+				if (tag_status == TAG_SLEEP)
+					tag_status = TAG_SLEEP_RECIVED;
 				break;
 
 			case TAG_WAIT_FOR_TIMESTAMPT_QUERY:
-				Counter_INT = 0;
 
 				tag_status = process_queried_tag_information(tag);
 
 				if (tag_status == TAG_TX_SUCCESS) {
 					if (tag->command == TAG_TIMESTAMP_QUERY)
 						tag_status = TAG_WAIT_FOR_TIMESTAMPT_QUERY;
-					else if (tag->command == TAG_SET_SLEEP_MODE)
-						tag_status = TAG_SLEEP;
+					else if (tag->command == TAG_SET_SLEEP_MODE) {
+						tag_status = TAG_SLEEP_RECIVED;
+					}
 				} else if (tag_status == TAG_RX_COMMAND_ERROR) {
-					HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
+					HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);
 					HAL_Delay(1);
 					HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_SET);
 					if (tag_init(&defatult_dwt_config, &defatult_dwt_txconfig,
@@ -316,39 +319,70 @@ int main(void) {
 				else if (tag_status != TAG_SLEEP)
 					tag_status = TAG_WAIT_FOR_TIMESTAMPT_QUERY;
 
-				if (HAL_GetTick() - query_ticks > query_timeout) {
+				if (HAL_GetTick() - query_ticks > query_timeout)
 					tag_status = TAG_SLEEP;
-				}
 				break;
 
-			default:
-				if ((Counter_INT_Led3 * 3 + Counter_INT_Led15 * 15) > 14) {
-					Counter_INT_Led3 = 0;
-					Counter_INT_Led15 = 0;
+			case TAG_SLEEP_RECIVED:
+				Counter_INT_Led3 = 15;
+				pins.on(VddLed);
 
-					pins.on(VddLed);
-					if (tag->Voltaje_Bat <= 0xA222) {
-						pcb_led.set_and_send_led_color(led, 1, 75, Color::RED);
-					} else if ((0xA222 < tag->Voltaje_Bat)
-							&& (tag->Voltaje_Bat <= 0xAAAA)) {
-						pcb_led.set_and_send_led_color(led, 1, 75, Color::YELLOW);
-					} else {
-						pcb_led.set_and_send_led_color(led, 1, 75, Color::GREEN);
-					}
-					pins.off(VddLed);
-				}
+				if (tag->Voltaje_Bat <= 0xA222)
+					pcb_led.set_and_send_led_color(led, 1, 15, Color::RED);
+				else if ((0xA222 < tag->Voltaje_Bat)
+						&& (tag->Voltaje_Bat <= 0xAAAA))
+					pcb_led.set_and_send_led_color(led, 1, 15, Color::YELLOW);
+				else
+					pcb_led.set_and_send_led_color(led, 1, 15, Color::GREEN);
+
+				pins.off(VddLed);
 
 				tag->readings = 0;
 
 				HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
 
-				if (Counter_INT < 6) {
-					HAL_LPTIM_TimeOut_Start_IT(&hlptim1, 24000); //Cuenta hasta 24000 (LSI Periodo) y activa interrupción al final del conteo
-					Counter_Main_INT1++;
-				} else if (6 <= Counter_INT) {
-					HAL_LPTIM_TimeOut_Start_IT(&hlptim3, 30000); //Cuenta hasta 30000 (LSI Periodo) y activa interrupción al final del conteo
-					Counter_Main_INT2++;
+				HAL_LPTIM_TimeOut_Start_IT(&hlptim1, (LSI_CLOCK / CLK_DIVIDER) * 15);
+
+				// Entra en modo STOP
+				HAL_SuspendTick();
+				HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON,
+				PWR_SLEEPENTRY_WFI);
+				HAL_ResumeTick();
+
+				SystemClock_Config();
+
+				HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_SET);
+				if (tag_init(&defatult_dwt_config, &defatult_dwt_txconfig,
+						&dwt_local_data, running_device, RATE_6M8) == 1)
+					Error_Handler();
+				tag->sniffer_state = MASTER_ONE_DETECTION;
+				tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
+				break;
+
+			default:
+				if ((Counter_INT_Led3) > 14) {
+					Counter_INT_Led3 = 0;
+
+					pins.on(VddLed);
+					if (tag->Voltaje_Bat <= 0xA222)
+						pcb_led.set_and_send_led_color(led, 1, 15, Color::RED);
+					else if ((0xA222 < tag->Voltaje_Bat)
+							&& (tag->Voltaje_Bat <= 0xAAAA))
+						pcb_led.set_and_send_led_color(led, 1, 15,
+								Color::YELLOW);
+					else
+						pcb_led.set_and_send_led_color(led, 1, 15,
+								Color::GREEN);
+
+					pins.off(VddLed);
 				}
+
+				tag->readings = 0;
+				Counter_INT_Led3++;
+
+				HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
+
+				HAL_LPTIM_TimeOut_Start_IT(&hlptim1, (LSI_CLOCK / CLK_DIVIDER) * 1);
 
 				// Entra en modo STOP
 				HAL_SuspendTick();
@@ -542,9 +576,9 @@ static void MX_LPTIM1_Init(void) {
 	/* USER CODE END LPTIM1_Init 1 */
 	hlptim1.Instance = LPTIM1;
 	hlptim1.Init.Clock.Source = LPTIM_CLOCKSOURCE_APBCLOCK_LPOSC;
-	hlptim1.Init.Clock.Prescaler = LPTIM_PRESCALER_DIV4;
+	hlptim1.Init.Clock.Prescaler = LPTIM_PRESCALER_DIV128;
 	hlptim1.Init.Trigger.Source = LPTIM_TRIGSOURCE_SOFTWARE;
-	hlptim1.Init.Period = 24000;
+	hlptim1.Init.Period = 30000;
 	hlptim1.Init.UpdateMode = LPTIM_UPDATE_IMMEDIATE;
 	hlptim1.Init.CounterSource = LPTIM_COUNTERSOURCE_INTERNAL;
 	hlptim1.Init.Input1Source = LPTIM_INPUT1SOURCE_GPIO;
@@ -575,7 +609,7 @@ static void MX_LPTIM3_Init(void) {
 	/* USER CODE END LPTIM3_Init 1 */
 	hlptim3.Instance = LPTIM3;
 	hlptim3.Init.Clock.Source = LPTIM_CLOCKSOURCE_APBCLOCK_LPOSC;
-	hlptim3.Init.Clock.Prescaler = LPTIM_PRESCALER_DIV16;
+	hlptim3.Init.Clock.Prescaler = LPTIM_PRESCALER_DIV128;
 	hlptim3.Init.Trigger.Source = LPTIM_TRIGSOURCE_SOFTWARE;
 	hlptim3.Init.Period = 30000;
 	hlptim3.Init.UpdateMode = LPTIM_UPDATE_IMMEDIATE;
@@ -791,18 +825,7 @@ static void MX_GPIO_Init(void) {
 // Función de callback para manejar la interrupción
 void HAL_LPTIM_CompareMatchCallback(LPTIM_HandleTypeDef *hlptim) {
 	HAL_LPTIM_Counter_Stop_IT(&hlptim1);
-	HAL_LPTIM_Counter_Stop_IT(&hlptim3);
 
-	if (hlptim->Instance == LPTIM1) {
-		Counter_INT_Led3++;
-		Counter_INT++;
-		if (Counter_INT >= 6) {
-			HAL_LPTIM_Counter_Stop_IT(&hlptim1);
-		}
-	} else if (hlptim->Instance == LPTIM3) {
-		Counter_INT_Led15++;
-		Counter_INT++;
-	}
 }
 
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim) {
