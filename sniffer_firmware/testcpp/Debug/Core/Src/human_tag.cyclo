@@ -1,8 +1,8 @@
 ../Core/Src/human_tag.c:17:14:process_first_tag_information	7
-../Core/Src/human_tag.c:80:14:process_second	6
-../Core/Src/human_tag.c:113:14:process_queried_tag_information	7
-../Core/Src/human_tag.c:144:14:process_response	3
-../Core/Src/human_tag.c:182:10:send_response_with_timestamps	3
-../Core/Src/human_tag.c:235:6:start_tag_reception_inmediate	1
-../Core/Src/human_tag.c:248:14:wait_rx_data	8
-../Core/Src/human_tag.c:298:6:sleep_config	1
+../Core/Src/human_tag.c:85:14:process_second	6
+../Core/Src/human_tag.c:118:14:process_queried_tag_information	7
+../Core/Src/human_tag.c:152:14:process_response	3
+../Core/Src/human_tag.c:190:10:send_response_with_timestamps	3
+../Core/Src/human_tag.c:243:6:start_tag_reception_inmediate	1
+../Core/Src/human_tag.c:256:14:wait_rx_data	8
+../Core/Src/human_tag.c:306:6:sleep_config	1

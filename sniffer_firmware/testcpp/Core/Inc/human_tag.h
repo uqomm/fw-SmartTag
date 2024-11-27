@@ -25,6 +25,7 @@ extern "C" {
 #define RESPONSE_TX_TIME_SHIFT_AMOUNT 8
 
 #define TX_BUFFER_SIZE (sizeof(uint8_t) + 3 * sizeof(uint32_t) + sizeof(uint16_t)) //Modificar para tamaño de batería de 16bits unsigned
+#define RX_BUFFER_SIZE_TIMESTAMP_QUERY  (sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t))
 #define TAG_TIMESTAMP_QUERY 0x11
 #define TAG_SET_SLEEP_MODE 0x12
 #define TAG_ID_QUERY 0x13
@@ -40,11 +41,13 @@ typedef struct {
 	uint64_t readings;
 	uint8_t command;
 	uint16_t Voltaje_Bat;
-	uint32_t resp_tx_timestamp;
-	uint32_t poll_rx_timestamp;
+	uint64_t resp_tx_timestamp;
+	uint64_t poll_rx_timestamp;
 	uint32_t resp_tx_time;
 	uint8_t sniffer_state;
 	uint8_t sleep_time;
+	uint16_t distance_a;
+	uint16_t distance_b;
 } TAG_t;
 
 typedef struct buffer {

@@ -27,15 +27,19 @@ TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 	if (rx_buffer_size == 0)
 		return (TAG_RX_DATA_ZERO);
 
-	uint8_t rx_buffer[3]; // TODO Revisar RX Buffer primera recepcion
+	uint8_t rx_buffer[6]; // TODO Revisar RX Buffer primera recepcion
 	dwt_readrxdata(rx_buffer, (uint16_t) rx_buffer_size, 0);
 
 	uint8_t received_command = rx_buffer[0];
 	tag->sniffer_state = rx_buffer[1];
 	tag->sleep_time = rx_buffer[2];
+	uint8_t hw_device = rx_buffer[4];
+	uint32_t debug_count = rx_buffer[5];
 
 	if (tag->command != received_command)
 		return (TAG_RX_COMMAND_ERROR);
+
+
 
 	tag->poll_rx_timestamp = get_rx_timestamp_u64();
 	/** Set send time for response */
@@ -52,6 +56,7 @@ TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 	/** Calculate the size needed for the response message buffer */
 	uint8_t tx_buffer_size = TX_BUFFER_SIZE;
 	uint8_t tx_buffer[TX_BUFFER_SIZE] = { 0 };
+
 	int index = 0;
 	tx_buffer[index++] = tag->command;
 	*(uint32_t*) (tx_buffer + index) = tag->id;
@@ -67,7 +72,7 @@ TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 		return (TAG_TX_ERROR);
 	dwt_writetxfctrl(tx_buffer_size + 2, 0, 1);
 	/*DWT_START_TX_DELAYED DWT_START_TX_IMMEDIATE*/
-	if (dwt_starttx(DWT_START_TX_DELAYED) == DWT_ERROR){
+	if (dwt_starttx(DWT_START_TX_DELAYED) == DWT_ERROR){ //DWT_START_TX_DELAYED o DWT_START_TX_IMMEDIATE
 		return (TAG_TX_ERROR);
 	}
 	//return (TAG_WAIT_FOR_FIRST_DETECTION);
@@ -120,7 +125,7 @@ TAG_STATUS_t process_queried_tag_information(TAG_t *tag) {
 		return (status_reg);
 
 	uint32_t rx_buffer_size = dwt_read32bitreg(RX_FINFO_ID) & FRAME_LEN_MAX_EX;
-	uint8_t rx_buffer[5];
+	uint8_t rx_buffer[RX_BUFFER_SIZE_TIMESTAMP_QUERY];
 	if (rx_buffer_size == 0)
 		return (TAG_RX_DATA_ZERO);
 	if ((rx_buffer_size < 5)) //Revisar && (tag->command != TAG_SET_SLEEP_MODE)
@@ -129,9 +134,12 @@ TAG_STATUS_t process_queried_tag_information(TAG_t *tag) {
 	dwt_readrxdata(rx_buffer, (uint16_t) rx_buffer_size, 0);
 
 	tag->command = rx_buffer[0];
-	uint32_t received_id = *(uint32_t*) (rx_buffer + 1);
+	uint32_t received_id = *(uint32_t*) (rx_buffer + sizeof(tag->command));
+	tag->distance_a = *(uint16_t*) (rx_buffer + sizeof(tag->command) + sizeof(tag->id));
+	tag->distance_b = *(uint16_t*) (rx_buffer + sizeof(tag->command) + sizeof(tag->id) + sizeof(tag->distance_a));
+
 	if (tag->id != received_id)
-		return (TAG_RX_COMMAND_ERROR);
+		return (TAG_WRONG_ID_MATCH);
 	if (tag->command == TAG_TIMESTAMP_QUERY)
 		return (process_response(tag));
 	else if(tag->command == TAG_SET_SLEEP_MODE)
@@ -243,7 +251,7 @@ void start_tag_reception_inmediate(uint8_t preamble_timeout, uint8_t rx_timeout)
 	/* Poll for reception of a frame or error/timeout. See NOTE 8 below. */
 }
 
-#define RX_DATA_TIMEOUT_MS 50 // Timeout in millisecondspasé de 1000 a 100 para probar
+#define RX_DATA_TIMEOUT_MS 150 // Timeout in millisecondspasé de 1000 a 100 para probar
 
 TAG_STATUS_t wait_rx_data() {
 	uint32_t status_reg;

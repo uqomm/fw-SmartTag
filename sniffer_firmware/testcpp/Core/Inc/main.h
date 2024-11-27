@@ -61,6 +61,12 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define LED_Pin GPIO_PIN_2
 #define LED_GPIO_Port GPIOE
+#define WAKEUP_Pin GPIO_PIN_3
+#define WAKEUP_GPIO_Port GPIOE
+#define EXTON_Pin GPIO_PIN_4
+#define EXTON_GPIO_Port GPIOE
+#define IRQ_DW_Pin GPIO_PIN_5
+#define IRQ_DW_GPIO_Port GPIOE
 #define CE_Pin GPIO_PIN_5
 #define CE_GPIO_Port GPIOA
 #define PG_Pin GPIO_PIN_6
@@ -70,6 +76,9 @@ void Error_Handler(void);
 #define LP_GPIO_Port GPIOA
 #define MR_Pin GPIO_PIN_0
 #define MR_GPIO_Port GPIOB
+#define EXTIN_Pin GPIO_PIN_1
+#define EXTIN_GPIO_Port GPIOB
+#define EXTIN_EXTI_IRQn EXTI1_IRQn
 #define DW3000_RST_RCV_Pin GPIO_PIN_9
 #define DW3000_RST_RCV_GPIO_Port GPIOE
 #define LED_C_Pin GPIO_PIN_10

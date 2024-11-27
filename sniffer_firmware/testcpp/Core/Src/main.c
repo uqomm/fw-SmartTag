@@ -494,7 +494,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, LED_Pin|DW3000_RST_RCV_Pin|LED_C_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, LED_Pin|WAKEUP_Pin|DW3000_RST_RCV_Pin|LED_C_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, CE_Pin|LP_Pin, GPIO_PIN_RESET);
@@ -508,12 +508,24 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LED_BAT_GPIO_Port, LED_BAT_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : LED_Pin DW3000_RST_RCV_Pin LED_C_Pin */
-  GPIO_InitStruct.Pin = LED_Pin|DW3000_RST_RCV_Pin|LED_C_Pin;
+  /*Configure GPIO pins : LED_Pin WAKEUP_Pin DW3000_RST_RCV_Pin LED_C_Pin */
+  GPIO_InitStruct.Pin = LED_Pin|WAKEUP_Pin|DW3000_RST_RCV_Pin|LED_C_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : EXTON_Pin */
+  GPIO_InitStruct.Pin = EXTON_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(EXTON_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : IRQ_DW_Pin */
+  GPIO_InitStruct.Pin = IRQ_DW_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(IRQ_DW_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : CE_Pin LP_Pin */
   GPIO_InitStruct.Pin = CE_Pin|LP_Pin;
@@ -535,6 +547,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(MR_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : EXTIN_Pin */
+  GPIO_InitStruct.Pin = EXTIN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(EXTIN_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin : SPI2_CS_Pin */
   GPIO_InitStruct.Pin = SPI2_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -550,6 +568,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(LED_BAT_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+
   HAL_NVIC_SetPriority(EXTI6_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI6_IRQn);
 
