@@ -760,7 +760,7 @@ typedef struct {
 #define GAIN_3DB   0x04040404  //  3db
 #define GAIN_0DB   0x00000000  //  0db
 
-#define DISTANCE_READINGS 8
+#define DISTANCE_READINGS 6
 
 //DW-IC SPI CRC-8 polynomial
 #define POLYNOMIAL  0x07    /* x^8 + x^2 + x^1 + x^0 */

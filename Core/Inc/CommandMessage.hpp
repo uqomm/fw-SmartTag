@@ -79,6 +79,8 @@ constexpr uint8_t QUERY_PARAMETER_LTEL = 0x11;
 constexpr uint8_t QUERY_PARAMETER_SIGMA = 0x12;
 constexpr uint8_t QUERY_PARAMETER_STR = 0x15;
 constexpr uint8_t QUERY_PARAMETER_ADC = 0x16;
+constexpr uint8_t ONE_DETECTION = 0x17;
+constexpr uint8_t MULTIPLE_DETECTION = 0x18;
 
 constexpr uint8_t SET_ATT_LTEL = 0x20;
 constexpr uint8_t SET_POUT_MAX = 0x24;

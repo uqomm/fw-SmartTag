@@ -16,27 +16,19 @@ static const char *TAG_MESSAGES[] = { "NO_RESPONSE", "NO_RXCG_DETECTED",
 
 static double compute_distance(const uint8_t *rx_buffer, int poll_rx_offset,
 		int resp_tx_offset);
+
 static void serialize_tag(TAG_t *tag, uint8_t *buffer);
+static void serialize_tag_od(TAG_t *tag, uint8_t *buffer);
+
 static TAG_STATUS_t transmit_and_receive(uint8_t *tx_buffer,
 		uint8_t tx_buffer_size, uint8_t *rx_buffer, uint32_t *rx_buffer_size);
 
+static TAG_STATUS_t transmit_(uint8_t *tx_buffer, uint8_t tx_buffer_size);
 
-static TAG_STATUS_t transmit_(uint8_t *tx_buffer,
-		uint8_t tx_buffer_size);
-
-
-static void parse_received_data(TAG_t *tag, const uint8_t *rx_buffer);
-static TAG_STATUS_t setup_and_transmit(TAG_t *tag, uint8_t *tx_buffer,
-		uint8_t tx_buffer_size, uint8_t *rx_buffer, uint32_t *rx_buffer_size);
+//static void parse_received_data(TAG_t *tag, const uint8_t *rx_buffer);
 
 static TAG_STATUS_t setup_and_transmit_for_timestamp_query(TAG_t *tag,
 		uint8_t *tx_buffer, uint8_t *rx_buffer, uint32_t *rx_buffer_size);
-
-
-
-
-
-
 
 void init_uwb_device(Uwb_HW_t *uwb_hw, SPI_HandleTypeDef *hspi,
 		GPIO_TypeDef *nssPort, uint16_t nssPin, GPIO_TypeDef *nrstPort,
@@ -75,8 +67,40 @@ void init_uwb_device(Uwb_HW_t *uwb_hw, SPI_HandleTypeDef *hspi,
 	HAL_GPIO_WritePin(uwb_hw->nrstPort, uwb_hw->nrstPin, GPIO_PIN_SET);
 	hw = uwb_hw;
 
-	int id = _dwt_otpread(PARTID_ADDRESS);
+	if (tag_init(&dwt_cfg, &dwt_tx_cfg, pdw3000local, DEV_UWB3000F27, RATE_6M8)
+			== 1)
+		Error_Handler();
+}
 
+
+void reset_actual_hw() {
+
+	/* Default communication configuration. We use default non-STS DW mode. */
+	dwt_config_t dwt_cfg = { 5, /* Channel number. */
+	DWT_PLEN_128, /* Preamble length. Used in TX only. */
+	DWT_PAC8, /* Preamble acquisition chunk size. Used in RX only. */
+	9, /* TX preamble code. Used in TX only. */
+	9, /* RX preamble code. Used in RX only. */
+	1, /* 0 to use standard 8 symbol SFD, 1 to use non-standard 8 symbol, 2 for non-standard 16 symbol SFD and 3 for 4z 8 symbol SDF type */
+	DWT_BR_6M8, /* Data rate. */
+	DWT_PHRMODE_STD, /* PHY header mode. */
+	DWT_PHRRATE_STD, /* PHY header rate. */
+	(129 + 8 - 8), /* SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. */
+	DWT_STS_MODE_OFF, /* STS disabled */
+	DWT_STS_LEN_64,/* STS length see allowed values in Enum dwt_sts_lengths_e */
+	DWT_PDOA_M0 /* PDOA mode off */
+	};
+	/* Values for the PG_DELAY and TX_POWER registers reflect the bandwidth and power of the spectrum at the current
+	 * temperature. These values can be calibrated prior to taking reference measurements. See NOTE 8 below. */
+	static dwt_txconfig_t dwt_tx_cfg = { 0x34, /* PG delay. */
+	0xfdfdfdfd, /* TX power. */
+	0x0 /*PG count*/
+	};
+
+	HAL_GPIO_WritePin(hw->nrstPort, hw->nrstPin, GPIO_PIN_RESET);/* Target specific drive of RSTn line into DW IC low for a period. */
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(hw->nssPort, hw->nssPin, GPIO_PIN_SET);
+	HAL_Delay(1);
 	if (tag_init(&dwt_cfg, &dwt_tx_cfg, pdw3000local, DEV_UWB3000F27, RATE_6M8)
 			== 1)
 		Error_Handler();
@@ -87,37 +111,93 @@ void reset_TAG_values(TAG_t *tag) {
 	tag->id = 0;
 	tag->readings = 0;
 	tag->command = 0;
-	tag->distance = NULL;
 	tag->Battery_Voltage = 0;
 	tag->Estado_Final = 0;
+	tag->distance_a = 0;
+	tag->distance_b = 0;
 //	tag->master_state = MASTER_ONE_DETECTION;
 
-
-	tag->distance_a.value = 0;
-	for (int i = 0; i < DISTANCE_READINGS / 2; i++) {
-		tag->distance_a.readings[i] = 0.0;
-	}
-
-	tag->distance_a.error_times = 0;
-	tag->distance_a.counter = 0;
-
-	tag->distance_b.value = 0;
-	for (int i = 0; i < DISTANCE_READINGS / 2; i++) {
-		tag->distance_b.readings[i] = 0.0;
-	}
-	tag->distance_b.error_times = 0;
-	tag->distance_b.counter = 0;
 }
 
-TAG_STATUS_t tag_discovery(TAG_t *tag) {
+//TAG_STATUS_t tag_discovery(TAG_t *tag) {
+//	uint8_t tx_buffer[TX_DISCOVERY_SIZE] = { 0 };
+//	uint8_t rx_buffer[FRAME_LEN_MAX_EX] = { 0 };
+//	uint32_t rx_buffer_size = 0;
+//	tag->command = TAG_ID_QUERY;
+//
+//	tx_buffer[0] = tag->command;
+//	tx_buffer[1] = tag->master_state;
+//	tx_buffer[2] = tag->sleep_time;
+//	tx_buffer[3] = DEV_UWB3000F27;
+//
+//	TAG_STATUS_t status_reg = setup_and_transmit(tag, tx_buffer,
+//	TX_DISCOVERY_SIZE, rx_buffer, &rx_buffer_size);
+//	if (status_reg != TAG_RX_CRC_VALID) {
+//		return status_reg;
+//	}
+//
+//	if (rx_buffer[2] == DEV_UWB3000F27) {
+//		return TAG_DISCOVERY;
+//	}
+//
+//	if (rx_buffer[3] != DEV_UWB3000F27) {
+//		if (tag->command == rx_buffer[0]) {
+//			parse_received_data(tag, rx_buffer);
+//			if (tag->master_state == MASTER_ONE_DETECTION) {
+//				return TAG_ONE_DETECTION;
+//			}
+//			return (TAG_SEND_TIMESTAMP_QUERY);
+//		}
+//		return (TAG_RX_NO_COMMAND);
+//	}
+//	return TAG_DISCOVERY;
+//}
+
+//TAG_STATUS_t tag_discovery_new(TAG_t *tag, Sniffer_State _interfaz_state) {
+//	uint8_t tx_buffer[TX_DISCOVERY_SIZE] = { 0 };
+//	uint8_t rx_buffer[FRAME_LEN_MAX_EX] = { 0 };
+//	uint32_t rx_buffer_size = 0;
+//	tag->command = TAG_ID_QUERY;
+//
+//	tx_buffer[0] = tag->command;
+//	tx_buffer[1] = _interfaz_state;
+//	tx_buffer[2] = tag->sleep_time;
+//	tx_buffer[3] = DEV_UWB3000F27;
+//
+//	TAG_STATUS_t status_reg = setup_and_transmit(tag, tx_buffer,
+//	TX_DISCOVERY_SIZE, rx_buffer, &rx_buffer_size);
+//	if (status_reg != TAG_RX_CRC_VALID) {
+//		return status_reg;
+//	}
+//
+//	if (rx_buffer[3] == DEV_UWB3000F27) {
+//		return TAG_DISCOVERY;
+//	}
+//
+//	if (rx_buffer[3] != DEV_UWB3000F27) {
+//		if (tag->command == rx_buffer[0]) {
+//			parse_received_data(tag, rx_buffer);
+//			if (_interfaz_state == MASTER_ONE_DETECTION) {
+//				return TAG_ONE_DETECTION;
+//			}
+//			return (TAG_SEND_TIMESTAMP_QUERY);
+//		}
+//		return (TAG_RX_NO_COMMAND);
+//	}
+//	return TAG_DISCOVERY;
+//}
+
+TAG_STATUS_t tag_discovery_new_new(TAG_t *tag, Sniffer_State _interfaz_state,
+		DistanceHandler *distance_ptr) {
 	uint8_t tx_buffer[TX_DISCOVERY_SIZE] = { 0 };
-	uint8_t rx_buffer[FRAME_LEN_MAX_EX] ={0};
+	uint8_t rx_buffer[FRAME_LEN_MAX_EX] = { 0 };
 	uint32_t rx_buffer_size = 0;
 	tag->command = TAG_ID_QUERY;
 
 	tx_buffer[0] = tag->command;
-	tx_buffer[1] = tag->master_state;
-	tx_buffer[2] = DEV_UWB3000F27;
+	tx_buffer[1] = _interfaz_state;
+	tx_buffer[2] = tag->sleep_time;
+	tx_buffer[3] = DEV_UWB3000F27;
 
 	TAG_STATUS_t status_reg = setup_and_transmit(tag, tx_buffer,
 	TX_DISCOVERY_SIZE, rx_buffer, &rx_buffer_size);
@@ -125,15 +205,33 @@ TAG_STATUS_t tag_discovery(TAG_t *tag) {
 		return status_reg;
 	}
 
-	if (rx_buffer[2] == DEV_UWB3000F27){
+	if (rx_buffer[3] == DEV_UWB3000F27) {
 		return TAG_DISCOVERY;
 	}
 
-
-	if (rx_buffer[2] != DEV_UWB3000F27) {
+	if (rx_buffer[3] != DEV_UWB3000F27) {
 		if (tag->command == rx_buffer[0]) {
-			parse_received_data(tag, rx_buffer);
-			if (tag->master_state == MASTER_ONE_DETECTION) {
+			tag->id = *(const uint32_t*) (rx_buffer + 1);
+
+			const int poll_rx_offset = 1;
+			const int resp_tx_offset = 1 + 4;
+
+			// Get timestamps embedded in response message
+			uint32_t poll_rx_timestamp = *(uint32_t*) (rx_buffer
+					+ poll_rx_offset);
+			uint32_t resp_tx_timestamp = *(uint32_t*) (rx_buffer
+					+ resp_tx_offset);
+			uint64_t rtd_init = get_rx_timestamp_u64() - get_tx_timestamp_u64();
+			uint64_t rtd_resp = resp_tx_timestamp - poll_rx_timestamp;
+
+			// Read carrier integrator value and calculate clock offset ratio
+			float clockOffsetRatio = dwt_readclockoffset() / (float) (1 << 26);
+
+			distance_ptr->save(rtd_init, rtd_resp, clockOffsetRatio);
+
+			tag->Battery_Voltage = *(const uint16_t*) (rx_buffer
+					+ BATTERY_VOLTAGE_RAW_OFFSET);
+			if (_interfaz_state == MASTER_ONE_DETECTION) {
 				return TAG_ONE_DETECTION;
 			}
 			return (TAG_SEND_TIMESTAMP_QUERY);
@@ -143,7 +241,7 @@ TAG_STATUS_t tag_discovery(TAG_t *tag) {
 	return TAG_DISCOVERY;
 }
 
-static TAG_STATUS_t setup_and_transmit(TAG_t *tag, uint8_t *tx_buffer,
+TAG_STATUS_t setup_and_transmit(TAG_t *tag, uint8_t *tx_buffer,
 		uint8_t tx_buffer_size, uint8_t *rx_buffer, uint32_t *rx_buffer_size) {
 	dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS_6M8);
 	dwt_setrxtimeout(RESP_RX_TIMEOUT_UUS_6M8);
@@ -153,49 +251,8 @@ static TAG_STATUS_t setup_and_transmit(TAG_t *tag, uint8_t *tx_buffer,
 			rx_buffer_size);
 }
 
-static void parse_received_data(TAG_t *tag, const uint8_t *rx_buffer) {
-	tag->id = *(const uint32_t*) (rx_buffer + 1);
-	double distance = compute_distance(rx_buffer, POLL_RX_OFFSET,
-	RESP_TX_OFFSET);
-	tag->distance->readings[tag->distance->counter++] = distance;
-	tag->Battery_Voltage = *(const uint16_t*) (rx_buffer
-			+ BATTERY_VOLTAGE_RAW_OFFSET);
-//	tag->battery_voltage.real = *(const uint16_t*) (rx_buffer
-//			+ BATTERY_VOLTAGE_RAW_OFFSET);
-//	tag->battery_voltage.real = (tag->battery_voltage.real*6.0)/65536.0;
-//	tag->battery_voltage.calibrated = *(const uint8_t*) (rx_buffer
-//			+ BATTERY_VOLTAGE_CALIBRATED_OFFSET);
-//	tag->temperature.raw =
-//			*(const uint8_t*) (rx_buffer + TEMPERATURE_RAW_OFFSET);
-//	tag->temperature.calibrated = *(const uint8_t*) (rx_buffer
-//			+ TEMPERATURE_CALIBRATED_OFFSET);
-}
-
-TAG_STATUS_t tag_send_timestamp_query(TAG_t *tag) {
-	assert_param(tag != NULL);
-
-	uint8_t tx_buffer[TX_BUFFER_SIZE] = { 0 };
-	uint8_t rx_buffer[FRAME_LEN_MAX_EX]; // verificar el size del buffer de recepcion.
-	uint32_t rx_buffer_size = 0;
-
-	tx_buffer[0] = tag->command;
-	*(uint32_t*) (tx_buffer + sizeof(tag->command)) = tag->id;
-
-	dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS_6M8);
-	dwt_setrxtimeout(RESP_RX_TIMEOUT_UUS_6M8);
-	dwt_setpreambledetecttimeout(PRE_TIMEOUT_6M8);
-
-	TAG_STATUS_t status_reg = setup_and_transmit_for_timestamp_query(tag,
-			tx_buffer, rx_buffer, &rx_buffer_size);
-
-	if (status_reg != TAG_RX_CRC_VALID)
-		return status_reg;
-
-	tag->command = rx_buffer[0];
-	return handle_received_command(tag, rx_buffer);
-}
-
-TAG_STATUS_t tag_receive_cmd(TAG_t *tag, uint8_t *rx_buffer) {
+TAG_STATUS_t tag_receive_cmd(TAG_t *tag, uint8_t *rx_buffer,
+		DistanceHandler d_a, DistanceHandler d_b) {
 	assert_param(tag != NULL);
 
 	uint8_t tx_buffer[TX_BUFFER_SIZE] = { 0 };
@@ -204,6 +261,8 @@ TAG_STATUS_t tag_receive_cmd(TAG_t *tag, uint8_t *rx_buffer) {
 
 	tx_buffer[0] = tag->command;
 	*(uint32_t*) (tx_buffer + sizeof(tag->command)) = tag->id;
+	*(uint16_t*) (tx_buffer + sizeof(tag->command) + sizeof(tag->id)) = d_a.get_media_multiplier(100);
+	*(uint16_t*) (tx_buffer + sizeof(tag->command) + sizeof(tag->id) + sizeof(d_a.get_media_multiplier(100))) = d_b.get_media_multiplier(100);
 
 	dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS_6M8);
 	dwt_setrxtimeout(RESP_RX_TIMEOUT_UUS_6M8);
@@ -218,17 +277,17 @@ TAG_STATUS_t tag_receive_cmd(TAG_t *tag, uint8_t *rx_buffer) {
 	return status_reg;
 }
 
-TAG_STATUS_t tag_response(TAG_t *tag){
+TAG_STATUS_t tag_response(TAG_t *tag) {
 	assert_param(tag != NULL);
 
-		uint8_t tx_buffer[TX_BUFFER_SIZE] = { 0 };
+	uint8_t tx_buffer[TX_BUFFER_SIZE] = { 0 };
 
-		tx_buffer[0] = tag->command;
-		*(uint32_t*) (tx_buffer + sizeof(tag->command)) = tag->id;
+	tx_buffer[0] = tag->command;
+	*(uint32_t*) (tx_buffer + sizeof(tag->command)) = tag->id;
 
-		TAG_STATUS_t status_reg = transmit_(tx_buffer, TX_BUFFER_SIZE);
+	TAG_STATUS_t status_reg = transmit_(tx_buffer, TX_BUFFER_SIZE);
 
-		return status_reg;
+	return status_reg;
 }
 
 TAG_STATUS_t handle_received_command(TAG_t *tag, const uint8_t *rx_buffer) {
@@ -260,8 +319,6 @@ static TAG_STATUS_t setup_and_transmit_for_timestamp_query(TAG_t *tag,
 			rx_buffer_size);
 }
 
-
-
 static TAG_STATUS_t transmit_and_receive(uint8_t *tx_buffer,
 		uint8_t tx_buffer_size, uint8_t *rx_buffer, uint32_t *rx_buffer_size) {
 	dwt_writetxdata(tx_buffer_size, tx_buffer, 0); /* Zero offset in TX buffer. */
@@ -288,8 +345,7 @@ static TAG_STATUS_t transmit_and_receive(uint8_t *tx_buffer,
 	return TAG_RX_CRC_VALID;
 }
 
-static TAG_STATUS_t transmit_(uint8_t *tx_buffer,
-		uint8_t tx_buffer_size) {
+static TAG_STATUS_t transmit_(uint8_t *tx_buffer, uint8_t tx_buffer_size) {
 	dwt_writetxdata(tx_buffer_size, tx_buffer, 0); /* Zero offset in TX buffer. */
 	dwt_writetxfctrl(tx_buffer_size + FCS_LEN, 0, 1); /* Zero offset in TX buffer, ranging. */
 
@@ -337,55 +393,6 @@ static double calc_distance(const uint8_t *rx_buffer, int poll_rx_timestamp,
 			* DWT_TIME_UNITS;
 	return tof * SPEED_OF_LIGHT;
 
-}
-
-TAG_STATUS_t send_message_with_timestamps() {
-
-	uint64_t poll_tx_timestamp;
-	uint64_t resp_rx_timestamp;
-	uint64_t final_tx_timestamp;
-	uint32_t final_tx_time;
-	uint8_t tx_final_msg[13];
-
-	uint8_t timestamp_data[20] = { 0 };
-	int ret;
-	tx_final_msg[0] = 0x11;
-	/* Retrieve poll transmission and response reception timestamp. */
-	poll_tx_timestamp = get_tx_timestamp_u64();
-	resp_rx_timestamp = get_rx_timestamp_u64();
-	final_tx_time = (resp_rx_timestamp
-			+ (RESP_RX_TO_FINAL_TX_DLY_UUS_6M8 * UUS_TO_DWT_TIME)) >> 8;
-	dwt_setdelayedtrxtime(final_tx_time);
-
-	/* Final TX timestamp is the transmission time we programmed plus the TX antenna delay. */
-	final_tx_timestamp = (((uint64_t) (final_tx_time & 0xFFFFFFFEUL)) << 8)
-			+ TX_ANT_DLY_HP;
-
-	uint32_t timestamps[3] = { poll_tx_timestamp, resp_rx_timestamp,
-			final_tx_timestamp };
-// Copy timestamps to final message using memcpy
-	memcpy(tx_final_msg + 1, timestamps, sizeof(timestamps));
-
-	/* Write and send final message. See NOTE 9 below. */
-
-	dwt_writetxdata(sizeof(tx_final_msg), tx_final_msg, 0); /* Zero offset in TX buffer. */
-	dwt_writetxfctrl(sizeof(tx_final_msg) + FCS_LEN, 0, 1); /* Zero offset in TX buffer, ranging bit set. */
-
-	ret = dwt_starttx(DWT_START_TX_DELAYED);
-	/* If dwt_starttx() returns an error, abandon this ranging exchange and proceed to the next one. See NOTE 13 below. */
-
-	if (ret == DWT_SUCCESS) {
-		/* Poll DW IC until TX frame sent event set. See NOTE 10 below. */
-		while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS_BIT_MASK)) {
-		};
-
-		/* Clear T&XFRS event. */
-		dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS_BIT_MASK);
-
-		/* Increment frame sequence number after transmission of the final message (modulo 256). */
-		return (0);
-	}
-	return (1);
 }
 
 uint32_t send_response_with_timestamps(uint8_t *tx_resp_msg, uint8_t size,
@@ -508,31 +515,7 @@ int send_message_with_human_tag_timestamp() {
 	return (ret);
 }
 
-int start_transmission_inmediate_with_response_expected(TX_BUFFER_t tx) {
-
-	dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS_6M8);
-	dwt_setrxtimeout(RESP_RX_TIMEOUT_UUS_6M8);
-	dwt_setpreambledetecttimeout(PRE_TIMEOUT_6M8);
-	/* Write frame data to DW IC and prepare transmission. See NOTE 9 below. */
-
-//tx_poll_msg[ALL_MSG_SN_IDX] = (uint8_t) tag->detection_times;
-	dwt_writetxdata(tx.buffer_size, tx.buffer, 0); /* Zero offset in TX buffer. */
-	dwt_writetxfctrl(tx.buffer_size + FCS_LEN, 0, 1); /* Zero offset in TX buffer, ranging. */
-
-	/* Start transmission, indicating that a response is expected so that reception is enabled automatically after the frame is sent and the delay
-	 * set by dwt_setrxaftertxdelay() has elapsed. */
-	int rets = dwt_starttx(DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
-
-	if (rets == DWT_ERROR) {
-		/* Clear RX error/timeout events in the DW IC status register. */
-		dwt_write32bitreg(SYS_STATUS_ID,
-				SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR | SYS_STATUS_TXFRS_BIT_MASK);
-
-	}
-
-	return (rets);
-}
-#define RX_TIMEOUT_MS 1000
+#define RX_TIMEOUT_MS 150
 
 uint32_t status_reg;
 TAG_STATUS_t wait_rx_data() {
@@ -594,7 +577,8 @@ void uart_transmit_int_to_text(int distanceValue) {
 	free(dist_str);
 }
 
-void debug(TAG_t tag, TAG_STATUS_t status) {
+void debug_distance_new(TAG_t tag, TAG_STATUS_t status, DistanceHandler d_a,
+		DistanceHandler d_b) {
 	/* Format the string directly into the dynamically allocated buffer */
 	char dist_str[300] = { 0 };
 	int size = 0;
@@ -606,15 +590,13 @@ void debug(TAG_t tag, TAG_STATUS_t status) {
 
 	size =
 			sprintf(dist_str,
-					"{message: %s},{ID: 0x%08X},{times: %lu},{error_a:%u},{error_b:%u},{Counter_a: %u},{Counter_b: %u},{distance_a: %0.2f},{distance_b: %0.2f},{battery_voltage_FLOAT: %0.2f},{battery_voltage_INT: %u}",
+					"{message: %s},{ID: 0x%08X},{readings: %lu},{error_track_a:%u},{error_track_b:%u},{Counter_a: %u},{Counter_b: %u},{distance_a: %0.2f},{distance_b: %0.2f},{error_crc_a:%u},{error_crc_b:%u},{battery_voltage_INT: %u}",
 					TAG_MESSAGES[status], (int) tag.id,
-					(unsigned long) tag.readings, tag.distance_a.error_times,
-					tag.distance_b.error_times, tag.distance_a.counter,
-					tag.distance_b.counter,
-					(float) tag.distance_a.readings[tag.distance_a.counter - 1],
-					(float) tag.distance_b.readings[tag.distance_b.counter - 1],
-					tag.Float_Battery_Voltage, tag.Real_Batt_Voltage);
-//					tag.temperature.real);
+					(unsigned long) tag.readings, d_a.get_error_track(),
+					d_b.get_error_track(), d_a.get_counter(), d_b.get_counter(),
+					(float) d_a.get_last_distance(),
+					(float) d_b.get_last_distance(), d_a.get_error_crc_times(),
+					d_b.get_error_crc_times(), tag.Real_Batt_Voltage);
 
 	HAL_UART_Transmit(&huart1, (uint8_t*) dist_str, size, HAL_MAX_DELAY);
 	//if (status == TAG_DISCOVERY || status == TAG_SEND_TIMESTAMP_QUERY)
@@ -624,7 +606,7 @@ void debug(TAG_t tag, TAG_STATUS_t status) {
 		HAL_UART_Transmit(&huart1, (uint8_t*) "\n\r", 2, HAL_MAX_DELAY);
 }
 
-void debug_distance(TAG_t tag, TAG_STATUS_t status, double d_a, double d_b) {
+void debug_status(TAG_STATUS_t status, uint8_t hw_device) {
 	/* Format the string directly into the dynamically allocated buffer */
 	char dist_str[300] = { 0 };
 	int size = 0;
@@ -634,59 +616,29 @@ void debug_distance(TAG_t tag, TAG_STATUS_t status, double d_a, double d_b) {
 		status = TAG_UNKNOWN;
 	}
 
-	size = sprintf(dist_str,
-					"{message: %s},{ID: 0x%08X},{times: %lu},{error_a:%u},{error_b:%u},{Counter_a: %u},{Counter_b: %u},{distance_a: %0.2f},{distance_b: %0.2f},{battery_voltage_FLOAT: %0.2f},{battery_voltage_INT: %u}",
-					TAG_MESSAGES[status], (int) tag.id,
-					(unsigned long) tag.readings, tag.distance_a.error_times,
-					tag.distance_b.error_times, tag.distance_a.counter,
-					tag.distance_b.counter,
-					(float) d_a,
-					(float) d_b,
-					tag.Float_Battery_Voltage, tag.Real_Batt_Voltage);
-
-	HAL_UART_Transmit(&huart1, (uint8_t*) dist_str, size, HAL_MAX_DELAY);
 	//if (status == TAG_DISCOVERY || status == TAG_SEND_TIMESTAMP_QUERY)
-	if (status == TAG_DISCOVERY)
-		HAL_UART_Transmit(&huart1, (uint8_t*) "\n\r", 1, HAL_MAX_DELAY);
-	else
-		HAL_UART_Transmit(&huart1, (uint8_t*) "\n\r", 2, HAL_MAX_DELAY);
-}
-
-
-void debug_status(TAG_STATUS_t status) {
-	/* Format the string directly into the dynamically allocated buffer */
-	char dist_str[300] = { 0 };
-	int size = 0;
-
-	/* Check if status value is within the valid range */
-	if (status >= TAG_UNKNOWN) {
-		status = TAG_UNKNOWN;
-	}
-
-	size = sprintf(dist_str, "\r\n{message: %s}", TAG_MESSAGES[status]);
-
-	HAL_UART_Transmit(&huart1, (uint8_t*) dist_str, size,
-	HAL_MAX_DELAY);
-	//if (status == TAG_DISCOVERY || status == TAG_SEND_TIMESTAMP_QUERY)
-	if (status == TAG_DISCOVERY)
+	if (status == TAG_DISCOVERY) {
+		size = sprintf(dist_str, "\r\n{message: %s},{HW: %u}",
+				TAG_MESSAGES[status], hw_device);
+		HAL_UART_Transmit(&huart1, (uint8_t*) dist_str, size,
+		HAL_MAX_DELAY);
 		HAL_UART_Transmit(&huart1, (uint8_t*) "\r", 1, HAL_MAX_DELAY);
-	else
+	} else {
+		size = sprintf(dist_str, "\r\n{message: %s},{HW: %u}",
+				TAG_MESSAGES[status], hw_device);
 		HAL_UART_Transmit(&huart1, (uint8_t*) "\n\r", 2, HAL_MAX_DELAY);
-
+		HAL_UART_Transmit(&huart1, (uint8_t*) dist_str, size,
+		HAL_MAX_DELAY);
+		HAL_UART_Transmit(&huart1, (uint8_t*) "\n\r", 2, HAL_MAX_DELAY);
+	}
 }
 
 void debug_tag(TAG_t tag) {
 	/* Format the string directly into the dynamically allocated buffer */
 	char dist_str[300] = { 0 };
 	int size = 0;
-	size =
-			sprintf(dist_str,
-					"{ID: 0x%08X},{times: %lu},{distance_a: %u},{distance_b: %u},{battery_voltage: %u}",
-					(int) tag.id, (unsigned long) tag.readings,
-					tag.distance_a.value, tag.distance_b.value,
-					tag.Real_Batt_Voltage);
-//					tag.battery_voltage.real,
-//					tag.temperature.real);
+	size = sprintf(dist_str, "{ID: 0x%08X},{times: %lu},{battery_voltage: %u}",
+			(int) tag.id, (unsigned long) tag.readings, tag.Real_Batt_Voltage);
 
 	HAL_UART_Transmit(&huart1, (uint8_t*) dist_str, size,
 	HAL_MAX_DELAY);
@@ -712,7 +664,7 @@ void print_all_tags(TAG_List *list, TAG_STATUS_t status) {
 	TAG_Node *current = list->head;
 
 	while (current != NULL) {
-		debug_tag(current->tag);
+
 		HAL_UART_Transmit(&huart1, (uint8_t*) "\n\r", (uint16_t) 2,
 		HAL_MAX_DELAY);
 		current = current->next;
@@ -724,20 +676,21 @@ void print_all_tags(TAG_List *list, TAG_STATUS_t status) {
 void print_serialized_tags(TAG_List *list) {
 	if (list->head == NULL) {
 		HAL_UART_Transmit(&huart1, (uint8_t*) "No tag detected\n\r",
-				(uint16_t) 18, HAL_MAX_DELAY);
+				(uint16_t) 18,
+				HAL_MAX_DELAY);
 		return;
 	}
 
-	// Allocate buffer for serialized tags
+// Allocate buffer for serialized tags
 	uint8_t buffer[SERIALIZED_TAG_SIZE * list->count];
 	serialize_tag_list(list, buffer);
 
-	// Print each serialized tag in hexadecimal format separated by "\n"
+// Print each serialized tag in hexadecimal format separated by "\n"
 	uint8_t *current = buffer;
 	char hex_output[SERIALIZED_TAG_SIZE * 2 + 1]; // Each byte is represented by 2 hex digits + null terminator
 
 	for (int i = 0; i < list->count; ++i) {
-		for (int j = 0; j < SERIALIZED_TAG_SIZE; ++j) {
+		for (uint32_t j = 0; j < SERIALIZED_TAG_SIZE; ++j) {
 			snprintf(&hex_output[j * 2], 3, "%02X", current[j]);
 		}
 
@@ -750,21 +703,6 @@ void print_serialized_tags(TAG_List *list) {
 	HAL_UART_Transmit(&huart1, (uint8_t*) "####\n\r", (uint16_t) 6,
 	HAL_MAX_DELAY);
 }
-//void set_battery_voltage(Mesurement_data_t *measurement) {
-//	/* Bench measurements gives approximately:
-//	 * VDDBAT = sar_read * Vref / max_code * 16x_atten   - assume Vref @ 3.0V
-//	 */
-//	measurement->real = (float) ((float) (measurement->raw
-//			- measurement->calibrated) * 0.4f * 16 / 255) + 3.0f;
-//}
-//
-//void set_temperature(Mesurement_data_t *measurement) {
-//	/* the User Manual formula is:
-//	 * Temperature (�C) = ( (SAR_LTEMP ?OTP_READ(Vtemp @ 20�C) ) x 1.05)        // Vtemp @ 20�C
-//	 */
-//	measurement->real = (float) ((measurement->raw - measurement->calibrated)
-//			* 105) + 200;
-//}
 
 void int_to_float_Tag_Battery_Voltage(TAG_t *tag) {
 	tag->Float_Battery_Voltage = ((tag->Battery_Voltage) * 6.0) / 65536.0;
@@ -850,43 +788,119 @@ void free_tag_list(TAG_List *list) {
 	list->count = 0;
 }
 
+// Function to free the entire linked list
+void free_tag_list_limit(TAG_List *list, uint8_t limit) {
+	TAG_Node *current = list->head;
+	TAG_Node *next;
+	uint8_t tag_number = 0;
+	while (current != NULL && tag_number < limit) {
+		next = current->next;
+		free(current);
+		current = next;
+		tag_number++;
+	}
+	if (current == NULL) {
+		list->head = NULL;
+		list->count = 0;
+	}
+}
+
 static void serialize_tag(TAG_t *tag, uint8_t *buffer) {
 	int offset = 0;
 
 	memcpy(buffer + offset, &tag->id, sizeof(tag->id));
 	offset += sizeof(tag->id);
 
-	memcpy(buffer + offset, &tag->distance_a.value,
-			sizeof(tag->distance_a.value));
-	offset += sizeof(tag->distance_a.value);
+	memcpy(buffer + offset, &tag->distance_a, sizeof(tag->distance_a));
+	offset += sizeof(tag->distance_a);
 
-	memcpy(buffer + offset, &tag->distance_b.value,
-			sizeof(tag->distance_b.value));
-	offset += sizeof(tag->distance_b.value);
+	memcpy(buffer + offset, &tag->distance_b, sizeof(tag->distance_b));
+	offset += sizeof(tag->distance_b);
 
 	memcpy(buffer + offset, &tag->Real_Batt_Voltage,
 			sizeof(tag->Real_Batt_Voltage));
 	offset += sizeof(tag->Real_Batt_Voltage);
 
-//	memcpy(buffer + offset, &tag->temperature.real,
-//			sizeof(tag->temperature.real));
-//	offset += sizeof(tag->temperature.real);
-//
-//	memcpy(buffer + offset, &tag->battery_voltage.real,
-//			sizeof(tag->battery_voltage.real));
-//	offset += sizeof(tag->battery_voltage.real);
+}
+
+static void serialize_tag_od(TAG_t *tag, uint8_t *buffer) {
+	int offset = 0;
+
+	memcpy(buffer + offset, &tag->id, sizeof(tag->id));
+	offset += sizeof(tag->id);
+
+	memcpy(buffer + offset, &tag->Real_Batt_Voltage,
+			sizeof(tag->Real_Batt_Voltage));
+	offset += sizeof(tag->Real_Batt_Voltage);
+
 }
 
 void serialize_tag_list(TAG_List *list, uint8_t *buffer) {
 	int offset = 0;
+
+	memcpy(buffer + offset, &list->count, sizeof(list->count));
+	offset += sizeof(list->count);
+
 	TAG_Node *current = list->head;
 	while (current != NULL) {
 		serialize_tag(&current->tag, buffer + offset);
-		offset += sizeof(current->tag.id)
-				+ sizeof(current->tag.distance_a.value)
-				+ sizeof(current->tag.distance_b.value)
+		offset += sizeof(current->tag.id) + sizeof(current->tag.distance_a)
+				+ sizeof(current->tag.distance_b)
 				+ sizeof(current->tag.Real_Batt_Voltage);
 		current = current->next;
+	}
+}
+
+void serialize_tag_list_limit(TAG_List *list, uint8_t *buffer, uint8_t limit,
+		uint8_t _total_tags) {
+	int offset = 0;
+	memcpy(buffer + offset, &_total_tags, sizeof(_total_tags)); //entregar limit y _total_tags por referencia
+	offset += sizeof(_total_tags);
+
+	if (list->count > limit) {
+		memcpy(buffer + offset, &limit, sizeof(limit));
+		offset += sizeof(limit);
+	} else {
+		memcpy(buffer + offset, &list->count, sizeof(list->count));
+		offset += sizeof(list->count);
+	}
+	TAG_Node *current = list->head;
+	uint8_t tag_number = 0;
+	while (current != NULL && tag_number < limit) {
+		serialize_tag(&current->tag, buffer + offset);
+		offset += sizeof(current->tag.id) + sizeof(current->tag.distance_a)
+				+ sizeof(current->tag.distance_b)
+				+ sizeof(current->tag.Real_Batt_Voltage);
+		current = current->next;
+		tag_number++;
+	}
+}
+
+void serialize_tag_list_limit_od(TAG_List *list, uint8_t *buffer, uint8_t limit,
+		uint8_t _total_tags, uint32_t _sniffer_id) {
+	int offset = 0;
+
+	memcpy(buffer + offset, &_sniffer_id, sizeof(_sniffer_id));
+	offset += sizeof(_sniffer_id);
+
+	memcpy(buffer + offset, &_total_tags, sizeof(_total_tags));
+	offset += sizeof(_total_tags);
+
+	if (list->count > limit) {
+		memcpy(buffer + offset, &limit, sizeof(limit));
+		offset += sizeof(limit);
+	} else {
+		memcpy(buffer + offset, &list->count, sizeof(list->count));
+		offset += sizeof(list->count);
+	}
+	TAG_Node *current = list->head;
+	uint8_t tag_number = 0;
+	while (current != NULL && tag_number < limit) {
+		serialize_tag_od(&current->tag, buffer + offset);
+		offset += sizeof(current->tag.id)
+				+ sizeof(current->tag.Real_Batt_Voltage);
+		current = current->next;
+		tag_number++;
 	}
 }
 
@@ -911,16 +925,44 @@ double calculate_media(double *values, uint8_t size) {
 	return (double) ((sum) / size);
 }
 
-void tag_save_distance(TAG_t *tag, const uint8_t *rx_buffer) {
-	const int poll_rx_offset = 1;
-	const int resp_tx_offset = 1 + 4;
-
-	// Get timestamps embedded in response message
-	uint32_t poll_rx_timestamp = *(uint32_t*) (rx_buffer + poll_rx_offset);
-	uint32_t resp_tx_timestamp = *(uint32_t*) (rx_buffer + resp_tx_offset);
-	double distance = calc_distance((uint8_t*) rx_buffer, poll_rx_timestamp,
-			resp_tx_timestamp);
-	tag->distance->readings[tag->distance->counter] = distance;
-	if (tag->distance->counter < DISTANCE_READINGS / 2)
-		tag->distance->counter++;
+uint8_t switch_hw(TAG_t *tag, DistanceHandler *&dist_ptr, Uwb_HW_t *&hw,
+		DistanceHandler *dist_a, DistanceHandler *dist_b) { // &dist_ptr y &hw son referencias
+	if (hw == &uwb_hw_a) {
+		hw = &uwb_hw_b;
+		dist_ptr = dist_b; // Asigna directamente al puntero
+		return 0xB;
+	} else {
+		hw = &uwb_hw_a;
+		dist_ptr = dist_a; // Asigna directamente al puntero
+		return 0xA;
+	}
 }
+
+uint8_t switch_hw_timestamp_query(TAG_t *tag, DistanceHandler *&dist_ptr,
+		Uwb_HW_t *&hw, DistanceHandler *dist_a, DistanceHandler *dist_b) {
+	if ((hw == &uwb_hw_a) && (dist_b->get_counter() < DISTANCE_READINGS / 2)) {
+		hw = &uwb_hw_b;
+		dist_ptr = dist_b; // Asigna directamente al puntero
+		return 0xB;
+	} else if (dist_a->get_counter() < DISTANCE_READINGS / 2){
+		hw = &uwb_hw_a;
+		dist_ptr = dist_a; // Asigna directamente al puntero
+		return 0xA;
+	}
+	return 0x0;
+}
+
+void saveTagIfNeeded(TAG_t *tag, DistanceHandler *distance_a,
+		DistanceHandler *distance_b, TAG_List *list, TAG_List *list_od) { // list como puntero
+	if (distance_a->get_media_multiplier(100) > 0
+			&& distance_b->get_media_multiplier(100) > 0) {
+		tag->distance_a = distance_a->get_media_multiplier(100);
+		tag->distance_b = distance_b->get_media_multiplier(100);
+		insert_tag(list, *tag);
+	}
+	insert_tag(list_od, *tag);
+	reset_TAG_values(tag);
+	distance_a->clear();
+	distance_b->clear();
+}
+

@@ -15,16 +15,20 @@ public:
 	DistanceHandler(uint8_t _total_readings);
 	void save(uint64_t rtd_init, uint64_t rtd_resp, float clockOffsetRatio);
 
-	uint16_t get_media_multipier(uint8_t multiplier);
+	uint16_t get_media_multiplier(uint8_t multiplier);
 	void clear();
 	virtual ~DistanceHandler();
 	double get_last_distance();
+	uint8_t get_counter();
+	uint8_t get_error_track();
+	uint8_t get_error_crc_times();
+	void error_crc_increment();
 
 private:
 	uint8_t total_readings;
 	double *readings;
 	uint16_t value;
-	uint8_t error_times;
+	uint8_t error_crc_times;
 	uint8_t counter;
 	uint8_t error_track=0;
 

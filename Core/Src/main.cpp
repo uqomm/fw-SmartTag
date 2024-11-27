@@ -24,10 +24,10 @@
 /* USER CODE BEGIN Includes */
 #include <sniffer_tag.hpp>
 #include "Gpio.hpp"
-#include "DistanceHandler.hpp"
 #include "Memory.hpp"
 #include "CommandMessage.hpp"
 #include <Lora.hpp>
+#include "GpioHandler.hpp"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -54,27 +54,6 @@ UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 
-uint8_t data[226] = {
-  0x7e, 0x10, 0x01, 0x11, 0xd9, 0x00, 0x18, 0x00, 0x00, 0x00, 0x00, 0x49, 0x02, 0x53, 0x02, 0x29,
-  0x01, 0x00, 0x00, 0x00, 0x31, 0x25, 0x38, 0x25, 0x21, 0x02, 0x00, 0x00, 0x00, 0x92, 0x17, 0x81,
-  0x17, 0x22, 0x03, 0x00, 0x00, 0x00, 0xb4, 0x09, 0xb4, 0x09, 0x21, 0x04, 0x00, 0x00, 0x00, 0x4f,
-  0x0a, 0x4d, 0x0a, 0x22, 0x05, 0x00, 0x00, 0x00, 0x52, 0x18, 0x46, 0x18, 0x1e, 0x06, 0x00, 0x00,
-  0x00, 0xea, 0x26, 0xe3, 0x26, 0x29, 0x07, 0x00, 0x00, 0x00, 0x8a, 0x1b, 0x81, 0x1b, 0x27, 0x08,
-  0x00, 0x00, 0x00, 0x28, 0x1b, 0x38, 0x1b, 0x1e, 0x09, 0x00, 0x00, 0x00, 0x2c, 0x07, 0x2b, 0x07,
-  0x25, 0x0a, 0x00, 0x00, 0x00, 0x59, 0x19, 0x63, 0x19, 0x27, 0x0b, 0x00, 0x00, 0x00, 0xd9, 0x10,
-  0xdc, 0x10, 0x1b, 0x0c, 0x00, 0x00, 0x00, 0xf5, 0x05, 0xfd, 0x05, 0x24, 0x0d, 0x00, 0x00, 0x00,
-  0x67, 0x26, 0x64, 0x26, 0x26, 0x0e, 0x00, 0x00, 0x00, 0xf6, 0x04, 0xfa, 0x04, 0x19, 0x0f, 0x00,
-  0x00, 0x00, 0x72, 0x20, 0x6e, 0x20, 0x1f, 0x10, 0x00, 0x00, 0x00, 0x2b, 0x26, 0x37, 0x26, 0x24,
-  0x11, 0x00, 0x00, 0x00, 0x85, 0x23, 0x96, 0x23, 0x28, 0x12, 0x00, 0x00, 0x00, 0xd7, 0x1b, 0xc7,
-  0x1b, 0x22, 0x13, 0x00, 0x00, 0x00, 0x32, 0x08, 0x3a, 0x08, 0x28, 0x14, 0x00, 0x00, 0x00, 0xbc,
-  0x15, 0xbd, 0x15, 0x1b, 0x15, 0x00, 0x00, 0x00, 0xa1, 0x07, 0x9c, 0x07, 0x21, 0x16, 0x00, 0x00,
-  0x00, 0xfe, 0x1f, 0xfa, 0x1f, 0x1f, 0x17, 0x00, 0x00, 0x00, 0xea, 0x26, 0xdf, 0x26, 0x1b, 0x1e,
-  0xa4, 0x7f
-};
-
-
-
-
 uint8_t Data_reciv_test[256] = { 0 };
 double *distance_ptr;
 TAG_t *tag;
@@ -85,11 +64,12 @@ Uwb_HW_t uwb_hw_b;
 Uwb_HW_t *hw;
 dwt_local_data_t *pdw3000local;
 uint8_t crcTable[256];
-uint8_t recvChar[255] = {0};
+uint8_t recvChar[255] = { 0 };
 TAG_t *tag_ptr;
 DistanceHandler distance_a = DistanceHandler(DISTANCE_READINGS);
 DistanceHandler distance_b = DistanceHandler(DISTANCE_READINGS);
-
+uint32_t tiempo_max = 5;
+GpioHandler gpio_handler();
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -145,6 +125,7 @@ int main(void) {
 	/* USER CODE BEGIN 2 */
 	pdw3000local = new dwt_local_data_t;
 	TAG_List list = { NULL, 0 };
+	TAG_List list_od = { NULL, 0 };
 
 	HAL_GPIO_WritePin(DW3000_B_WKUP_GPIO_Port, DW3000_B_WKUP_Pin,
 			GPIO_PIN_RESET);
@@ -157,7 +138,6 @@ int main(void) {
 	DW3000_A_CS_Pin,
 	DW3000_A_RST_GPIO_Port, DW3000_A_RST_Pin);
 
-
 	init_uwb_device(&uwb_hw_b, &hspi3, DW3000_B_CS_GPIO_Port, DW3000_B_CS_Pin,
 	DW3000_B_RST_GPIO_Port, DW3000_B_RST_Pin);
 
@@ -165,7 +145,12 @@ int main(void) {
 	reset_TAG_values(&tag);
 	tag_ptr = &tag;
 
+	uint32_t sniffer_id = _dwt_otpread(PARTID_ADDRESS);
 
+	uint8_t hw_device =0;
+	tag.envios_ = 0;
+	Sniffer_State interfaz_state = MASTER_MULTIPLE_DETECTION;
+	tag.sleep_time = 1; //tiempo de sleep
 	tag.master_state = MASTER_ONE_DETECTION; //MASTER_MULTIPLE_DETECTION      MASTER_ONE_DETECTION
 	TAG_STATUS_t tag_status = TAG_DISCOVERY;
 	uint32_t lora_send_timeout = 5000;
@@ -179,6 +164,8 @@ int main(void) {
 	Memory eeprom = Memory(&hi2c3);
 
 	CommandMessage cmd = CommandMessage(
+			static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER), 0x00);
+	CommandMessage cmd_od = CommandMessage(
 			static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER), 0x00);
 
 	Gpio rx_lora_nss = Gpio(LORA_RX_NSS_GPIO_Port, LORA_RX_NSS_Pin);
@@ -200,59 +187,93 @@ int main(void) {
 
 		if (tag_status == TAG_DISCOVERY) {
 			debug_count++;
-			if (hw == &uwb_hw_a) {
-				hw = &uwb_hw_b;
-				tag.distance = &(tag.distance_b);
-				distance_ptr = &distance_b;
-			} else {
-				hw = &uwb_hw_a;
-				tag.distance = &(tag.distance_a);
-				distance_ptr = &distance_a;
-			}
 
-			tag_status = tag_discovery(&tag);
+			hw_device = switch_hw(&tag, distance_ptr, hw, &distance_a, &distance_b);
+			uint8_t tx_buffer[TX_DISCOVERY_SIZE] = { 0 };
+			uint8_t rx_buffer[FRAME_LEN_MAX_EX] = { 0 };
+			uint32_t rx_buffer_size = 0;
+			tag.command = TAG_ID_QUERY;
+
+			tx_buffer[0] = tag.command;
+			tx_buffer[1] = interfaz_state;
+			tx_buffer[2] = tag.sleep_time;
+			tx_buffer[3] = DEV_UWB3000F27;
+			tx_buffer[4] = hw_device;
+			tx_buffer[5] = debug_count;
+
+			tag_status = setup_and_transmit(&tag, tx_buffer,
+			TX_DISCOVERY_SIZE, rx_buffer, &rx_buffer_size);
+
+			if (tag_status == TAG_RX_CRC_VALID) {
+				if (rx_buffer[3] == DEV_UWB3000F27) {
+					tag_status =  TAG_DISCOVERY;
+				}
+				else {
+					if (tag.command == rx_buffer[0]) {
+						tag.id = *(const uint32_t*) (rx_buffer + 1);
+
+						const int poll_rx_offset = 5;
+						const int resp_tx_offset = 9;
+
+						// Get timestamps embedded in response message
+						uint32_t poll_rx_timestamp = *(uint32_t*) (rx_buffer
+								+ poll_rx_offset);
+						uint32_t resp_tx_timestamp = *(uint32_t*) (rx_buffer
+								+ resp_tx_offset);
+
+						// Compute time of flight and distance, using clock offset ratio to correct for differing local and remote clock rates
+						uint64_t rtd_init = get_rx_timestamp_u64()
+								- get_tx_timestamp_u64();
+						uint64_t rtd_resp = resp_tx_timestamp
+								- poll_rx_timestamp;
+
+						// Read carrier integrator value and calculate clock offset ratio
+						float clockOffsetRatio = dwt_readclockoffset()
+								/ (float) (1 << 26);
+
+						distance_ptr->save(rtd_init, rtd_resp,
+								clockOffsetRatio);
+
+						tag.readings++;
+
+						tag.Battery_Voltage = *(const uint16_t*) (rx_buffer
+								+ BATTERY_VOLTAGE_RAW_OFFSET);
+
+						debug_distance_new(tag, tag_status, distance_a, distance_b);
+
+						if (interfaz_state == MASTER_ONE_DETECTION) {
+							tag_status = TAG_ONE_DETECTION;
+						}
+						else
+							tag_status = TAG_SEND_TIMESTAMP_QUERY;
+					}
+					else
+						tag_status =TAG_RX_NO_COMMAND;
+				}
+			}
 
 			if ((tag_status != TAG_SEND_TIMESTAMP_QUERY)
 					&& (tag_status != TAG_ONE_DETECTION))
 				tag_status = TAG_DISCOVERY;
 			else
 				query_ticks = HAL_GetTick();
-			//			set_battery_voltage(&(tag.battery_voltage));
-			//			set_temperature(&(tag.temperature));
 			converse_Tag_Battery_Voltage(&tag);
-			if ((debug_count == 1) || (tag_status == TAG_ONE_DETECTION)) {
-			}
 
 		} else if (tag_status == TAG_SEND_TIMESTAMP_QUERY) {
+
 			if (tag.readings < DISTANCE_READINGS - 1) {
-				if ((hw == &uwb_hw_a)
-						&& (tag.distance_b.counter < DISTANCE_READINGS / 2)) {
-					hw = &uwb_hw_b;
-					tag.distance = &(tag.distance_b);
-					distance_ptr = &distance_b;
-				} else {
-					hw = &uwb_hw_a;
-					tag.distance = &(tag.distance_a);
-					distance_ptr = &distance_a;
-				}
+				hw_device = switch_hw_timestamp_query(&tag, distance_ptr, hw, &distance_a,
+						&distance_b);
 				tag.command = TAG_TIMESTAMP_QUERY;
 			} else {
 				tag.command = TAG_SET_SLEEP_MODE;
-				if ((hw == &uwb_hw_a)
-						&& (tag.distance_b.counter < DISTANCE_READINGS / 2)) {
-					hw = &uwb_hw_b;
-					tag.distance = &(tag.distance_b);
-					distance_ptr = &distance_b;
-				} else {
-					hw = &uwb_hw_a;
-					tag.distance = &(tag.distance_a);
-					distance_ptr = &distance_a;
-				}
+				hw_device = switch_hw_timestamp_query(&tag, distance_ptr, hw, &distance_a,
+						&distance_b);
 			}
 
 			uint8_t rx_buffer[FRAME_LEN_MAX_EX] = { 0 }; // verificar el size del buffer de recepcion.
 
-			tag_status = tag_receive_cmd(&tag, rx_buffer);
+			tag_status = tag_receive_cmd(&tag, rx_buffer, distance_a, distance_b);
 
 			if (tag_status == TAG_RX_CRC_VALID) {
 				tag.command = rx_buffer[0];
@@ -275,14 +296,11 @@ int main(void) {
 
 				switch (tag.command) {
 				case TAG_TIMESTAMP_QUERY:
-
 					distance_ptr->save(rtd_init, rtd_resp, clockOffsetRatio);
-					//					tag_save_distance(&tag, rx_buffer);
 					tag_status = TAG_SEND_TIMESTAMP_QUERY;
 					break;
 				case TAG_SET_SLEEP_MODE:
 					distance_ptr->save(rtd_init, rtd_resp, clockOffsetRatio);
-					//					tag_save_distance(&tag, rx_buffer);
 					tag_status = TAG_END_READINGS;
 					break;
 				default:
@@ -291,48 +309,32 @@ int main(void) {
 				}
 				if ((tag_status == TAG_END_READINGS)) {
 
-					debug_distance(tag, tag_status,
-							distance_a.get_last_distance(),
-							distance_b.get_last_distance());
-					tag.distance_a.value = distance_a.get_media_multipier(100);
-					tag.distance_b.value = distance_b.get_media_multipier(100);
-
-					insert_tag(&list, tag);
+					debug_distance_new(tag, tag_status, distance_a, distance_b);
+					saveTagIfNeeded(&tag, &distance_a, &distance_b, &list,
+							&list_od);
 					tag_status = TAG_DISCOVERY;
-					reset_TAG_values(&tag);
-					distance_a.clear();
-					distance_b.clear();
 					debug_count = 0;
 				} else if (tag_status == TAG_SEND_TIMESTAMP_QUERY) {
-					debug_distance(tag, tag_status,
-							distance_a.get_last_distance(),
-							distance_b.get_last_distance());
 					tag.readings++;
-					tag_status = TAG_SEND_TIMESTAMP_QUERY;
+					debug_distance_new(tag, tag_status, distance_a, distance_b);
 				} else {
+					saveTagIfNeeded(&tag, &distance_a, &distance_b, &list,
+							&list_od);
 					tag_status = TAG_DISCOVERY;
-					reset_TAG_values(&tag);
-					distance_a.clear();
-					distance_b.clear();
 				}
 
 			} else {
-				//				debug(tag, tag_status);
-				tag.distance->error_times++;
+
+//				debug_distance_new(tag, tag_status, distance_a, distance_b);
+				distance_ptr->error_crc_increment();
 				tag_status = TAG_SEND_TIMESTAMP_QUERY;
-				if (tag.distance->counter == DISTANCE_READINGS / 2) {
-					tag_status = TAG_DISCOVERY;
-					reset_TAG_values(&tag);
-					distance_a.clear();
-					distance_b.clear();
-					debug_count = 0;
-				}
 			}
 
-			//			debug(tag, tag_status);
 			if (HAL_GetTick() - query_ticks > query_timeout) {
+				debug_distance_new(tag, tag_status, distance_a, distance_b);
+				saveTagIfNeeded(&tag, &distance_a, &distance_b, &list,
+						&list_od);
 				tag_status = TAG_DISCOVERY;
-				reset_TAG_values(&tag);
 				debug_count = 0;
 			}
 
@@ -341,8 +343,8 @@ int main(void) {
 			HAL_Delay(1);
 			tag_status = tag_response(&tag);
 
-			debug(tag, tag_status);
-			insert_tag(&list, tag);
+			lora_send_ticks = HAL_GetTick();
+			insert_tag(&list_od, tag);
 			tag_status = TAG_DISCOVERY;
 			reset_TAG_values(&tag);
 			debug_count = 0;
@@ -350,48 +352,97 @@ int main(void) {
 
 //----------------ENVIO DE FRAME CON DATA DE TAGS----------------
 
-		if (((HAL_GetTick() - lora_send_ticks) > lora_send_timeout) && (list.count > 0)) { // list.count > 2 Or use uint32_t
-//			potencia_registro = dwt_read32bitoffsetreg(0x01, 0x0C);
-//			dwt_write32bitoffsetreg(0x01, 0x0C, 0x88000000);
-//			potencia_registro = dwt_read32bitoffsetreg(0x01, 0x0C);
+		uint8_t MAX_TAG_NUMBER_MULTIPLE_DETECTTION = 27;
+		uint8_t MAX_TAG_NUMBER_ONE_DETECTTION = 48;
+
+		if ((((HAL_GetTick() - lora_send_ticks) > lora_send_timeout)
+				&& (list.count > 0))) {
+
 			print_all_tags(&list, tag_status);
 			print_serialized_tags(&list);
-
-
-			size_t tags_size = list.count * SERIALIZED_TAG_SIZE;
+			size_t tags_size = (list.count * SERIALIZED_TAG_SIZE)
+					+ sizeof(list.count) * 2;
 			uint8_t tx_arr[tags_size];
-			serialize_tag_list(&list, tx_arr);
-			std::vector<uint8_t> tx_vect(tx_arr, tx_arr + tags_size);
-			cmd.composeMessage(&tx_vect);
-			std::vector<uint8_t> message_composed = cmd.get_composed_message();
+			uint8_t total_tags = list.count;
 
-			uint8_t size_bytes = txlora.receive(recvChar, LINKMODE::UPLINK);
-//			uint8_t size_bytes = 0;
-//			uint8_t leng = 226;
-			if (size_bytes < 5) {
-				STATUS status_data = cmd.validate(message_composed.data(),
-						message_composed.size());
-				txlora.transmit(message_composed.data(),
-						message_composed.size(), LINKMODE::UPLINK);
-
-//				txlora.transmit(data,leng , LINKMODE::UPLINK);
-			} else {
-				STATUS status_data = cmd.validate(message_composed.data(),
-						message_composed.size());
+			while (list.head != NULL) {
+				serialize_tag_list_limit(&list, tx_arr,
+						MAX_TAG_NUMBER_MULTIPLE_DETECTTION, total_tags);
+				std::vector<uint8_t> tx_vect(tx_arr, tx_arr + tags_size);
+				cmd.composeMessage(&tx_vect);
+				std::vector<uint8_t> message_composed =
+						cmd.get_composed_message();
+				do {
+//				gpio_handler.off(lora_rx_led);
+					uint8_t DATA_SIZE = txlora.receive(recvChar,
+							LINKMODE::UPLINK);
+//				gpio_handler.on(lora_rx_led);
+					if (DATA_SIZE == 0) {
+//					gpio_handler.on(lora_tx_led);
+						txlora.transmit(message_composed.data(),
+								message_composed.size(), LINKMODE::UPLINK);
+//					gpio_handler.off(lora_tx_led);
+						memset(recvChar, 0, sizeof(recvChar));
+						break;
+					} else {
+						uint32_t delay_ms = rand() % tiempo_max + 1;
+						HAL_Delay(delay_ms);
+					}
+				} while (true);
+				tx_vect.clear();
+				free_tag_list_limit(&list, MAX_TAG_NUMBER_MULTIPLE_DETECTTION);
 			}
-			tx_vect.clear();
-			free_tag_list(&list);
 			lora_send_ticks = HAL_GetTick();
-//			HAL_Delay(10);
 		}
+
+		else if (((HAL_GetTick() - lora_send_ticks) > lora_send_timeout)
+				&& ((list_od.count > 0))) {
+
+			print_all_tags(&list_od, tag_status);
+			print_serialized_tags(&list_od);
+			size_t tags_size = sizeof(sniffer_id) + sizeof(list_od.count) * 2
+					+ (list_od.count * SERIALIZED_TAG_SIZE_ONE_DETECTION);
+			uint8_t tx_arr[tags_size];
+			uint8_t total_tags = list_od.count;
+
+			while (list_od.head != NULL) {
+				serialize_tag_list_limit_od(&list_od, tx_arr,
+						MAX_TAG_NUMBER_MULTIPLE_DETECTTION, total_tags,
+						sniffer_id);
+				std::vector<uint8_t> tx_vect(tx_arr, tx_arr + tags_size);
+				cmd.setCommandId(ONE_DETECTION);
+				cmd.composeMessage(&tx_vect);
+				std::vector<uint8_t> message_composed =
+						cmd.get_composed_message();
+				do {
+//				gpio_handler.off(lora_rx_led);
+					uint8_t DATA_SIZE = txlora.receive(recvChar,
+							LINKMODE::UPLINK);
+//				gpio_handler.on(lora_rx_led);
+					if (DATA_SIZE == 0) {
+//					gpio_handler.on(lora_tx_led);
+						txlora.transmit(message_composed.data(),
+								message_composed.size(), LINKMODE::UPLINK);
+//					gpio_handler.off(lora_tx_led);
+						memset(recvChar, 0, sizeof(recvChar));
+						break;
+					} else {
+						uint32_t delay_ms = rand() % tiempo_max + 1;
+						HAL_Delay(delay_ms);
+					}
+				} while (true);
+				tx_vect.clear();
+				free_tag_list_limit(&list_od, MAX_TAG_NUMBER_ONE_DETECTTION);
+			}
+			lora_send_ticks = HAL_GetTick();
+		}
+
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
 	}
 	/* USER CODE END 3 */
 }
-
-
 
 /**
  * @brief System Clock Configuration
@@ -480,118 +531,112 @@ static void MX_I2C3_Init(void) {
  * @param None
  * @retval None
  */
-static void MX_SPI1_Init(void)
-{
+static void MX_SPI1_Init(void) {
 
-  /* USER CODE BEGIN SPI1_Init 0 */
+	/* USER CODE BEGIN SPI1_Init 0 */
 
-  /* USER CODE END SPI1_Init 0 */
+	/* USER CODE END SPI1_Init 0 */
 
-  /* USER CODE BEGIN SPI1_Init 1 */
+	/* USER CODE BEGIN SPI1_Init 1 */
 
-  /* USER CODE END SPI1_Init 1 */
-  /* SPI1 parameter configuration*/
-  hspi1.Instance = SPI1;
-  hspi1.Init.Mode = SPI_MODE_MASTER;
-  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
-  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi1.Init.CRCPolynomial = 7;
-  hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
-  hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
-  if (HAL_SPI_Init(&hspi1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN SPI1_Init 2 */
+	/* USER CODE END SPI1_Init 1 */
+	/* SPI1 parameter configuration*/
+	hspi1.Instance = SPI1;
+	hspi1.Init.Mode = SPI_MODE_MASTER;
+	hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+	hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+	hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+	hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+	hspi1.Init.NSS = SPI_NSS_SOFT;
+	hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+	hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+	hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+	hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+	hspi1.Init.CRCPolynomial = 7;
+	hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+	hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+	if (HAL_SPI_Init(&hspi1) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN SPI1_Init 2 */
 
-  /* USER CODE END SPI1_Init 2 */
+	/* USER CODE END SPI1_Init 2 */
 
 }
 
 /**
-  * @brief SPI2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_SPI2_Init(void)
-{
+ * @brief SPI2 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_SPI2_Init(void) {
 
-  /* USER CODE BEGIN SPI2_Init 0 */
+	/* USER CODE BEGIN SPI2_Init 0 */
 
-  /* USER CODE END SPI2_Init 0 */
+	/* USER CODE END SPI2_Init 0 */
 
-  /* USER CODE BEGIN SPI2_Init 1 */
+	/* USER CODE BEGIN SPI2_Init 1 */
 
-  /* USER CODE END SPI2_Init 1 */
-  /* SPI2 parameter configuration*/
-  hspi2.Instance = SPI2;
-  hspi2.Init.Mode = SPI_MODE_MASTER;
-  hspi2.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi2.Init.NSS = SPI_NSS_SOFT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
-  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi2.Init.CRCPolynomial = 7;
-  hspi2.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
-  hspi2.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
-  if (HAL_SPI_Init(&hspi2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN SPI2_Init 2 */
+	/* USER CODE END SPI2_Init 1 */
+	/* SPI2 parameter configuration*/
+	hspi2.Instance = SPI2;
+	hspi2.Init.Mode = SPI_MODE_MASTER;
+	hspi2.Init.Direction = SPI_DIRECTION_2LINES;
+	hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
+	hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
+	hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
+	hspi2.Init.NSS = SPI_NSS_SOFT;
+	hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+	hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
+	hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
+	hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+	hspi2.Init.CRCPolynomial = 7;
+	hspi2.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+	hspi2.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+	if (HAL_SPI_Init(&hspi2) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN SPI2_Init 2 */
 
-  /* USER CODE END SPI2_Init 2 */
+	/* USER CODE END SPI2_Init 2 */
 
 }
 
 /**
-  * @brief SPI3 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_SPI3_Init(void)
-{
+ * @brief SPI3 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_SPI3_Init(void) {
 
-  /* USER CODE BEGIN SPI3_Init 0 */
+	/* USER CODE BEGIN SPI3_Init 0 */
 
-  /* USER CODE END SPI3_Init 0 */
+	/* USER CODE END SPI3_Init 0 */
 
-  /* USER CODE BEGIN SPI3_Init 1 */
+	/* USER CODE BEGIN SPI3_Init 1 */
 
-  /* USER CODE END SPI3_Init 1 */
-  /* SPI3 parameter configuration*/
-  hspi3.Instance = SPI3;
-  hspi3.Init.Mode = SPI_MODE_MASTER;
-  hspi3.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi3.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi3.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi3.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi3.Init.NSS = SPI_NSS_SOFT;
-  hspi3.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;
-  hspi3.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi3.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi3.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi3.Init.CRCPolynomial = 7;
-  hspi3.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
-  hspi3.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
-  if (HAL_SPI_Init(&hspi3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN SPI3_Init 2 */
+	/* USER CODE END SPI3_Init 1 */
+	/* SPI3 parameter configuration*/
+	hspi3.Instance = SPI3;
+	hspi3.Init.Mode = SPI_MODE_MASTER;
+	hspi3.Init.Direction = SPI_DIRECTION_2LINES;
+	hspi3.Init.DataSize = SPI_DATASIZE_8BIT;
+	hspi3.Init.CLKPolarity = SPI_POLARITY_LOW;
+	hspi3.Init.CLKPhase = SPI_PHASE_1EDGE;
+	hspi3.Init.NSS = SPI_NSS_SOFT;
+	hspi3.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;
+	hspi3.Init.FirstBit = SPI_FIRSTBIT_MSB;
+	hspi3.Init.TIMode = SPI_TIMODE_DISABLE;
+	hspi3.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+	hspi3.Init.CRCPolynomial = 7;
+	hspi3.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+	hspi3.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
+	if (HAL_SPI_Init(&hspi3) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN SPI3_Init 2 */
 
-  /* USER CODE END SPI3_Init 2 */
+	/* USER CODE END SPI3_Init 2 */
 
 }
 static void MX_USART1_UART_Init(void) {

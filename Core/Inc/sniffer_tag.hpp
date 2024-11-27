@@ -16,6 +16,7 @@ extern "C" {
 #include "uwb3000Fxx.h"
 #include "eeprom.h"
 #include "rdss.h"
+#include "DistanceHandler.hpp"
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -29,6 +30,7 @@ extern Uwb_HW_t *hw;
 #define INITIAL_COMUNICATION_DATA_SIZE 5
 // Define the size of the serialized TAG_t structure
 #define SERIALIZED_TAG_SIZE (sizeof(uint32_t)*1 + 2 * sizeof(uint16_t) + sizeof(uint8_t)*1)
+#define SERIALIZED_TAG_SIZE_ONE_DETECTION (sizeof(uint32_t)*1 + sizeof(uint8_t)*1)
 #define POLL_RX_OFFSET 5
 #define RESP_TX_OFFSET (POLL_RX_OFFSET+sizeof(uint32_t))
 #define BATTERY_VOLTAGE_RAW_OFFSET (RESP_TX_OFFSET+sizeof(uint32_t))
@@ -54,16 +56,16 @@ typedef struct {
 	uint32_t id;
 	int readings;
 	uint8_t command;
-	Distance_t *distance;
-	Distance_t distance_a;
-	Distance_t distance_b;
+//	Distance_t *distance;
+	uint16_t distance_a;
+	uint16_t distance_b;
 	uint16_t Battery_Voltage;
 	uint8_t Real_Batt_Voltage;
 	float Float_Battery_Voltage;
 	uint8_t Estado_Final;
 	Sniffer_State master_state;
-//	Mesurement_data_t temperature;
-//	Mesurement_data_t battery_voltage;
+	uint8_t sleep_time;
+	uint8_t envios_;
 } TAG_t;
 
 typedef struct tag_node {
@@ -106,8 +108,8 @@ typedef enum {
 	TAG_UNKNOWN
 } TAG_STATUS_t;
 
-#define TX_BUFFER_SIZE (sizeof(uint8_t) + sizeof(uint32_t))
-#define TX_DISCOVERY_SIZE (sizeof(uint8_t) + sizeof(uint8_t) + sizeof(uint8_t))
+#define TX_BUFFER_SIZE (sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t))
+#define TX_DISCOVERY_SIZE (sizeof(uint8_t) + sizeof(uint8_t) + sizeof(uint8_t) + sizeof(uint8_t) + sizeof(uint8_t) + 4* sizeof(uint8_t))
 #define TX_TIMESTAMP_SIZE (sizeof(uint8_t) + sizeof(uint32_t))
 #define TAG_TIMESTAMP_QUERY 0x11
 #define TAG_SET_SLEEP_MODE 0x12
@@ -117,23 +119,29 @@ typedef enum {
 
 void init_uwb_device(Uwb_HW_t * hwb_hw,SPI_HandleTypeDef *hspi, GPIO_TypeDef *nssPort,
 		uint16_t nssPin, GPIO_TypeDef *nrstPort, uint16_t nrstPin);
+void reset_actual_hw();
 TAG_t* create_TAG();
 void reset_TAG_values(TAG_t *tag);
-TAG_STATUS_t tag_discovery(TAG_t *tag);
-TAG_STATUS_t tag_send_timestamp_query(TAG_t *tag);
+//TAG_STATUS_t tag_discovery(TAG_t *tag);
+//TAG_STATUS_t tag_discovery_new(TAG_t *tag, Sniffer_State interfaz_state);
+TAG_STATUS_t tag_discovery_new_new(TAG_t *tag, Sniffer_State _interfaz_state,
+		DistanceHandler *distance_ptr);
+TAG_STATUS_t setup_and_transmit(TAG_t *tag, uint8_t *tx_buffer,
+		uint8_t tx_buffer_size, uint8_t *rx_buffer, uint32_t *rx_buffer_size);
+
+
 TAG_STATUS_t process_queried_tag_information(TAG_t *tag);
 double calculate_distance_human_tag(uint8_t *rx_buffer, Distance_t *distance);
-TAG_STATUS_t send_message_with_timestamps();
 uint32_t send_response_with_timestamps(uint8_t *tx_resp_msg, uint8_t size,
 		uint32_t frame_seq_nb);
 uint32_t allocate_and_read_received_frame(uint8_t **rx_buffer);
 double distance_moving_average(Distance_t *distance);
-int start_transmission_inmediate_with_response_expected(TX_BUFFER_t tx);
+
 TAG_STATUS_t wait_rx_data();
-void debug_status(TAG_STATUS_t status);
-void debug(TAG_t tag, TAG_STATUS_t status);
-void debug_distance(TAG_t tag, TAG_STATUS_t status, double d_a, double d_b);
-void debug_tag(TAG_t tag);
+void debug_status(TAG_STATUS_t status, uint8_t hw_device);
+//void debug(TAG_t tag, TAG_STATUS_t status);
+//void debug_distance(TAG_t tag, TAG_STATUS_t status, double d_a, double d_b);
+//void debug_tag(TAG_t tag);
 double distance_smooth(Distance_t *distance);
 //void set_battery_voltage(Mesurement_data_t *battery_voltage);
 //void set_temperature(Mesurement_data_t *temperature);
@@ -143,9 +151,12 @@ void converse_Tag_Battery_Voltage(TAG_t *tag);
 void insert_tag(TAG_List *list, TAG_t new_tag);
 void delete_tag(TAG_List *list, uint32_t id);
 void free_tag_list(TAG_List *list);
+void free_tag_list_limit(TAG_List *list, uint8_t limit);
 void print_all_tags(TAG_List *list, TAG_STATUS_t status);
 void print_serialized_tags(TAG_List *list);
 void serialize_tag_list(TAG_List *list, uint8_t *buffer);
+void serialize_tag_list_limit(TAG_List *list, uint8_t *buffer, uint8_t limit, uint8_t _total_tags);
+void serialize_tag_list_limit_od(TAG_List *list, uint8_t *buffer, uint8_t limit, uint8_t _total_tags, uint32_t _sniffer_id);
 void media_tag_distance(Distance_t *distance);
 
 void process_discovery(TAG_t *tag, TAG_STATUS_t *tag_status, uint32_t *query_ticks);
@@ -154,13 +165,15 @@ void process_timestamp_query(TAG_t *tag, TAG_STATUS_t *tag_status);
 void print_tx_hex(uint8_t *tx, uint16_t length);
 double calculate_media(double  *values, uint8_t size);
 void tag_save_distance(TAG_t *tag,const uint8_t * rx_buffer);
-TAG_STATUS_t tag_receive_cmd(TAG_t *tag,uint8_t *rx_buffer);
+TAG_STATUS_t tag_receive_cmd(TAG_t *tag,uint8_t *rx_buffer, DistanceHandler d_a, DistanceHandler d_b);
 
 
 TAG_STATUS_t tag_response(TAG_t *tag);
-
-
-
+uint8_t switch_hw(TAG_t *tag, DistanceHandler* &dist_ptr, Uwb_HW_t* &hw, DistanceHandler* dist_a, DistanceHandler* dist_b);
+//void switch_hw(TAG_t *tag, DistanceHandler dist_hand, DistanceHandler *dist_a, DistanceHandler *dist_b);
+uint8_t switch_hw_timestamp_query(TAG_t *tag, DistanceHandler* &dist_ptr, Uwb_HW_t* &hw, DistanceHandler* dist_a, DistanceHandler* dist_b);
+void saveTagIfNeeded(TAG_t* tag, DistanceHandler* distance_a, DistanceHandler* distance_b, TAG_List *list, TAG_List *list_od);
+void debug_distance_new(TAG_t tag, TAG_STATUS_t status, DistanceHandler d_a, DistanceHandler d_b);
 
 
 
