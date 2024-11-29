@@ -1,21 +1,21 @@
 ../Core/Src/main.cpp:107:6:void Led_OnOff(const Gpio&, Ws2812Color*, PcbLed&, bool)	5
 ../Core/Src/main.cpp:123:6:void sleep_in_out(dwt_config_t, dwt_txconfig_t, dwt_local_data_t, uint8_t)	2
-../Core/Src/main.cpp:149:5:int main()	24
-../Core/Src/main.cpp:406:6:void SystemClock_Config()	4
-../Core/Src/main.cpp:460:13:void MX_FLASH_Init()	3
-../Core/Src/main.cpp:486:13:void MX_GPDMA1_Init()	1
-../Core/Src/main.cpp:513:13:void MX_I2C1_Init()	4
-../Core/Src/main.cpp:558:13:void MX_LPTIM1_Init()	2
-../Core/Src/main.cpp:591:13:void MX_LPTIM3_Init()	2
-../Core/Src/main.cpp:624:13:void MX_SPI2_Init()	3
-../Core/Src/main.cpp:681:13:void MX_TIM3_Init()	6
-../Core/Src/main.cpp:737:13:void MX_GPIO_Init()	1
-../Core/Src/main.cpp:838:6:void HAL_LPTIM_CompareMatchCallback(LPTIM_HandleTypeDef*)	1
-../Core/Src/main.cpp:843:6:void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef*)	1
-../Core/Src/main.cpp:847:6:void HAL_GPIO_EXTI_Falling_Callback(uint16_t)	1
-../Core/Src/main.cpp:856:6:void HAL_GPIO_EXTI_Rising_Callback(uint16_t)	1
-../Core/Src/main.cpp:866:6:void Error_Handler()	1
+../Core/Src/main.cpp:151:5:int main()	24
+../Core/Src/main.cpp:408:6:void SystemClock_Config()	4
+../Core/Src/main.cpp:462:13:void MX_FLASH_Init()	3
+../Core/Src/main.cpp:488:13:void MX_GPDMA1_Init()	1
+../Core/Src/main.cpp:515:13:void MX_I2C1_Init()	4
+../Core/Src/main.cpp:560:13:void MX_LPTIM1_Init()	2
+../Core/Src/main.cpp:593:13:void MX_LPTIM3_Init()	2
+../Core/Src/main.cpp:626:13:void MX_SPI2_Init()	3
+../Core/Src/main.cpp:683:13:void MX_TIM3_Init()	6
+../Core/Src/main.cpp:739:13:void MX_GPIO_Init()	1
+../Core/Src/main.cpp:835:6:void HAL_LPTIM_CompareMatchCallback(LPTIM_HandleTypeDef*)	1
+../Core/Src/main.cpp:840:6:void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef*)	1
+../Core/Src/main.cpp:844:6:void HAL_GPIO_EXTI_Falling_Callback(uint16_t)	1
+../Core/Src/main.cpp:853:6:void HAL_GPIO_EXTI_Rising_Callback(uint16_t)	1
+../Core/Src/main.cpp:863:6:void Error_Handler()	1
 ../Core/Inc/bq25150.hpp:81:7:Bq25155::~Bq25155()	1
-../Core/Src/main.cpp:873:1:void __static_initialization_and_destruction_0(int, int)	5
-../Core/Src/main.cpp:873:1:cpp)	1
-../Core/Src/main.cpp:873:1:cpp)	1
+../Core/Src/main.cpp:870:1:void __static_initialization_and_destruction_0(int, int)	5
+../Core/Src/main.cpp:870:1:cpp)	1
+../Core/Src/main.cpp:870:1:cpp)	1

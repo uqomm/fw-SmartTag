@@ -748,10 +748,6 @@ static void MX_GPIO_Init(void) {
 	__HAL_RCC_GPIOD_CLK_ENABLE();
 //  __HAL_RCC_GPIOC_CLK_ENABLE();
 
-	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(GPIOE,
-			LED_Pin | WAKEUP_Pin | DW3000_RST_RCV_Pin | LED_C_Pin,
-			GPIO_PIN_RESET);
 
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(GPIOA, CE_Pin | LP_Pin, GPIO_PIN_RESET);
@@ -765,24 +761,23 @@ static void MX_GPIO_Init(void) {
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(LED_BAT_GPIO_Port, LED_BAT_Pin, GPIO_PIN_RESET);
 
+	  /*Configure GPIO pin Output Level */
+	  HAL_GPIO_WritePin(DW3000_RST_RCV_GPIO_Port, DW3000_RST_RCV_Pin, GPIO_PIN_RESET);
+
 	/*Configure GPIO pins : LED_Pin DW3000_RST_RCV_Pin LED_C_Pin */
-	GPIO_InitStruct.Pin = LED_Pin | DW3000_RST_RCV_Pin | LED_C_Pin;
+	GPIO_InitStruct.Pin = LED_Pin | LED_C_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-	/*Configure GPIO pin : IRQ_DW_Pin */
-	GPIO_InitStruct.Pin = IRQ_DW_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-	HAL_GPIO_Init(IRQ_DW_GPIO_Port, &GPIO_InitStruct);
 
-	/*Configure GPIO pin : EXTON_Pin */
-	GPIO_InitStruct.Pin = EXTON_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init(EXTON_GPIO_Port, &GPIO_InitStruct);
+	  /*Configure GPIO pin : DW3000_RST_RCV_Pin */
+	  GPIO_InitStruct.Pin = DW3000_RST_RCV_Pin;
+	  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	  GPIO_InitStruct.Pull = GPIO_NOPULL;
+	  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	  HAL_GPIO_Init(DW3000_RST_RCV_GPIO_Port, &GPIO_InitStruct);
 
 	/*Configure GPIO pins : CE_Pin LP_Pin */
 	GPIO_InitStruct.Pin = CE_Pin | LP_Pin;
