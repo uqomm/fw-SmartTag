@@ -131,6 +131,26 @@ void sleep_in_out(dwt_config_t defatult_dwt_config,
 	tag->distance_b = 0;
 	tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
 }
+
+void battery_charging_led_on_off(const Gpio &VddLed, uint8_t STAT0_Reg,
+		uint8_t charge_const, Ws2812Color led[1], uint8_t charge_done,
+		PcbLed &pcb_led) {
+	if (Power_Good == false) {
+		battery_charger.register_init_all_2();
+		HAL_Delay(1);
+		pins.off(NCE);
+		pins.on(VddLed);
+		STAT0_Reg = battery_charger.register_STAT0();
+		if (charge_const & STAT0_Reg)
+			pcb_led.set_and_send_led_color(led, 1, 0, Color::YELLOW);
+		else if (charge_done & STAT0_Reg)
+			pcb_led.set_and_send_led_color(led, 1, 0, Color::GREEN);
+		else
+			pcb_led.set_and_send_led_color(led, 1, 0, Color::RED);
+	} else
+		pins.off(VddLed);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -275,28 +295,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-		if (Power_Good == false) {
-			battery_charger.register_init_all_2();
-			HAL_Delay(1);
-			pins.off(NCE);
-			pins.on(VddLed);
-			STAT0_Reg = battery_charger.register_STAT0();
-
-			if (charge_const & STAT0_Reg)
-				pcb_led.set_and_send_led_color(led, 1, 0, Color::YELLOW);
-			else if (charge_done & STAT0_Reg)
-				pcb_led.set_and_send_led_color(led, 1, 0, Color::GREEN);
-			else
-				pcb_led.set_and_send_led_color(led, 1, 0, Color::RED);
-
-		} else
-			pins.off(VddLed);
-
-//		battery_charger.manual_read_adc_bat(); //manual_read_adc_bat();
-//		HAL_Delay(1);
-//		tag->Voltaje_Bat = battery_charger.register_adc_bat();
-
 		switch (tag_status) {
 		case TAG_WAIT_FOR_FIRST_DETECTION:
 			battery_charger.manual_read_adc_bat(); //manual_read_adc_bat();
@@ -355,6 +353,8 @@ int main(void)
 			break;
 
 		case TAG_SLEEP_RECIVED:
+			battery_charging_led_on_off(VddLed, STAT0_Reg, charge_const, led, charge_done, pcb_led);
+
 			Counter_INT_Led3 = 15;
 			Led_OnOff(VddLed, led, pcb_led, Power_Good);
 
@@ -363,6 +363,8 @@ int main(void)
 			break;
 
 		default:
+			battery_charging_led_on_off(VddLed, STAT0_Reg, charge_const, led, charge_done, pcb_led);
+
 			if ((Counter_INT_Led3) > 14) {
 				Counter_INT_Led3 = 0;
 				Led_OnOff(VddLed, led, pcb_led, Power_Good);

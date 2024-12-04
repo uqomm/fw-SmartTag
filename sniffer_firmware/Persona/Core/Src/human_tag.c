@@ -27,14 +27,12 @@ TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 	if (rx_buffer_size == 0)
 		return (TAG_RX_DATA_ZERO);
 
-	uint8_t rx_buffer[6]; // TODO Revisar RX Buffer primera recepcion
+	uint8_t rx_buffer[3]; // TODO Revisar RX Buffer primera recepcion
 	dwt_readrxdata(rx_buffer, (uint16_t) rx_buffer_size, 0);
 
 	uint8_t received_command = rx_buffer[0];
 	tag->sniffer_state = rx_buffer[1];
 	tag->sleep_time = rx_buffer[2];
-	uint8_t hw_device = rx_buffer[4];
-	uint32_t debug_count = rx_buffer[5];
 
 	if (tag->command != received_command)
 		return (TAG_RX_COMMAND_ERROR);
