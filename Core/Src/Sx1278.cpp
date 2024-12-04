@@ -47,7 +47,7 @@ void Sx1278::write_reg_addr(uint8_t address, uint8_t *cmd, uint8_t lenght) {
 	HAL_GPIO_WritePin(nss.get_port(), nss.get_pin(), GPIO_PIN_RESET);  // pull the pin low
 	HAL_SPI_Transmit(spi, tx_data, lenght + 1, 1000);
 	HAL_GPIO_WritePin(nss.get_port(), nss.get_pin(), GPIO_PIN_SET);  // pull the pin high
-	HAL_Delay(10);
+//	HAL_Delay(10);
 }
 
 uint8_t Sx1278::read_8bit_reg(LoraRegisters reg) {
@@ -120,10 +120,11 @@ int8_t Sx1278::wait_irq(uint8_t mask, uint16_t timeout) {
 uint8_t Sx1278::write_tx_fifo_data(uint8_t *data, uint8_t data_len) {
 	if (data_len > 0) {
 		write_8bit_reg(LoraRegisters::RegPayloadLength, data_len);
+		write_8bit_reg(LoraRegisters::RegFifoTxBaseAddr, DATA_BUFFER_BASE_ADDR);
 		write_8bit_reg(LoraRegisters::RegFifoAddrPtr, DATA_BUFFER_BASE_ADDR); //DATA_BUFFER_BASE_ADDR
-//for (int i = 0; i < data_len; i++)
-			//write_8bit_reg(LoraRegisters::RegFifo, data[i]);
-			write_reg_addr(static_cast<uint8_t> (LoraRegisters::RegFifo),data, data_len);
+		for (int i = 0; i < data_len; i++)
+		write_8bit_reg(LoraRegisters::RegFifo, data[i]);
+//		write_reg_addr(static_cast<uint8_t>(LoraRegisters::RegFifo),data, data_len);
 	}
 	return data_len;
 }

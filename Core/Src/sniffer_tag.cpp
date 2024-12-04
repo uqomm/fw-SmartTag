@@ -115,6 +115,8 @@ void reset_TAG_values(TAG_t *tag) {
 	tag->Estado_Final = 0;
 	tag->distance_a = 0;
 	tag->distance_b = 0;
+	tag->Float_Battery_Voltage = 0.0;
+	tag->Real_Batt_Voltage  = 0;
 //	tag->master_state = MASTER_ONE_DETECTION;
 
 }
@@ -704,6 +706,50 @@ void print_serialized_tags(TAG_List *list) {
 	HAL_MAX_DELAY);
 }
 
+void print_serialized_tags_od(TAG_List *list, uint8_t limit,
+		uint8_t _total_tags, uint32_t _sniffer_id) {
+	if (list->head == NULL) {
+		HAL_UART_Transmit(&huart1, (uint8_t*) "No tag detected\n\r",
+				(uint16_t) 18,
+				HAL_MAX_DELAY);
+		return;
+	}
+
+// Allocate buffer for serialized tags
+	uint8_t buffer[SERIALIZED_TAG_SIZE_ONE_DETECTION * list->count] = {0};
+	serialize_tag_list_limit_od(list, buffer, list->count, _total_tags, _sniffer_id);
+
+// Print each serialized tag in hexadecimal format separated by "\n"
+	uint8_t *current = buffer+6;
+	char hex_output[SERIALIZED_TAG_SIZE_ONE_DETECTION * 2 + 1+8+2+2] = {0}; // Each byte is represented by 2 hex digits + null terminator
+
+	for (int i = 0; i < 4; ++i) {
+			snprintf(&hex_output[i*2], 3, "%02X", buffer[i]);
+	}
+	HAL_UART_Transmit(&huart1, (uint8_t*) hex_output, (uint16_t) (4 * 2), HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart1, (uint8_t*) "\n\r\r", 2,HAL_MAX_DELAY);
+	uint8_t total_bytes = sprintf(hex_output, "%02X", buffer[4]);
+	HAL_UART_Transmit(&huart1, (uint8_t*) hex_output, total_bytes, HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart1, (uint8_t*) "\n\r\r", 2,	HAL_MAX_DELAY);
+	total_bytes = sprintf(hex_output, "%02X", buffer[5]);
+	HAL_UART_Transmit(&huart1, (uint8_t*) hex_output, total_bytes, HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart1, (uint8_t*) "\n\r\r", 2,	HAL_MAX_DELAY);
+
+	for (int i = 0; i < list->count; ++i) {
+		for (uint32_t j = 0; j < SERIALIZED_TAG_SIZE_ONE_DETECTION; ++j) {
+			snprintf(&hex_output[j * 2], 3, "%02X", current[j]);
+		}
+
+		HAL_UART_Transmit(&huart1, (uint8_t*) hex_output,
+				(uint16_t) (SERIALIZED_TAG_SIZE_ONE_DETECTION * 2), HAL_MAX_DELAY);
+		HAL_UART_Transmit(&huart1, (uint8_t*) "\n\r\r", 2,
+		HAL_MAX_DELAY);
+		current += SERIALIZED_TAG_SIZE_ONE_DETECTION;
+	}
+	HAL_UART_Transmit(&huart1, (uint8_t*) "####\n\r", (uint16_t) 6,
+	HAL_MAX_DELAY);
+}
+
 void int_to_float_Tag_Battery_Voltage(TAG_t *tag) {
 	tag->Float_Battery_Voltage = ((tag->Battery_Voltage) * 6.0) / 65536.0;
 }
@@ -746,6 +792,39 @@ void insert_tag(TAG_List *list, TAG_t new_tag) {
 		}
 		list->count++;
 	}
+}
+
+uint8_t insert_tag_od(TAG_List *list, TAG_t new_tag) {
+	TAG_Node *current = list->head;
+	TAG_Node *prev = NULL;
+	uint8_t found = 0;
+
+	while (current != NULL) {
+		if (current->tag.id == new_tag.id) {
+			// ID found, replace the TAG_t structure
+			current->tag = new_tag;
+			found = 1;
+			break;
+		}
+		prev = current;
+		current = current->next;
+	}
+
+	if (!found) {
+		// ID not found, create a new node at the end
+		TAG_Node *new_node = (TAG_Node*) malloc(sizeof(TAG_Node));
+		new_node->tag = new_tag;
+		new_node->next = NULL;
+
+		if (prev == NULL) {
+			// Insert at the beginning if the list is empty
+			list->head = new_node;
+		} else {
+			prev->next = new_node;
+		}
+		list->count++;
+	}
+	return found;
 }
 
 void delete_tag(TAG_List *list, uint32_t id) {
@@ -852,8 +931,12 @@ void serialize_tag_list(TAG_List *list, uint8_t *buffer) {
 }
 
 void serialize_tag_list_limit(TAG_List *list, uint8_t *buffer, uint8_t limit,
-		uint8_t _total_tags) {
+		uint8_t _total_tags, uint32_t _sniffer_id) {
 	int offset = 0;
+
+	memcpy(buffer + offset, &_sniffer_id, sizeof(_sniffer_id));
+	offset += sizeof(_sniffer_id);
+
 	memcpy(buffer + offset, &_total_tags, sizeof(_total_tags)); //entregar limit y _total_tags por referencia
 	offset += sizeof(_total_tags);
 
@@ -925,34 +1008,29 @@ double calculate_media(double *values, uint8_t size) {
 	return (double) ((sum) / size);
 }
 
-uint8_t switch_hw(TAG_t *tag, DistanceHandler *&dist_ptr, Uwb_HW_t *&hw,
+void switch_hw(TAG_t *tag, DistanceHandler *&dist_ptr, Uwb_HW_t *&hw,
 		DistanceHandler *dist_a, DistanceHandler *dist_b) { // &dist_ptr y &hw son referencias
 	if (hw == &uwb_hw_a) {
 		hw = &uwb_hw_b;
 		dist_ptr = dist_b; // Asigna directamente al puntero
-		return 0xB;
 	} else {
 		hw = &uwb_hw_a;
 		dist_ptr = dist_a; // Asigna directamente al puntero
-		return 0xA;
 	}
 }
 
-uint8_t switch_hw_timestamp_query(TAG_t *tag, DistanceHandler *&dist_ptr,
+void switch_hw_timestamp_query(TAG_t *tag, DistanceHandler *&dist_ptr,
 		Uwb_HW_t *&hw, DistanceHandler *dist_a, DistanceHandler *dist_b) {
 	if ((hw == &uwb_hw_a) && (dist_b->get_counter() < DISTANCE_READINGS / 2)) {
 		hw = &uwb_hw_b;
 		dist_ptr = dist_b; // Asigna directamente al puntero
-		return 0xB;
 	} else if (dist_a->get_counter() < DISTANCE_READINGS / 2){
 		hw = &uwb_hw_a;
 		dist_ptr = dist_a; // Asigna directamente al puntero
-		return 0xA;
 	}
-	return 0x0;
 }
 
-void saveTagIfNeeded(TAG_t *tag, DistanceHandler *distance_a,
+uint8_t saveTagIfNeeded(TAG_t *tag, DistanceHandler *distance_a,
 		DistanceHandler *distance_b, TAG_List *list, TAG_List *list_od) { // list como puntero
 	if (distance_a->get_media_multiplier(100) > 0
 			&& distance_b->get_media_multiplier(100) > 0) {
@@ -960,9 +1038,23 @@ void saveTagIfNeeded(TAG_t *tag, DistanceHandler *distance_a,
 		tag->distance_b = distance_b->get_media_multiplier(100);
 		insert_tag(list, *tag);
 	}
-	insert_tag(list_od, *tag);
+	uint8_t _found = insert_tag_od(list_od, *tag);
 	reset_TAG_values(tag);
 	distance_a->clear();
 	distance_b->clear();
+	return _found;
 }
+
+uint8_t saveTagIfNeeded_od(TAG_t *tag, DistanceHandler *distance_a, DistanceHandler *distance_b,TAG_List *list_od) { // list como puntero
+	uint8_t _found = insert_tag_od(list_od, *tag);
+	reset_TAG_values(tag);
+	distance_a->clear();
+	distance_b->clear();
+	return _found;
+}
+
+
+
+
+
 

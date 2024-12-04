@@ -65,7 +65,6 @@ typedef struct {
 	uint8_t Estado_Final;
 	Sniffer_State master_state;
 	uint8_t sleep_time;
-	uint8_t envios_;
 } TAG_t;
 
 typedef struct tag_node {
@@ -109,7 +108,7 @@ typedef enum {
 } TAG_STATUS_t;
 
 #define TX_BUFFER_SIZE (sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t))
-#define TX_DISCOVERY_SIZE (sizeof(uint8_t) + sizeof(uint8_t) + sizeof(uint8_t) + sizeof(uint8_t) + sizeof(uint8_t) + 4* sizeof(uint8_t))
+#define TX_DISCOVERY_SIZE (4* sizeof(uint8_t))
 #define TX_TIMESTAMP_SIZE (sizeof(uint8_t) + sizeof(uint32_t))
 #define TAG_TIMESTAMP_QUERY 0x11
 #define TAG_SET_SLEEP_MODE 0x12
@@ -149,13 +148,16 @@ void int_to_float_Tag_Battery_Voltage(TAG_t *tag);
 void converse_Tag_Battery_Voltage(TAG_t *tag);
 // Function to insert a new TAG_t node into the linked list
 void insert_tag(TAG_List *list, TAG_t new_tag);
+uint8_t insert_tag_od(TAG_List *list, TAG_t new_tag);
 void delete_tag(TAG_List *list, uint32_t id);
 void free_tag_list(TAG_List *list);
 void free_tag_list_limit(TAG_List *list, uint8_t limit);
 void print_all_tags(TAG_List *list, TAG_STATUS_t status);
 void print_serialized_tags(TAG_List *list);
+void print_serialized_tags_od(TAG_List *list, uint8_t limit,
+		uint8_t _total_tags, uint32_t _sniffer_id);
 void serialize_tag_list(TAG_List *list, uint8_t *buffer);
-void serialize_tag_list_limit(TAG_List *list, uint8_t *buffer, uint8_t limit, uint8_t _total_tags);
+void serialize_tag_list_limit(TAG_List *list, uint8_t *buffer, uint8_t limit, uint8_t _total_tags, uint32_t _sniffer_id);
 void serialize_tag_list_limit_od(TAG_List *list, uint8_t *buffer, uint8_t limit, uint8_t _total_tags, uint32_t _sniffer_id);
 void media_tag_distance(Distance_t *distance);
 
@@ -169,10 +171,11 @@ TAG_STATUS_t tag_receive_cmd(TAG_t *tag,uint8_t *rx_buffer, DistanceHandler d_a,
 
 
 TAG_STATUS_t tag_response(TAG_t *tag);
-uint8_t switch_hw(TAG_t *tag, DistanceHandler* &dist_ptr, Uwb_HW_t* &hw, DistanceHandler* dist_a, DistanceHandler* dist_b);
+void switch_hw(TAG_t *tag, DistanceHandler* &dist_ptr, Uwb_HW_t* &hw, DistanceHandler* dist_a, DistanceHandler* dist_b);
 //void switch_hw(TAG_t *tag, DistanceHandler dist_hand, DistanceHandler *dist_a, DistanceHandler *dist_b);
-uint8_t switch_hw_timestamp_query(TAG_t *tag, DistanceHandler* &dist_ptr, Uwb_HW_t* &hw, DistanceHandler* dist_a, DistanceHandler* dist_b);
-void saveTagIfNeeded(TAG_t* tag, DistanceHandler* distance_a, DistanceHandler* distance_b, TAG_List *list, TAG_List *list_od);
+void switch_hw_timestamp_query(TAG_t *tag, DistanceHandler* &dist_ptr, Uwb_HW_t* &hw, DistanceHandler* dist_a, DistanceHandler* dist_b);
+uint8_t saveTagIfNeeded(TAG_t* tag, DistanceHandler* distance_a, DistanceHandler* distance_b, TAG_List *list, TAG_List *list_od);
+uint8_t saveTagIfNeeded_od(TAG_t *tag, DistanceHandler *distance_a,DistanceHandler *distance_b,TAG_List *list_od);
 void debug_distance_new(TAG_t tag, TAG_STATUS_t status, DistanceHandler d_a, DistanceHandler d_b);
 
 

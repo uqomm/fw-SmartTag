@@ -28,6 +28,20 @@ Lora::Lora(Gpio _nss, Gpio _reset, SPI_HandleTypeDef *_spi, Memory* _eeprom) :
 Lora::~Lora() {
 }
 
+bool Lora::channel_detection() {
+    uint8_t irqFlags = 0;
+    set_low_frequency_mode(DeviceOperatingMode::CAD);
+    HAL_Delay(10);
+    irqFlags = read_8bit_reg(LoraRegisters::RegIrqFlags);
+    if (irqFlags & CAD_DETECTED_MASK) {
+        write_8bit_reg(LoraRegisters::RegIrqFlags, CAD_DETECTED_MASK);
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+
 int8_t Lora::receive(uint8_t *data_received, LINKMODE mode) {
 	uint8_t op_mode = (read_8bit_reg(LoraRegisters::RegOpMode));
 	if (!(op_mode & static_cast<uint8_t>(DeviceOperatingMode::RX_CONTINUOUS))) {
@@ -62,23 +76,19 @@ void Lora::set_link_frequency(LINKMODE mode) {
 }
 
 uint8_t Lora::transmit(uint8_t *data, uint8_t data_len, LINKMODE mode) {
-	uint32_t initime = HAL_GetTick();
+
 	set_low_frequency_mode(DeviceOperatingMode::STANDBY);
 
 	set_link_frequency(mode);
 
 	write_tx_fifo_data(data, data_len);
-
 	set_low_frequency_mode(DeviceOperatingMode::TX);
+	if((wait_irq(TX_DONE_MASK, 1000)))
+			return HAL_ERROR;
+	return HAL_OK;
 
-	if((wait_irq(TX_DONE_MASK, 1000))){
-			return -1;
-	}else {
-		uint32_t endtime = HAL_GetTick();
-		uint32_t duracion = endtime - initime;
-		return 0;
-	}
 }
+
 
 void Lora::set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,
 		uint32_t dl_freq, uint32_t up_freq) {
