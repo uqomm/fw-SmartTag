@@ -18,7 +18,7 @@ constexpr uint32_t DOWNLINK_FREQ_MIN = 148000000;
 constexpr uint32_t DOWNLINK_FREQ = 155000000;
 constexpr uint32_t UPLINK_FREQ_MAX = 180000000;
 constexpr uint32_t UPLINK_FREQ_MIN = 164000000;
-constexpr uint32_t UPLINK_FREQ = 172000000;
+constexpr uint32_t UPLINK_FREQ = 180000000;
 
 constexpr uint8_t SX1278_MAX_PACKET = 100;
 constexpr uint16_t SX1278_DEFAULT_TIMEOUT = 3000;

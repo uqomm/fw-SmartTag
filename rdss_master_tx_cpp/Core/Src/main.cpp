@@ -138,15 +138,15 @@ int main(void) {
 	Gpio rst_lora = Gpio(LORA_RST_GPIO_Port, LORA_RST_Pin);
 
 	Lora lora = Lora(nss_lora, rst_lora, &hspi1, &eeprom);
-	lora.set_lora_settings(LoraBandWidth::BW_125KHZ, CodingRate::CR_4_6,
-			SpreadFactor::SF_10, DOWNLINK_FREQ, UPLINK_FREQ);
+	lora.set_lora_settings(LoraBandWidth::BW_500KHZ, CodingRate::CR_4_6,
+			SpreadFactor::SF_7, DOWNLINK_FREQ, UPLINK_FREQ);
 
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-		uint8_t bytes_reciv = uart.read_timeout(data_reciv, 1);
+		uint8_t bytes_reciv = uart.read_timeout_new(data_reciv, 1);
 		if (bytes_reciv > 0) {
 
 			STATUS status_data = command.validate(data_reciv, bytes_reciv);
@@ -169,7 +169,7 @@ int main(void) {
 				}
 
 			} else if (status_data == STATUS::RETRANSMIT_FRAME) {
-				if (lora.transmit(data_reciv, leng, LinkMode::UPLINK)
+				if (lora.transmit(data_reciv, leng, LinkMode::DOWNLINK)
 						== HAL_OK) {
 					HAL_GPIO_TogglePin(LORA_TX_OK_GPIO_Port, LORA_TX_OK_Pin);
 					//HAL_Delay(1000);

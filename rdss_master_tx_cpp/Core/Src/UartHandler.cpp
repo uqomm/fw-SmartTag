@@ -51,3 +51,28 @@ uint8_t UartHandler::read_timeout(uint8_t *data_received, uint16_t timeout_ms) {
 	}
 }
 
+uint8_t UartHandler::read_timeout_new(uint8_t *data_received, uint16_t timeout_ms) {
+	int i = 0;
+	uint8_t size = sizeof(buffer);
+	HAL_StatusTypeDef resp;
+
+	uint8_t buffer[12] = {0x7E ,0x0A, 0x01, 0x02 ,0x00 ,0x03, 0x01, 0x02, 0x05, 0x76, 0x38, 0x7F};
+
+	for (i = 0; buffer[0] == 0x7e && buffer[i] != 0x7f; i++) {
+		if (i == 255) {
+			i = 0;
+			break;
+		}
+	}
+
+	if (i > 0) {
+		i++;
+		memcpy(data_received, buffer, i);
+		memset(buffer,0,sizeof(buffer));
+		return i;
+	} else{
+		memset(buffer,0,sizeof(buffer));
+		return 0;
+	}
+}
+

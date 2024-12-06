@@ -27,7 +27,7 @@ TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 	if (rx_buffer_size == 0)
 		return (TAG_RX_DATA_ZERO);
 
-	uint8_t rx_buffer[3]; // TODO Revisar RX Buffer primera recepcion
+	uint8_t rx_buffer[3];
 	dwt_readrxdata(rx_buffer, (uint16_t) rx_buffer_size, 0);
 
 	uint8_t received_command = rx_buffer[0];
@@ -133,11 +133,11 @@ TAG_STATUS_t process_queried_tag_information(TAG_t *tag) {
 
 	tag->command = rx_buffer[0];
 	uint32_t received_id = *(uint32_t*) (rx_buffer + sizeof(tag->command));
-	tag->distance_a = *(uint16_t*) (rx_buffer + sizeof(tag->command) + sizeof(tag->id));
-	tag->distance_b = *(uint16_t*) (rx_buffer + sizeof(tag->command) + sizeof(tag->id) + sizeof(tag->distance_a));
 
 	if (tag->id != received_id)
 		return (TAG_WRONG_ID_MATCH);
+	tag->distance_a = *(uint16_t*) (rx_buffer + sizeof(tag->command) + sizeof(tag->id));
+	tag->distance_b = *(uint16_t*) (rx_buffer + sizeof(tag->command) + sizeof(tag->id) + sizeof(tag->distance_a));
 	if (tag->command == TAG_TIMESTAMP_QUERY)
 		return (process_response(tag));
 	else if(tag->command == TAG_SET_SLEEP_MODE)
