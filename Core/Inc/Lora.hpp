@@ -40,6 +40,7 @@ constexpr uint8_t LTEL_COMPATIBLE_AGC_AUTO_ON = 12;
 constexpr uint8_t LTEL_COMPATIBLE_SYNC_WORD = 0x12;
 constexpr uint8_t LTEL_COMPATIBLE_PREAMBLE_LENGTH_LSB = 12;
 constexpr uint8_t CLEAR_IRQ_MASK = 0xFF;
+constexpr uint8_t SET_INTERRUPT_RX_DONE = 0x00;
 
 
 enum class LINKMODE {
@@ -79,6 +80,7 @@ class Lora : public Sx1278{
 public:
 
 	Lora(Gpio _nss, Gpio _reset, SPI_HandleTypeDef *_spi, Memory* _eeprom);
+	Lora(Gpio _nss, Gpio _reset, SPI_HandleTypeDef *_spi, Memory* _eeprom, uint8_t _type);
 	virtual ~Lora();
 
 	void set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,
@@ -92,6 +94,9 @@ public:
 	uint8_t transmit(uint8_t *data, uint8_t data_len, LINKMODE mode);
 	uint32_t read_settings();
 	bool channel_detection();
+	void set_rx_continuous_mode(LINKMODE mode);
+	uint8_t read_data_after_interrupt(uint8_t *data_received);
+	bool rxdone();
 private:
 	Memory* eeprom;
 	uint8_t len;
@@ -125,6 +130,7 @@ private:
 
 	//METODOS PRIVADOS
 	void set_default_configurations();
+	void set_default_configurations_new();
 	void save_lora_settings();
 	void set_low_frequency_mode(DeviceOperatingMode mode);
 	void changeMode(LINKMODE mode);

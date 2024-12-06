@@ -25,6 +25,23 @@ Lora::Lora(Gpio _nss, Gpio _reset, SPI_HandleTypeDef *_spi, Memory* _eeprom) :
 	set_default_configurations();
 }
 
+Lora::Lora(Gpio _nss, Gpio _reset, SPI_HandleTypeDef *_spi, Memory* _eeprom, uint8_t type) :
+	Sx1278(_nss, _reset, _spi) {
+
+	spi = _spi;
+	eeprom = _eeprom;
+
+	//EPROM KEYS
+	sf_key = eeprom->createKey(EP_SF_ADDR, sizeof(uint8_t));
+	bw_key = eeprom->createKey(EP_BW_ADDR, sizeof(uint8_t));
+	cr_key = eeprom->createKey(EP_CR_ADDR, sizeof(uint8_t));
+	frq_key = eeprom->createKey(EP_FRQ_ADDR, sizeof(uint32_t));
+	frq_dw_key = eeprom->createKey(EP_FRQ_UP_ADDR, sizeof(uint32_t));
+	frq_up_key = eeprom->createKey(EP_FRQ_DW_ADDR, sizeof(uint32_t));
+
+	set_default_configurations_new();
+}
+
 Lora::~Lora() {
 }
 
@@ -35,6 +52,18 @@ bool Lora::channel_detection() {
     irqFlags = read_8bit_reg(LoraRegisters::RegIrqFlags);
     if (irqFlags & CAD_DETECTED_MASK) {
         write_8bit_reg(LoraRegisters::RegIrqFlags, CAD_DETECTED_MASK);
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+bool Lora::rxdone() {
+    uint8_t irqFlags = 0;
+    set_low_frequency_mode(DeviceOperatingMode::CAD);
+    irqFlags = read_8bit_reg(LoraRegisters::RegIrqFlags);
+    if (irqFlags & RX_DONE_MASK) {
+        write_8bit_reg(LoraRegisters::RegIrqFlags, RX_DONE_MASK);
         return 1;
     } else {
         return 0;
@@ -65,6 +94,30 @@ int8_t Lora::receive(uint8_t *data_received, LINKMODE mode) {
 		}
 	} else
 		return 0;
+}
+
+uint8_t Lora::read_data_after_interrupt(uint8_t *data_recived){
+	if (!wait_irq(RX_DONE_MASK, 100)) {
+			uint8_t rx_nb_bytes = read_8bit_reg(LoraRegisters::RegRxNbBytes); //Number for received bytes
+			if (read_reg_addr(LoraRegisters::RegFifo, rx_nb_bytes) == 0) {
+				memcpy(data_recived, fifo, rx_nb_bytes);
+				return rx_nb_bytes;
+			} else {
+				data_recived = NULL;
+				return 0;
+			}
+		} else
+			return 0;
+}
+
+void Lora::set_rx_continuous_mode(LINKMODE mode){
+	set_low_frequency_mode(DeviceOperatingMode::SLEEP); //Change modem mode Must in Sleep mode
+	HAL_Delay(1);
+
+	set_link_frequency (mode);
+
+	write_8bit_reg(LoraRegisters::RegFifoAddrPtr, DATA_BUFFER_BASE_ADDR);
+	set_low_frequency_mode(DeviceOperatingMode::RX_CONTINUOUS);
 }
 
 void Lora::set_link_frequency(LINKMODE mode) {
@@ -170,6 +223,30 @@ void Lora::set_default_configurations() {
 	write_8bit_reg(LoraRegisters::RegHopPeriod, LTEL_COMPATIBLE_HOPS_PERIOD);
 	write_8bit_reg(LoraRegisters::RegModemConfig3, LTEL_COMPATIBLE_AGC_AUTO_ON);
 	//write_8bit_reg(LoraRegisters::RegDioMapping1, dioConfig);
+	write_8bit_reg(LoraRegisters::RegIrqFlagsMask, flagsMode);
+}
+
+void Lora::set_default_configurations_new() {
+	set_low_frequency_mode(DeviceOperatingMode::SLEEP);
+	uint8_t flagsMode = 0xBF;
+	HAL_Delay(15);
+	write_8bit_reg(LoraRegisters::RegFifoAddrPtr, DATA_BUFFER_BASE_ADDR);
+	write_8bit_reg(LoraRegisters::RegFifoRxCurrentaddr, DATA_BUFFER_BASE_ADDR);
+	write_8bit_reg(LoraRegisters::RegFifoRxBaseAddr, DATA_BUFFER_BASE_ADDR);
+	write_8bit_reg(LoraRegisters::RegFifoTxBaseAddr, DATA_BUFFER_BASE_ADDR);
+	write_8bit_reg(LoraRegisters::RegSyncWord, LTEL_COMPATIBLE_SYNC_WORD);
+	write_8bit_reg(LoraRegisters::RegPaConfig, SX1278_POWER_17DBM);
+	write_8bit_reg(LoraRegisters::RegOcp, DEFAULT_OVERCURRENTPROTECT);
+	write_8bit_reg(LoraRegisters::RegLna, DEFAULT_LNAGAIN);
+	write_8bit_reg(LoraRegisters::RegSymbTimeoutLsb, RX_TIMEOUT_LSB);
+	write_8bit_reg(LoraRegisters::RegPreambleMsb, PREAMBLE_LENGTH_MSB);
+	write_8bit_reg(LoraRegisters::RegPreambleLsb,
+			LTEL_COMPATIBLE_PREAMBLE_LENGTH_LSB);
+	write_8bit_reg(LoraRegisters::RegIrqFlags, CLEAR_IRQ_MASK);
+	write_8bit_reg(LoraRegisters::RegHopPeriod, LTEL_COMPATIBLE_HOPS_PERIOD);
+	write_8bit_reg(LoraRegisters::RegModemConfig3, LTEL_COMPATIBLE_AGC_AUTO_ON);
+	write_8bit_reg(LoraRegisters::RegDioMapping1, SET_INTERRUPT_RX_DONE);
+//	write_8bit_reg(LoraRegisters::RegDioMapping1, dioConfig);
 	write_8bit_reg(LoraRegisters::RegIrqFlagsMask, flagsMode);
 }
 

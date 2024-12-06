@@ -882,6 +882,10 @@ void free_tag_list_limit(TAG_List *list, uint8_t limit) {
 		list->head = NULL;
 		list->count = 0;
 	}
+	else{
+		list->head = current;
+		list->count = list->count-limit;
+	}
 }
 
 static void serialize_tag(TAG_t *tag, uint8_t *buffer) {

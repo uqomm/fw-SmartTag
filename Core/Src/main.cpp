@@ -53,7 +53,7 @@ SPI_HandleTypeDef hspi3;
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
-
+uint8_t lora_rcv_bytes = 0;
 uint8_t Data_reciv_test[256] = { 0 };
 double *distance_ptr;
 TAG_t *tag;
@@ -70,6 +70,9 @@ DistanceHandler distance_a = DistanceHandler(DISTANCE_READINGS);
 DistanceHandler distance_b = DistanceHandler(DISTANCE_READINGS);
 uint32_t tiempo_max = 5;
 GpioHandler gpio_handler = GpioHandler();
+
+uint8_t lora_rcv_buffer[255] = { 0 };
+uint8_t prueba_irq = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -154,6 +157,7 @@ int main(void) {
 	uint32_t lora_send_ticks = HAL_GetTick();
 	uint32_t query_timeout = 1000;
 	uint32_t query_ticks;
+	uint8_t type = 0;
 
 
 	DistanceHandler *distance_ptr;
@@ -162,29 +166,47 @@ int main(void) {
 
 	CommandMessage cmd = CommandMessage(
 			static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER), 0x00);
-	CommandMessage cmd_od = CommandMessage(
-			static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER), 0x00);
 
 	Gpio rx_lora_nss = Gpio(LORA_RX_NSS_GPIO_Port, LORA_RX_NSS_Pin);
 	Gpio rx_lora_rst = Gpio(LORA_RX_NRST_GPIO_Port, LORA_RX_NRST_Pin);
 	Gpio tx_lora_nss = Gpio(LORA_TX_NSS_GPIO_Port, LORA_TX_NSS_Pin);
 	Gpio tx_lora_rst = Gpio(LORA_TX_NRST_GPIO_Port, LORA_TX_NRST_Pin);
-	Lora rxlora = Lora(rx_lora_nss, rx_lora_rst, &hspi2, &eeprom);
+	Lora rxlora = Lora(rx_lora_nss, rx_lora_rst, &hspi2, &eeprom, type);
 	Lora txlora = Lora(tx_lora_nss, tx_lora_rst, &hspi1, &eeprom);
 	rxlora.set_lora_settings(LoraBandWidth::BW_500KHZ, CodingRate::CR_4_6,
 			SpreadFactor::SF_7, DOWNLINK_FREQ, UPLINK_FREQ);
 	txlora.set_lora_settings(LoraBandWidth::BW_500KHZ, CodingRate::CR_4_6,
 			SpreadFactor::SF_7, DOWNLINK_FREQ, UPLINK_FREQ);
 
+	rxlora.set_rx_continuous_mode(LINKMODE::DOWNLINK);
+
 	Gpio lora_rx_led = Gpio(LORA_RX_LED_GPIO_Port, LORA_RX_LED_Pin);
 	Gpio lora_tx_led = Gpio(LORA_TX_LED_GPIO_Port, LORA_TX_LED_Pin);
 
-
+	uint8_t recive_test[255] = { 0 };
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
+
+		if (rxlora.rxdone() == 1){
+//			lora_rcv_bytes = rxlora.receive(lora_rcv_buffer, LINKMODE::DOWNLINK);
+			lora_rcv_bytes = rxlora.read_data_after_interrupt(lora_rcv_buffer);
+			if (lora_rcv_bytes > 0) {
+				gpio_handler.on(lora_rx_led);
+
+				STATUS status_data = cmd.validate(lora_rcv_buffer,
+						lora_rcv_bytes);
+				cmd.save_frame(lora_rcv_buffer, lora_rcv_bytes); // llegan 197 bytes
+
+
+
+				memset(lora_rcv_buffer, 0, sizeof(lora_rcv_buffer));
+
+				gpio_handler.off(lora_rx_led);
+			}
+		}
 
 		if (tag_status == TAG_DISCOVERY) {
 
@@ -210,6 +232,7 @@ int main(void) {
 				else {
 					if (tag.command == rx_buffer[0]) {
 						tag.id = *(const uint32_t*) (rx_buffer + 1);
+						debug_distance_new(tag, tag_status, distance_a, distance_b);
 
 						const int poll_rx_offset = 5;
 						const int resp_tx_offset = 9;
@@ -317,7 +340,7 @@ int main(void) {
 
 				} else if (tag_status == TAG_SEND_TIMESTAMP_QUERY) {
 					tag.readings++;
-					debug_distance_new(tag, tag_status, distance_a, distance_b);
+//					debug_distance_new(tag, tag_status, distance_a, distance_b);
 				} else {
 					uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list,
 							&list_od);
@@ -721,9 +744,6 @@ static void MX_GPIO_Init(void) {
 			GPIO_PIN_RESET);
 
 	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(LORA_RX_DIO0_GPIO_Port, LORA_RX_DIO0_Pin, GPIO_PIN_RESET);
-
-	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(LORA_RX_NRST_GPIO_Port, LORA_RX_NRST_Pin, GPIO_PIN_RESET);
 
 	/*Configure GPIO pins : DW3000_A_RST_Pin KA_Pin DW3000_A_CS_Pin DW3000_A_WKUP_Pin
@@ -751,12 +771,11 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-	/*Configure GPIO pin : LORA_RX_DIO0_Pin */
-	GPIO_InitStruct.Pin = LORA_RX_DIO0_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(LORA_RX_DIO0_GPIO_Port, &GPIO_InitStruct);
+	  /*Configure GPIO pin : LORA_RX_DIO0_IRQ_Pin */
+	  GPIO_InitStruct.Pin = LORA_RX_DIO0_IRQ_Pin;
+	  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	  GPIO_InitStruct.Pull = GPIO_NOPULL;
+	  HAL_GPIO_Init(LORA_RX_DIO0_IRQ_GPIO_Port, &GPIO_InitStruct);
 
 	/*Configure GPIO pin : LORA_RX_NRST_Pin */
 	GPIO_InitStruct.Pin = LORA_RX_NRST_Pin;
@@ -765,12 +784,18 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(LORA_RX_NRST_GPIO_Port, &GPIO_InitStruct);
 
+	  /* EXTI interrupt init*/
+	HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
 	/* USER CODE BEGIN MX_GPIO_Init_2 */
 	/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+	prueba_irq  = 1;
+}
 /* USER CODE END 4 */
 
 /**

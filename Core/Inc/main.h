@@ -77,8 +77,9 @@ void Error_Handler(void);
 #define LORA_TX_NRST_GPIO_Port GPIOB
 #define LORA_RX_NSS_Pin GPIO_PIN_12
 #define LORA_RX_NSS_GPIO_Port GPIOB
-#define LORA_RX_DIO0_Pin GPIO_PIN_6
-#define LORA_RX_DIO0_GPIO_Port GPIOC
+#define LORA_RX_DIO0_IRQ_Pin GPIO_PIN_6
+#define LORA_RX_DIO0_IRQ_GPIO_Port GPIOC
+#define LORA_RX_DIO0_IRQ_EXTI_IRQn EXTI9_5_IRQn
 #define DW3000_B_RST_Pin GPIO_PIN_8
 #define DW3000_B_RST_GPIO_Port GPIOA
 #define DW3000_B_IRQ_Pin GPIO_PIN_9
