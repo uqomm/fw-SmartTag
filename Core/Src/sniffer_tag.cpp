@@ -1072,7 +1072,9 @@ uint8_t saveTagIfNeeded_od(TAG_t *tag, DistanceHandler *distance_a, DistanceHand
 
 
 
-static uint8_t insert_tag_cplusplus(std::map<uint32_t, TAG_t>* tag_map, TAG_t* tag){
+
+
+uint8_t insert_tag_cplusplus(std::map<uint32_t, TAG_t>* tag_map, TAG_t* tag){
 	auto it = tag_map->find(tag->id);
 	if (it != tag_map->end()) {
 		it->second = *tag;
@@ -1084,29 +1086,20 @@ static uint8_t insert_tag_cplusplus(std::map<uint32_t, TAG_t>* tag_map, TAG_t* t
 
 }
 
-uint8_t saveTagIfNeeded_cplusplus(TAG_t* tag, DistanceHandler* distance_a, DistanceHandler* distance_b, std::map<uint32_t, TAG_t> *tag_map, std::map<uint32_t, TAG_t> *tag_map_od) { // list como puntero
-	uint8_t _found = 0;
-	_found = insert_tag_cplusplus(tag_map_od, tag);
+uint8_t save_at_least_one_distance(TAG_t* tag, DistanceHandler* distance_a, DistanceHandler* distance_b, std::map<uint32_t, TAG_t> *tag_map) { // list como puntero
+	uint8_t _found_new = 0;
+	
 	if (distance_a->get_media_multiplier(100) > 0
 			&& distance_b->get_media_multiplier(100) > 0) {
 		tag->distance_a = distance_a->get_media_multiplier(100);
 		tag->distance_b = distance_b->get_media_multiplier(100);
-		_found = insert_tag_cplusplus(tag_map, tag);
+		_found_new = insert_tag_cplusplus(tag_map, tag);
 	}
-	reset_TAG_values(tag);
-	distance_a->clear();
-	distance_b->clear();
-	return _found;
+
+	return _found_new;
 }
 
-uint8_t saveTagIfNeeded__od_cplusplus(TAG_t* tag, DistanceHandler* distance_a, DistanceHandler* distance_b, std::map<uint32_t, TAG_t> *tag_map_od) { // list como puntero
-	uint8_t _found = 0;
-	_found = insert_tag_cplusplus(tag_map_od, tag);
-	reset_TAG_values(tag);
-	distance_a->clear();
-	distance_b->clear();
-	return _found;
-}
+
 
 
 void print_qty_tags(int qty) {

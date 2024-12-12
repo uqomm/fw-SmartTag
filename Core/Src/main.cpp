@@ -169,6 +169,28 @@ void sendLoRaMessage(std::map<uint32_t, TAG_t>& tag_map,
 
 	lora_send_ticks = HAL_GetTick();
 }
+uint8_t save_map_and_clear_tag(TAG_t* tag, DistanceHandler* distance_a, DistanceHandler* distance_b, std::map<uint32_t, TAG_t> *tag_map_od) { // list como puntero
+	uint8_t _found = 0;
+	_found = insert_tag_cplusplus(tag_map_od, tag);
+	reset_TAG_values(tag);
+	distance_a->clear();
+	distance_b->clear();
+	return _found;
+}
+
+void save_two_maps_and_clear_tag( DistanceHandler& distance_a, DistanceHandler& distance_b, std::map<uint32_t, TAG_t> &tag_map_od, TAG_t &tag, uint32_t &lora_send_ticks, std::map<uint32_t, TAG_t> &tag_map)
+{
+    uint8_t _found_new = 0;
+
+    _found_new = save_at_least_one_distance(&tag, &distance_a, &distance_b, &tag_map);
+    if (_found_new == 0)
+        lora_send_ticks = HAL_GetTick();
+
+	_found_new = save_map_and_clear_tag(&tag, &distance_a, &distance_b, &tag_map_od);
+    if (_found_new == 0)
+        lora_send_ticks = HAL_GetTick();
+
+}
 
 /* USER CODE BEGIN PFP */
 
@@ -429,51 +451,39 @@ int main(void) {
 					break;
 				}
 				if ((tag_status == TAG_END_READINGS)) {
-
 					debug_distance_new(tag, tag_status, distance_a, distance_b);
 //					uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list,&list_od);
-					uint8_t found = saveTagIfNeeded_cplusplus(&tag, &distance_a, &distance_b, &tag_map,&tag_map_od);
-					if (found == 0)
-						lora_send_ticks = HAL_GetTick();
-					tag_status = TAG_DISCOVERY;
-
+                    save_two_maps_and_clear_tag(distance_a, distance_b,tag_map_od, tag, lora_send_ticks, tag_map);
+                    tag_status = TAG_DISCOVERY;
 				} else if (tag_status == TAG_SEND_TIMESTAMP_QUERY) {
 					tag.readings++;
 				} else {
 //					uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list, &list_od);
-					uint8_t found = saveTagIfNeeded_cplusplus(&tag, &distance_a, &distance_b, &tag_map,&tag_map_od);
-					if (found == 0)
-						lora_send_ticks = HAL_GetTick();
+					save_two_maps_and_clear_tag(distance_a, distance_b,tag_map_od, tag, lora_send_ticks, tag_map);
 					tag_status = TAG_DISCOVERY;
 				}
 
 			} else {
-
 				distance_ptr->error_crc_increment();
 				tag_status = TAG_SEND_TIMESTAMP_QUERY;
 			}
-
 			if (HAL_GetTick() - query_ticks > query_timeout) {
 				debug_distance_new(tag, tag_status, distance_a, distance_b);
 //				uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list, &list_od);
-				uint8_t found = saveTagIfNeeded_cplusplus(&tag, &distance_a, &distance_b, &tag_map,&tag_map_od);
-				if (found == 0)
-					lora_send_ticks = HAL_GetTick();
+				save_two_maps_and_clear_tag(distance_a, distance_b,tag_map_od, tag, lora_send_ticks, tag_map);
 				tag_status = TAG_DISCOVERY;
-
 			}
 
 		} else if (tag_status == TAG_ONE_DETECTION) {
 			tag.command = TAG_SET_SLEEP_MODE;
 			HAL_Delay(1);
 			tag_status = tag_response(&tag);
-
 			debug_distance_new(tag, tag_status, distance_a, distance_b);
 //			uint8_t found = saveTagIfNeeded_od(&tag, &distance_a, &distance_b,&list_od);
-			uint8_t found = saveTagIfNeeded__od_cplusplus(&tag, &distance_a, &distance_b, &tag_map_od);
-			uint8_t size_mapa_od = tag_map_od.size();
-			if (found == 0)
+			uint8_t _found_new = save_map_and_clear_tag(&tag, &distance_a, &distance_b, &tag_map_od);			
+			if (_found_new == 0)
 					lora_send_ticks = HAL_GetTick();
+			
 			tag_status = TAG_DISCOVERY;
 
 
@@ -640,6 +650,8 @@ int main(void) {
 	}
 	/* USER CODE END 3 */
 }
+
+
 
 /**
  * @brief System Clock Configuration

@@ -181,10 +181,11 @@ void switch_hw_timestamp_query(TAG_t *tag, DistanceHandler* &dist_ptr, Uwb_HW_t*
 
 
 
+uint8_t insert_tag_cplusplus(std::map<uint32_t, TAG_t>* tag_map, TAG_t* tag);
 uint8_t saveTagIfNeeded(TAG_t* tag, DistanceHandler* distance_a, DistanceHandler* distance_b, TAG_List *list, TAG_List *list_od);
 uint8_t saveTagIfNeeded_od(TAG_t *tag, DistanceHandler *distance_a,DistanceHandler *distance_b,TAG_List *list_od);
-uint8_t saveTagIfNeeded_cplusplus(TAG_t* tag, DistanceHandler* distance_a, DistanceHandler* distance_b, std::map<uint32_t, TAG_t> *tag_map, std::map<uint32_t, TAG_t> *tag_map_od);
-uint8_t saveTagIfNeeded__od_cplusplus(TAG_t* tag, DistanceHandler* distance_a, DistanceHandler* distance_b, std::map<uint32_t, TAG_t> *tag_map_od);
+uint8_t save_at_least_one_distance(TAG_t* tag, DistanceHandler* distance_a, DistanceHandler* distance_b, std::map<uint32_t, TAG_t> *tag_map);
+uint8_t save_map_and_clear_tag(TAG_t* tag, DistanceHandler* distance_a, DistanceHandler* distance_b, std::map<uint32_t, TAG_t> *tag_map_od);
 void print_qty_tags(int qty);
 void print_serialized_cplusplus(std::map<uint32_t, TAG_t> *tag_map, uint8_t limit,
 		uint8_t _total_tags, uint32_t _sniffer_id, Sniffer_State interface_state, uint8_t tag_size);
