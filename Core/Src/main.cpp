@@ -86,24 +86,6 @@ static void MX_SPI1_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_SPI3_Init(void);
 
-bool is_ready_to_send(uint32_t lora_send_ticks, uint32_t lora_send_timeout,
-					  int size, Sniffer_State interfaz_state, Sniffer_State state)
-{
-	return ((HAL_GetTick() - lora_send_ticks) > lora_send_timeout) && (size > 0) && (interfaz_state == state);
-}
-bool is_ready_to_send_md(uint32_t lora_send_ticks, uint32_t lora_send_timeout,
-						 int size, Sniffer_State interfaz_state)
-{
-	return is_ready_to_send(lora_send_ticks, lora_send_timeout, size,
-							interfaz_state, MASTER_MULTIPLE_DETECTION);
-}
-bool is_ready_to_send_od(uint32_t lora_send_ticks, uint32_t lora_send_timeout,
-						 int size, Sniffer_State interfaz_state)
-{
-	return is_ready_to_send(lora_send_ticks, lora_send_timeout, size,
-							interfaz_state, MASTER_ONE_DETECTION);
-}
-
 void sendMessageWithRetry(const Gpio &lora_rx_led,
 						  const Gpio &lora_tx_led,
 						  Lora &txlora,
@@ -174,7 +156,33 @@ void sendLoRaMessage(std::map<uint32_t, TAG_t> &tag_map,
 	cmd.reset();
 
 	lora_send_ticks = HAL_GetTick();
+
+
 }
+
+bool is_ready_to_send(uint32_t lora_send_ticks, uint32_t lora_send_timeout,
+                      int size, Sniffer_State interfaz_state, Sniffer_State expected_state) {
+    return (HAL_GetTick() - lora_send_ticks > lora_send_timeout) &&
+           (size > 0) &&
+           (interfaz_state == expected_state);
+}
+
+void send_lora_message_if_ready(uint32_t lora_send_ticks, uint32_t lora_send_timeout, TagMap& tag_map,
+                             Sniffer_State interfaz_state, Sniffer_State expected_state, int max_tags, 
+                             uint8_t command_id, int tag_size, uint32_t sniffer_id, 
+                             DigitalOut& lora_rx_led, DigitalOut& lora_tx_led, 
+                             LoRa& txlora) { // Assuming these are the correct types for your arguments
+
+    if (is_ready_to_send(lora_send_ticks, lora_send_timeout, tag_map.size(), interfaz_state, expected_state)) {
+        sendLoRaMessage(tag_map, max_tags, command_id, tag_size, lora_send_ticks, lora_send_timeout,
+                        sniffer_id, lora_rx_led, lora_tx_led, txlora, interfaz_state);
+
+        tag_map.clear(); // Clear the tag map *after* sending.
+
+    }
+}
+
+
 uint8_t save_map_and_clear_tag(TAG_t *tag, DistanceHandler *distance_a, DistanceHandler *distance_b, std::map<uint32_t, TAG_t> *tag_map_od)
 { // list como puntero
 	uint8_t _found = 0;
@@ -475,28 +483,16 @@ int main(void)
 
 		if (tag_status == TAG_DISCOVERY)
 		{
-			if (is_ready_to_send_md(lora_send_ticks, lora_send_timeout,
-									tag_map.size(), interfaz_state))
-			{
-				if (!tag_map_od.empty())
-					tag_map_od.clear();
-				sendLoRaMessage(tag_map, MAX_TAG_NUMBER_MULTIPLE_DETECTTION,
-								MULTIPLE_DETECTION,
-								SERIALIZED_TAG_SIZE, lora_send_ticks, lora_send_timeout,
-								sniffer_id, lora_rx_led, lora_tx_led, txlora,
-								interfaz_state);
-			}
+			if (interfaz_state == MASTER_MULTIPLE_DETECTION){
 
-			else if (is_ready_to_send_od(lora_send_ticks, lora_send_timeout,
-										 tag_map_od.size(), interfaz_state))
-			{
-				if (!tag_map.empty())
-					tag_map.clear();
-				sendLoRaMessage(tag_map_od, MAX_TAG_NUMBER_ONE_DETECTTION,
-								ONE_DETECTION,
-								SERIALIZED_TAG_SIZE_ONE_DETECTION, lora_send_ticks,
-								lora_send_timeout, sniffer_id, lora_rx_led, lora_tx_led,
-								txlora, interfaz_state);
+					send_lora_message_if_ready(lora_send_ticks, lora_send_timeout, tag_map, interfaz_state, MASTER_MULTIPLE_DETECTION,
+						MAX_TAG_NUMBER_MULTIPLE_DETECTTION, MULTIPLE_DETECTION, SERIALIZED_TAG_SIZE,
+						sniffer_id, lora_rx_led, lora_tx_led, txlora);
+			} else if (interfaz_state == MASTER_ONE_DETECTION){
+
+					send_lora_message_if_ready(lora_send_ticks, lora_send_timeout, tag_map_od, interfaz_state, MASTER_ONE_DETECTION,
+						MAX_TAG_NUMBER_ONE_DETECTTION, ONE_DETECTION, SERIALIZED_TAG_SIZE_ONE_DETECTION,
+						sniffer_id, lora_rx_led, lora_tx_led, txlora);
 			}
 
 			//---------------- Recepción por lora  ----------------
