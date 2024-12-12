@@ -297,6 +297,7 @@ int main(void) {
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 
+//---------------- Recepción por lora  ----------------
 		lora_rcv_bytes = rxlora.read_data_after_interrupt(lora_rcv_buffer);
 		if (lora_rcv_bytes > 0) {
 			gpio_handler.on(lora_rx_led);
@@ -330,6 +331,7 @@ int main(void) {
 			gpio_handler.off(lora_rx_led);
 		}
 
+//---------------- Busqueda y guardado de tags ----------------
 
 		if (tag_status == TAG_DISCOVERY) {
 
@@ -487,7 +489,7 @@ int main(void) {
 
 		}
 
-//----------------ENVIO DE FRAME CON DATA DE TAGS----------------
+//---------------- ENVIO DE FRAME CON DATA DE TAGS----------------
 
 		uint8_t MAX_TAG_NUMBER_MULTIPLE_DETECTTION = 26;
 		uint8_t MAX_TAG_NUMBER_ONE_DETECTTION = 48;
@@ -826,18 +828,12 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(LORA_RX_NRST_GPIO_Port, &GPIO_InitStruct);
 
-	  /* EXTI interrupt init*/
-	HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
-
 	/* USER CODE BEGIN MX_GPIO_Init_2 */
 	/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-	prueba_irq  = 1;
-}
+
 /* USER CODE END 4 */
 
 /**
