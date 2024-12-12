@@ -114,6 +114,24 @@ void sendMessageWithRetry(const Gpio &lora_rx_led,
 	} while (true);
 }
 
+size_t calculate_serialize_size(uint32_t sniffer_id,
+								int tag_map_size,
+								uint8_t serialized_tag_size,
+								uint8_t max_tag_number){
+	size_t tags_size;
+
+	if (tag_map_size >= max_tag_number)
+		tags_size = sizeof(sniffer_id) +
+					sizeof(uint8_t) * 2 +
+					(max_tag_number * serialized_tag_size);
+	else
+		tags_size = sizeof(sniffer_id) +
+							sizeof(uint8_t) * 2 +
+							(tag_map_size * serialized_tag_size);
+	return tags_size;
+}
+
+
 void sendLoRaMessage(std::map<uint32_t, TAG_t> &tag_map,
 					 uint8_t max_tag_number,
 					 uint8_t command_id,
@@ -133,7 +151,10 @@ void sendLoRaMessage(std::map<uint32_t, TAG_t> &tag_map,
 							   sniffer_id, interfaz_state, serialized_tag_size);
 
 	// Prepare serialization
-	size_t tags_size = sizeof(sniffer_id) + sizeof(uint8_t) * 2 + (tag_map.size() * serialized_tag_size);
+	size_t tags_size = calculate_serialize_size(sniffer_id,
+												tag_map.size(),
+												serialized_tag_size,
+												max_tag_number);
 	uint8_t serialized_tags[tags_size] = {0};
 	uint8_t total_tags = tag_map.size();
 	std::vector<uint8_t> message_composed;
@@ -167,16 +188,15 @@ bool is_ready_to_send(uint32_t lora_send_ticks, uint32_t lora_send_timeout,
            (interfaz_state == expected_state);
 }
 
-void send_lora_message_if_ready(uint32_t lora_send_ticks, uint32_t lora_send_timeout, TagMap& tag_map,
+void send_lora_message_if_ready(uint32_t lora_send_ticks, uint32_t lora_send_timeout, std::map<uint32_t, TAG_t> &tag_map,
                              Sniffer_State interfaz_state, Sniffer_State expected_state, int max_tags, 
                              uint8_t command_id, int tag_size, uint32_t sniffer_id, 
-                             DigitalOut& lora_rx_led, DigitalOut& lora_tx_led, 
-                             LoRa& txlora) { // Assuming these are the correct types for your arguments
+							 const Gpio& lora_rx_led, const Gpio& lora_tx_led,
+							 Lora& txlora) { // Assuming these are the correct types for your arguments
 
     if (is_ready_to_send(lora_send_ticks, lora_send_timeout, tag_map.size(), interfaz_state, expected_state)) {
         sendLoRaMessage(tag_map, max_tags, command_id, tag_size, lora_send_ticks, lora_send_timeout,
                         sniffer_id, lora_rx_led, lora_tx_led, txlora, interfaz_state);
-
         tag_map.clear(); // Clear the tag map *after* sending.
 
     }
