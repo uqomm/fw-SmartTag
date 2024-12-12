@@ -100,7 +100,7 @@ int8_t Sx1278::wait_irq(uint8_t mask, uint16_t timeout) {
 	uint8_t irqFlags = 0;
 	while (1) {
 		irqFlags = read_8bit_reg(LoraRegisters::RegIrqFlags);
-		if ((irqFlags & mask)) {
+		if ((irqFlags & mask) && !(irqFlags & (0x1<<static_cast<uint8_t>(IrgFlagBit::PayloadCrcError))) ) {
 			int timeEnd = HAL_GetTick();
 			lastTxTime = timeEnd - timeStart;
 			write_8bit_reg(LoraRegisters::RegIrqFlags, mask);

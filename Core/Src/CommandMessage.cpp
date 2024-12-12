@@ -192,6 +192,14 @@ STATUS CommandMessage::validate(uint8_t *buffer, uint8_t length) {
 	}
 }
 
+STATUS CommandMessage::validate_crc_ptrotocol(uint8_t *buffer, uint8_t length) {
+	STATUS frameStatus = validate_protocol(buffer, length);
+	if (frameStatus != (STATUS::VALID_FRAME))
+		return (frameStatus);
+	STATUS crcStatus = validate_crc(buffer, length);
+	return (crcStatus);
+}
+
 STATUS CommandMessage::validate_protocol(uint8_t *frame, uint8_t length) {
 	if (length > (MINIMUN_FRAME_LEN)) {
 		if (frame[0] == RDSS_START_MARK) {

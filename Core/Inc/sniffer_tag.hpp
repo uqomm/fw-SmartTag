@@ -8,6 +8,9 @@
 #ifndef INC_SNIFFER_TAG_HPP_
 #define INC_SNIFFER_TAG_HPP_
 
+#include <map>
+#include <unordered_map>
+
 #ifdef __cplusplus // Check if compiling with a C++ compiler
 extern "C" {
 #endif
@@ -20,6 +23,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+
 
 extern UART_HandleTypeDef huart1;
 extern Uwb_HW_t uwb_hw_a;
@@ -147,7 +151,7 @@ double distance_smooth(Distance_t *distance);
 void int_to_float_Tag_Battery_Voltage(TAG_t *tag);
 void converse_Tag_Battery_Voltage(TAG_t *tag);
 // Function to insert a new TAG_t node into the linked list
-void insert_tag(TAG_List *list, TAG_t new_tag);
+bool insert_tag(TAG_List *list, TAG_t new_tag);
 uint8_t insert_tag_od(TAG_List *list, TAG_t new_tag);
 void delete_tag(TAG_List *list, uint32_t id);
 void free_tag_list(TAG_List *list);
@@ -174,8 +178,26 @@ TAG_STATUS_t tag_response(TAG_t *tag);
 void switch_hw(TAG_t *tag, DistanceHandler* &dist_ptr, Uwb_HW_t* &hw, DistanceHandler* dist_a, DistanceHandler* dist_b);
 //void switch_hw(TAG_t *tag, DistanceHandler dist_hand, DistanceHandler *dist_a, DistanceHandler *dist_b);
 void switch_hw_timestamp_query(TAG_t *tag, DistanceHandler* &dist_ptr, Uwb_HW_t* &hw, DistanceHandler* dist_a, DistanceHandler* dist_b);
+
+
+
 uint8_t saveTagIfNeeded(TAG_t* tag, DistanceHandler* distance_a, DistanceHandler* distance_b, TAG_List *list, TAG_List *list_od);
 uint8_t saveTagIfNeeded_od(TAG_t *tag, DistanceHandler *distance_a,DistanceHandler *distance_b,TAG_List *list_od);
+uint8_t saveTagIfNeeded_cplusplus(TAG_t* tag, DistanceHandler* distance_a, DistanceHandler* distance_b, std::map<uint32_t, TAG_t> *tag_map, std::map<uint32_t, TAG_t> *tag_map_od);
+uint8_t saveTagIfNeeded__od_cplusplus(TAG_t* tag, DistanceHandler* distance_a, DistanceHandler* distance_b, std::map<uint32_t, TAG_t> *tag_map_od);
+void print_qty_tags(int qty);
+void print_serialized_cplusplus(std::map<uint32_t, TAG_t> *tag_map, uint8_t limit,
+		uint8_t _total_tags, uint32_t _sniffer_id, Sniffer_State interface_state, uint8_t tag_size);
+void serialize_limit_cplusplus(std::map<uint32_t, TAG_t> *tag_map, uint8_t *buffer, uint8_t limit,
+		uint8_t _total_tags, uint32_t _sniffer_id,Sniffer_State interface_state);
+void serialize_cplusplus(std::map<uint32_t, TAG_t> *tag_map, uint8_t *buffer,
+		uint8_t _total_tags, uint32_t _sniffer_id,Sniffer_State interface_state);
+void erase_limit_map(std::map<uint32_t, TAG_t>* tag_map_ptr, size_t limit);
+
+
+
+
+
 void debug_distance_new(TAG_t tag, TAG_STATUS_t status, DistanceHandler d_a, DistanceHandler d_b);
 
 
