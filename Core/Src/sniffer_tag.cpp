@@ -1086,17 +1086,14 @@ uint8_t insert_tag_cplusplus(std::map<uint32_t, TAG_t>* tag_map, TAG_t* tag){
 
 }
 
-uint8_t save_at_least_one_distance(TAG_t* tag, DistanceHandler* distance_a, DistanceHandler* distance_b, std::map<uint32_t, TAG_t> *tag_map) { // list como puntero
-	uint8_t _found_new = 0;
-	
+uint8_t save_at_least_one_distance(TAG_t* tag, DistanceHandler* distance_a, DistanceHandler* distance_b, std::map<uint32_t, TAG_t> *tag_map) { // list como puntero	
 	if (distance_a->get_media_multiplier(100) > 0
 			&& distance_b->get_media_multiplier(100) > 0) {
 		tag->distance_a = distance_a->get_media_multiplier(100);
 		tag->distance_b = distance_b->get_media_multiplier(100);
-		_found_new = insert_tag_cplusplus(tag_map, tag);
-	}
-
-	return _found_new;
+		return insert_tag_cplusplus(tag_map, tag);
+		} 
+	return 1;
 }
 
 
