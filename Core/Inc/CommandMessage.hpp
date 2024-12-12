@@ -81,6 +81,7 @@ constexpr uint8_t QUERY_PARAMETER_STR = 0x15;
 constexpr uint8_t QUERY_PARAMETER_ADC = 0x16;
 constexpr uint8_t ONE_DETECTION = 0x17;
 constexpr uint8_t MULTIPLE_DETECTION = 0x18;
+constexpr uint8_t CHANGE_SLEEP_TIME = 0x19;
 
 constexpr uint8_t SET_ATT_LTEL = 0x20;
 constexpr uint8_t SET_POUT_MAX = 0x24;
@@ -136,6 +137,7 @@ public:
 	virtual ~CommandMessage();
 
 	STATUS validate(uint8_t *buffer, uint8_t length);
+	STATUS validate_crc_ptrotocol(uint8_t *buffer, uint8_t length);
 	void save_frame(uint8_t *buffer, uint8_t length);
 	uint16_t crc_get(uint8_t *buffer, uint8_t buff_len);
 

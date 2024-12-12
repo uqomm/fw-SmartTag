@@ -71,8 +71,10 @@ DistanceHandler distance_b = DistanceHandler(DISTANCE_READINGS);
 uint32_t tiempo_max = 5;
 GpioHandler gpio_handler = GpioHandler();
 
-uint8_t lora_rcv_buffer[255] = { 0 };
+uint8_t lora_rcv_buffer[50] = { 0 };
 uint8_t prueba_irq = 0;
+//TAG_List list = { NULL, 0 };
+//TAG_List list_od = { NULL, 0 };
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -83,6 +85,91 @@ static void MX_I2C3_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_SPI3_Init(void);
+
+
+
+bool is_ready_to_send(uint32_t lora_send_ticks, uint32_t lora_send_timeout,
+		int size, Sniffer_State interfaz_state, Sniffer_State state) {
+	return ((HAL_GetTick() - lora_send_ticks) > lora_send_timeout) && (size > 0)
+			&& (interfaz_state == state);
+}
+bool is_ready_to_send_md(uint32_t lora_send_ticks, uint32_t lora_send_timeout,
+		int size, Sniffer_State interfaz_state) {
+	return is_ready_to_send(lora_send_ticks, lora_send_timeout, size,
+			interfaz_state, MASTER_MULTIPLE_DETECTION);
+}
+bool is_ready_to_send_od(uint32_t lora_send_ticks, uint32_t lora_send_timeout,
+		int size, Sniffer_State interfaz_state) {
+	return is_ready_to_send(lora_send_ticks, lora_send_timeout, size,
+			interfaz_state, MASTER_ONE_DETECTION);
+}
+
+void sendMessageWithRetry(const Gpio &lora_rx_led,
+		const Gpio &lora_tx_led,
+		Lora &txlora,
+		std::vector<uint8_t> &message_composed) {
+	do {
+		gpio_handler.off(lora_rx_led);
+		bool DATA_SIZE = txlora.channel_detection();
+		gpio_handler.on(lora_rx_led);
+		if (DATA_SIZE == 0) {
+			gpio_handler.off(lora_tx_led);
+			if (txlora.transmit(message_composed.data(),
+					message_composed.size(), LINKMODE::UPLINK) == HAL_OK) {
+			}
+			gpio_handler.on(lora_tx_led);
+			break;
+		} else {
+			uint32_t delay_ms = (rand() % tiempo_max) + 230;
+			HAL_Delay(delay_ms);
+		}
+	} while (true);
+}
+
+
+void sendLoRaMessage(std::map<uint32_t, TAG_t>& tag_map,
+                     uint8_t max_tag_number,
+                     uint8_t command_id,
+                     uint8_t serialized_tag_size,
+					 uint32_t lora_send_ticks,
+                     uint32_t lora_send_timeout,
+                     uint32_t sniffer_id,
+					 const Gpio &lora_rx_led,
+					 const Gpio &lora_tx_led,
+					 Lora &txlora,
+					 Sniffer_State interfaz_state) {
+
+    CommandMessage cmd(static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER), 0x00);
+    print_qty_tags(tag_map.size());
+    print_serialized_cplusplus(&tag_map, max_tag_number, tag_map.size(),
+    					sniffer_id,interfaz_state,serialized_tag_size);
+
+    // Prepare serialization
+    size_t tags_size = sizeof(sniffer_id) + sizeof(uint8_t) * 2
+			+ (tag_map.size() * serialized_tag_size);
+	uint8_t serialized_tags[tags_size] = { 0 };
+	uint8_t total_tags = tag_map.size();
+	std::vector<uint8_t> message_composed;
+	std::vector<uint8_t> tx_vect;
+	while (tag_map.size() > 0) {
+		serialize_limit_cplusplus(&tag_map, serialized_tags, max_tag_number,
+				total_tags, sniffer_id, interfaz_state);
+		erase_limit_map(&tag_map, max_tag_number);
+		for (int i = 0; i < tags_size; i++)
+			tx_vect.push_back(serialized_tags[i]);
+		cmd.setCommandId(command_id);
+		cmd.composeMessage(&tx_vect);
+		tx_vect.clear();
+		message_composed = cmd.get_composed_message();
+		sendMessageWithRetry(lora_rx_led, lora_tx_led, txlora,
+				message_composed);
+	}
+	message_composed.clear();
+	cmd.reset();
+
+	lora_send_ticks = HAL_GetTick();
+}
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -127,8 +214,7 @@ int main(void) {
 	MX_SPI3_Init();
 	/* USER CODE BEGIN 2 */
 	pdw3000local = new dwt_local_data_t;
-	TAG_List list = { NULL, 0 };
-	TAG_List list_od = { NULL, 0 };
+
 
 	HAL_GPIO_WritePin(DW3000_B_WKUP_GPIO_Port, DW3000_B_WKUP_Pin,
 			GPIO_PIN_RESET);
@@ -151,7 +237,7 @@ int main(void) {
 	uint32_t sniffer_id = _dwt_otpread(PARTID_ADDRESS);
 
 	Sniffer_State interfaz_state = MASTER_MULTIPLE_DETECTION; //MASTER_MULTIPLE_DETECTION      MASTER_ONE_DETECTION
-	tag.sleep_time = 1; //tiempo de sleep
+	tag.sleep_time = 15; //tiempo de sleep
 	TAG_STATUS_t tag_status = TAG_DISCOVERY;
 	uint32_t lora_send_timeout = 5000;
 	uint32_t lora_send_ticks = HAL_GetTick();
@@ -159,13 +245,9 @@ int main(void) {
 	uint32_t query_ticks;
 	uint8_t type = 0;
 
-
 	DistanceHandler *distance_ptr;
 
 	Memory eeprom = Memory(&hi2c3);
-
-	CommandMessage cmd = CommandMessage(
-			static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER), 0x00);
 
 	Gpio rx_lora_nss = Gpio(LORA_RX_NSS_GPIO_Port, LORA_RX_NSS_Pin);
 	Gpio rx_lora_rst = Gpio(LORA_RX_NRST_GPIO_Port, LORA_RX_NRST_Pin);
@@ -184,29 +266,48 @@ int main(void) {
 	Gpio lora_tx_led = Gpio(LORA_TX_LED_GPIO_Port, LORA_TX_LED_Pin);
 
 	uint8_t recive_test[255] = { 0 };
+
+	std::map<uint32_t, TAG_t> tag_map;
+	std::map<uint32_t, TAG_t> tag_map_od;
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 
-		if (rxlora.rxdone() == 1){
-//			lora_rcv_bytes = rxlora.receive(lora_rcv_buffer, LINKMODE::DOWNLINK);
-			lora_rcv_bytes = rxlora.read_data_after_interrupt(lora_rcv_buffer);
-			if (lora_rcv_bytes > 0) {
-				gpio_handler.on(lora_rx_led);
-
-				STATUS status_data = cmd.validate(lora_rcv_buffer,
-						lora_rcv_bytes);
+		lora_rcv_bytes = rxlora.read_data_after_interrupt(lora_rcv_buffer);
+		if (lora_rcv_bytes > 0) {
+			gpio_handler.on(lora_rx_led);
+			CommandMessage cmd = CommandMessage(
+					static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER), 0x00);
+			STATUS status_data = cmd.validate_crc_ptrotocol(lora_rcv_buffer, lora_rcv_bytes);
+			if (status_data == STATUS::RDSS_DATA_OK){
 				cmd.save_frame(lora_rcv_buffer, lora_rcv_bytes); // llegan 197 bytes
-
-
-
-				memset(lora_rcv_buffer, 0, sizeof(lora_rcv_buffer));
-
-				gpio_handler.off(lora_rx_led);
+				std::vector<uint8_t> recived_data_lora = cmd.get_composed_message();
+				uint32_t recived_id_from_lora;
+				if (recived_data_lora.size() >= 4) {
+					std::memcpy(&recived_id_from_lora, &recived_data_lora[0], sizeof(uint32_t));
+					if (recived_id_from_lora == sniffer_id) {
+						switch (cmd.getCommandId()) {
+						case CHANGE_SLEEP_TIME:
+							tag.sleep_time = recived_data_lora[5];
+							break;
+						case ONE_DETECTION:
+							interfaz_state = MASTER_ONE_DETECTION;
+							break;
+						case MULTIPLE_DETECTION:
+							interfaz_state = MASTER_MULTIPLE_DETECTION;
+							break;
+						}
+					}
+				}
+				recived_data_lora.clear();
 			}
+			cmd.reset();
+			memset(lora_rcv_buffer, 0, sizeof(lora_rcv_buffer));
+			gpio_handler.off(lora_rx_led);
 		}
+
 
 		if (tag_status == TAG_DISCOVERY) {
 
@@ -260,8 +361,6 @@ int main(void) {
 
 						tag.Battery_Voltage = *(const uint16_t*) (rx_buffer
 								+ BATTERY_VOLTAGE_RAW_OFFSET);
-
-//						debug_distance_new(tag, tag_status, distance_a, distance_b);
 
 						if (interfaz_state == MASTER_ONE_DETECTION) {
 							tag_status = TAG_ONE_DETECTION;
@@ -332,18 +431,17 @@ int main(void) {
 				if ((tag_status == TAG_END_READINGS)) {
 
 					debug_distance_new(tag, tag_status, distance_a, distance_b);
-					uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list,
-							&list_od);
+//					uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list,&list_od);
+					uint8_t found = saveTagIfNeeded_cplusplus(&tag, &distance_a, &distance_b, &tag_map,&tag_map_od);
 					if (found == 0)
 						lora_send_ticks = HAL_GetTick();
 					tag_status = TAG_DISCOVERY;
 
 				} else if (tag_status == TAG_SEND_TIMESTAMP_QUERY) {
 					tag.readings++;
-//					debug_distance_new(tag, tag_status, distance_a, distance_b);
 				} else {
-					uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list,
-							&list_od);
+//					uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list, &list_od);
+					uint8_t found = saveTagIfNeeded_cplusplus(&tag, &distance_a, &distance_b, &tag_map,&tag_map_od);
 					if (found == 0)
 						lora_send_ticks = HAL_GetTick();
 					tag_status = TAG_DISCOVERY;
@@ -351,15 +449,14 @@ int main(void) {
 
 			} else {
 
-//				debug_distance_new(tag, tag_status, distance_a, distance_b);
 				distance_ptr->error_crc_increment();
 				tag_status = TAG_SEND_TIMESTAMP_QUERY;
 			}
 
 			if (HAL_GetTick() - query_ticks > query_timeout) {
 				debug_distance_new(tag, tag_status, distance_a, distance_b);
-				uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list,
-						&list_od);
+//				uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list, &list_od);
+				uint8_t found = saveTagIfNeeded_cplusplus(&tag, &distance_a, &distance_b, &tag_map,&tag_map_od);
 				if (found == 0)
 					lora_send_ticks = HAL_GetTick();
 				tag_status = TAG_DISCOVERY;
@@ -372,7 +469,9 @@ int main(void) {
 			tag_status = tag_response(&tag);
 
 			debug_distance_new(tag, tag_status, distance_a, distance_b);
-			uint8_t found = saveTagIfNeeded_od(&tag, &distance_a, &distance_b,&list_od);
+//			uint8_t found = saveTagIfNeeded_od(&tag, &distance_a, &distance_b,&list_od);
+			uint8_t found = saveTagIfNeeded__od_cplusplus(&tag, &distance_a, &distance_b, &tag_map_od);
+			uint8_t size_mapa_od = tag_map_od.size();
 			if (found == 0)
 					lora_send_ticks = HAL_GetTick();
 			tag_status = TAG_DISCOVERY;
@@ -385,93 +484,154 @@ int main(void) {
 		uint8_t MAX_TAG_NUMBER_MULTIPLE_DETECTTION = 26;
 		uint8_t MAX_TAG_NUMBER_ONE_DETECTTION = 48;
 
-		if ((((HAL_GetTick() - lora_send_ticks) > lora_send_timeout) && (list.count > 0)) && (interfaz_state == MASTER_MULTIPLE_DETECTION)) {
+		if (is_ready_to_send_md(lora_send_ticks, lora_send_timeout,
+				tag_map.size(), interfaz_state)) {
+			if (!tag_map_od.empty())
+				tag_map_od.clear();
+//			free_tag_list(&list_od);
 
-			print_all_tags(&list, tag_status);
-			print_serialized_tags(&list);
-			size_t tags_size = (list.count * SERIALIZED_TAG_SIZE)
-					+ sizeof(list.count) * 2;
-			uint8_t tx_arr[tags_size];
-			uint8_t total_tags = list.count;
+			sendLoRaMessage(tag_map, MAX_TAG_NUMBER_MULTIPLE_DETECTTION,
+					MULTIPLE_DETECTION,
+					SERIALIZED_TAG_SIZE, lora_send_ticks, lora_send_timeout,
+					sniffer_id, lora_rx_led, lora_tx_led, txlora,
+					interfaz_state);
 
-			while (list.head != NULL) {
-				serialize_tag_list_limit(&list, tx_arr,
-						MAX_TAG_NUMBER_MULTIPLE_DETECTTION, total_tags, sniffer_id);
-				std::vector<uint8_t> tx_vect(tx_arr, tx_arr + tags_size);
-				cmd.setCommandId(MULTIPLE_DETECTION);
-				cmd.composeMessage(&tx_vect);
-				std::vector<uint8_t> message_composed = cmd.get_composed_message();
-				do {
-					gpio_handler.off(lora_rx_led);
-					bool DATA_SIZE = txlora.channel_detection();
-					gpio_handler.on(lora_rx_led);
-					if (DATA_SIZE == 0) {
-						gpio_handler.off(lora_tx_led);
-						//				start = HAL_GetTick();
-						if (txlora.transmit(message_composed.data(),
-								message_composed.size(), LINKMODE::UPLINK)
-								== HAL_OK) {
-						}
-						gpio_handler.on(lora_tx_led);
-						break;
-					} else {
-						uint32_t delay_ms = (rand() % tiempo_max) + 230;
-						HAL_Delay(delay_ms);
-					}
-					//			memset(recvChar, 0, sizeof(recvChar));
-				} while (true);
-				tx_vect.clear();
-				free_tag_list_limit(&list, MAX_TAG_NUMBER_MULTIPLE_DETECTTION);
-			}
-			free_tag_list(&list_od);
-			lora_send_ticks = HAL_GetTick();
+//			CommandMessage cmd = CommandMessage(
+//					static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER), 0x00);
+//
+//
+////			print_all_tags(&list, tag_status);
+//			print_qty_tags(tag_map.size());
+//
+////			print_serialized_tags(&list);
+//			print_serialized_cplusplus(&tag_map,MAX_TAG_NUMBER_MULTIPLE_DETECTTION, tag_map.size(),
+//					sniffer_id, interfaz_state, SERIALIZED_TAG_SIZE);
+//
+//			size_t tags_size = (sizeof(sniffer_id) + tag_map.size() * SERIALIZED_TAG_SIZE)
+//					+ sizeof(uint8_t) * 2;
+//			uint8_t serialized_tags[tags_size] = {0};
+//			uint8_t total_tags = tag_map.size();
+//			std::vector<uint8_t> message_composed;
+//			std::vector<uint8_t> serilized_tags_vector;
+//			while (tag_map.size() > 0) {
+//
+////				serialize_tag_list_limit(&list, serialized_tags,MAX_TAG_NUMBER_MULTIPLE_DETECTTION, total_tags,sniffer_id);
+//				serialize_limit_cplusplus(&tag_map, serialized_tags,MAX_TAG_NUMBER_MULTIPLE_DETECTTION, total_tags,
+//						sniffer_id, interfaz_state);
+//
+//
+////				free_tag_list_limit(&list, MAX_TAG_NUMBER_MULTIPLE_DETECTTION);
+//				erase_limit_map(&tag_map, MAX_TAG_NUMBER_MULTIPLE_DETECTTION);
+//
+//
+//				for(int i = 0 ; i<tags_size; i++)
+//					serilized_tags_vector.push_back(serialized_tags[i]);
+//
+//				cmd.setCommandId(MULTIPLE_DETECTION);
+//				cmd.composeMessage(&serilized_tags_vector);
+//				serilized_tags_vector.clear();
+//
+//			    message_composed = cmd.get_composed_message();
+//				do {
+//					gpio_handler.off(lora_rx_led);
+//					bool DATA_SIZE = txlora.channel_detection();
+//					gpio_handler.on(lora_rx_led);
+//					if (DATA_SIZE == 0) {
+//						gpio_handler.off(lora_tx_led);
+//						//				start = HAL_GetTick();
+//						if (txlora.transmit(message_composed.data(),
+//								message_composed.size(), LINKMODE::UPLINK)
+//								== HAL_OK) {
+//						}
+//						gpio_handler.on(lora_tx_led);
+//						break;
+//					} else {
+//						uint32_t delay_ms = (rand() % tiempo_max) + 230;
+//						HAL_Delay(delay_ms);
+//					}
+//					//			memset(recvChar, 0, sizeof(recvChar));
+//				} while (true);
+//
+//			}
+//			message_composed.clear();
+//			cmd.reset();
+//			lora_send_ticks = HAL_GetTick();
 		}
 
-		else if (((HAL_GetTick() - lora_send_ticks) > lora_send_timeout) && ((list_od.count > 0))  && (interfaz_state == MASTER_ONE_DETECTION)) {
+		else if (is_ready_to_send_od(lora_send_ticks, lora_send_timeout,
+				tag_map_od.size(), interfaz_state)) {
+			if (!tag_map.empty())
+				tag_map.clear();
+//			free_tag_list(&list);
+			sendLoRaMessage(tag_map_od, MAX_TAG_NUMBER_ONE_DETECTTION,
+					ONE_DETECTION,
+					SERIALIZED_TAG_SIZE_ONE_DETECTION, lora_send_ticks,
+					lora_send_timeout, sniffer_id, lora_rx_led, lora_tx_led,
+					txlora, interfaz_state);
 
-			print_all_tags(&list_od, tag_status);
-			print_serialized_tags_od(&list_od, MAX_TAG_NUMBER_MULTIPLE_DETECTTION, list_od.count,
-					sniffer_id);
-
-			size_t tags_size = sizeof(sniffer_id) + sizeof(list_od.count) * 2
-					+ (list_od.count * SERIALIZED_TAG_SIZE_ONE_DETECTION);
-			uint8_t tx_arr[tags_size] ={0};
-			uint8_t total_tags = list_od.count;
-
-			while (list_od.head != NULL) {
-				serialize_tag_list_limit_od(&list_od, tx_arr,
-						MAX_TAG_NUMBER_MULTIPLE_DETECTTION, total_tags,
-						sniffer_id);
-
-				std::vector<uint8_t> tx_vect(tx_arr, tx_arr + tags_size);
-				cmd.setCommandId(ONE_DETECTION);
-				cmd.composeMessage(&tx_vect);
-				std::vector<uint8_t> message_composed =
-						cmd.get_composed_message();
-				do {
-					gpio_handler.off(lora_rx_led);
-					bool DATA_SIZE = txlora.channel_detection();
-					gpio_handler.on(lora_rx_led);
-					if (DATA_SIZE == 0) {
-						gpio_handler.off(lora_tx_led);
-						//				start = HAL_GetTick();
-						if (txlora.transmit(message_composed.data(),
-								message_composed.size(), LINKMODE::UPLINK)
-								== HAL_OK) {
-						}
-						gpio_handler.on(lora_tx_led);
-						break;
-					} else {
-						uint32_t delay_ms = (rand() % tiempo_max) + 230;
-						HAL_Delay(delay_ms);
-					}
-					//			memset(recvChar, 0, sizeof(recvChar));
-				} while (true);
-				tx_vect.clear();
-				free_tag_list_limit(&list_od, MAX_TAG_NUMBER_ONE_DETECTTION);
-			}
-			free_tag_list(&list);
-			lora_send_ticks = HAL_GetTick();
+//			CommandMessage cmd = CommandMessage(
+//					static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER), 0x00);
+//
+//
+//			print_qty_tags(tag_map_od.size());
+////			print_all_tags(&list_od, tag_status);
+//
+//
+////			print_serialized_tags_od(&list_od, MAX_TAG_NUMBER_ONE_DETECTTION, list_od.count,sniffer_id);
+//			print_serialized_cplusplus(&tag_map_od, MAX_TAG_NUMBER_ONE_DETECTTION, tag_map_od.size(),sniffer_id,interfaz_state,SERIALIZED_TAG_SIZE_ONE_DETECTION);
+//
+//
+//
+//			size_t tags_size = sizeof(sniffer_id) + sizeof(uint8_t) * 2
+//					+ (tag_map_od.size() * SERIALIZED_TAG_SIZE_ONE_DETECTION);
+//			uint8_t serialized_tags[tags_size] ={0};
+//			uint8_t total_tags = tag_map_od.size();
+//			std::vector<uint8_t> message_composed;
+//			std::vector<uint8_t> tx_vect;
+//			while (tag_map_od.size() > 0) {
+//
+//
+//				serialize_limit_cplusplus(&tag_map_od, serialized_tags,MAX_TAG_NUMBER_ONE_DETECTTION,total_tags,sniffer_id, interfaz_state);
+////				serialize_tag_list_limit_od(&list_od, tx_arr,MAX_TAG_NUMBER_ONE_DETECTTION, total_tags,	sniffer_id);
+//
+//
+////				free_tag_list_limit(&list_od, MAX_TAG_NUMBER_ONE_DETECTTION);
+//				erase_limit_map(&tag_map_od, MAX_TAG_NUMBER_ONE_DETECTTION);
+//
+//				for(int i = 0 ; i<tags_size; i++)
+//					tx_vect.push_back(serialized_tags[i]);
+//
+//				cmd.setCommandId(ONE_DETECTION);
+//				cmd.composeMessage(&tx_vect);
+//				tx_vect.clear();
+//				message_composed =
+//						cmd.get_composed_message();
+//
+//				do {
+//					gpio_handler.off(lora_rx_led);
+//					bool DATA_SIZE = txlora.channel_detection();
+//					gpio_handler.on(lora_rx_led);
+//					if (DATA_SIZE == 0) {
+//						gpio_handler.off(lora_tx_led);
+//						//				start = HAL_GetTick();
+//						if (txlora.transmit(message_composed.data(),
+//								message_composed.size(), LINKMODE::UPLINK)
+//								== HAL_OK) {
+//						}
+//						gpio_handler.on(lora_tx_led);
+//						break;
+//					} else {
+//						uint32_t delay_ms = (rand() % tiempo_max) + 230;
+//						HAL_Delay(delay_ms);
+//					}
+//					//			memset(recvChar, 0, sizeof(recvChar));
+//				} while (true);
+//
+//			}
+//			message_composed.clear();
+//			cmd.reset();
+//
+//			lora_send_ticks = HAL_GetTick();
 		}
 
 		/* USER CODE END WHILE */

@@ -60,10 +60,8 @@ bool Lora::channel_detection() {
 
 bool Lora::rxdone() {
     uint8_t irqFlags = 0;
-    set_low_frequency_mode(DeviceOperatingMode::CAD);
     irqFlags = read_8bit_reg(LoraRegisters::RegIrqFlags);
-    if (irqFlags & RX_DONE_MASK) {
-        write_8bit_reg(LoraRegisters::RegIrqFlags, RX_DONE_MASK);
+    if ((irqFlags & RX_DONE_MASK) ) {  // && (irqFlags && PAYLOAD_CRC_ERROR_MASK == 0)
         return 1;
     } else {
         return 0;
@@ -97,17 +95,20 @@ int8_t Lora::receive(uint8_t *data_received, LINKMODE mode) {
 }
 
 uint8_t Lora::read_data_after_interrupt(uint8_t *data_recived){
-	if (!wait_irq(RX_DONE_MASK, 100)) {
-			uint8_t rx_nb_bytes = read_8bit_reg(LoraRegisters::RegRxNbBytes); //Number for received bytes
-			if (read_reg_addr(LoraRegisters::RegFifo, rx_nb_bytes) == 0) {
-				memcpy(data_recived, fifo, rx_nb_bytes);
-				return rx_nb_bytes;
-			} else {
-				data_recived = NULL;
-				return 0;
-			}
-		} else
+	if (!wait_irq(RX_DONE_MASK, 0)) {
+		uint8_t rx_nb_bytes = read_8bit_reg(LoraRegisters::RegRxNbBytes); //Number for received bytes
+		uint8_t fifo_ptr = 0;
+		fifo_ptr = read_8bit_reg(LoraRegisters::RegFifoRxCurrentaddr);
+		write_8bit_reg(LoraRegisters::RegFifoAddrPtr, fifo_ptr);
+		if (read_reg_addr(LoraRegisters::RegFifo, rx_nb_bytes) == 0) {
+			memcpy(data_recived, fifo, rx_nb_bytes);
+			return rx_nb_bytes;
+		} else {
+			data_recived = NULL;
 			return 0;
+		}
+	} else
+		return 0;
 }
 
 void Lora::set_rx_continuous_mode(LINKMODE mode){
