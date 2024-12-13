@@ -71,10 +71,10 @@ DistanceHandler distance_b = DistanceHandler(DISTANCE_READINGS);
 uint32_t tiempo_max = 5;
 GpioHandler gpio_handler = GpioHandler();
 
-uint8_t lora_rcv_buffer[50] = {0};
-uint8_t prueba_irq = 0;
-// TAG_List list = { NULL, 0 };
-// TAG_List list_od = { NULL, 0 };
+uint8_t lora_rcv_buffer[256] = {0};
+
+std::vector<uint8_t> message_composed;
+std::vector<uint8_t> tx_vect;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -145,7 +145,7 @@ void sendLoRaMessage(std::map<uint32_t, TAG_t> &tag_map,
 					 Sniffer_State interfaz_state)
 {
 
-	CommandMessage cmd(static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER), 0x00);
+	CommandMessage cmd_lora_send(static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER), 0x00);
 	print_qty_tags(tag_map.size());
 	print_serialized_cplusplus(&tag_map, max_tag_number, tag_map.size(),
 							   sniffer_id, interfaz_state, serialized_tag_size);
@@ -157,24 +157,27 @@ void sendLoRaMessage(std::map<uint32_t, TAG_t> &tag_map,
 												max_tag_number);
 	uint8_t serialized_tags[tags_size] = {0};
 	uint8_t total_tags = tag_map.size();
-	std::vector<uint8_t> message_composed;
-	std::vector<uint8_t> tx_vect;
+
 	while (tag_map.size() > 0)
 	{
 		serialize_limit_cplusplus(&tag_map, serialized_tags, max_tag_number,
 								  total_tags, sniffer_id, interfaz_state);
 		erase_limit_map(&tag_map, max_tag_number);
+
+
 		for (int i = 0; i < tags_size; i++)
 			tx_vect.push_back(serialized_tags[i]);
-		cmd.setCommandId(command_id);
-		cmd.composeMessage(&tx_vect);
+
+
+		 cmd_lora_send.setCommandId(command_id);
+		 cmd_lora_send.composeMessage(&tx_vect);
 		tx_vect.clear();
-		message_composed = cmd.get_composed_message();
+		message_composed = cmd_lora_send.get_composed_message();
 		sendMessageWithRetry(lora_rx_led, lora_tx_led, txlora,
 							 message_composed);
 	}
 	message_composed.clear();
-	cmd.reset();
+	cmd_lora_send.reset();
 
 	lora_send_ticks = HAL_GetTick();
 
@@ -325,6 +328,10 @@ int main(void)
 
 	std::map<uint32_t, TAG_t> tag_map;
 	std::map<uint32_t, TAG_t> tag_map_od;
+
+
+	message_composed.reserve(255);
+	tx_vect.reserve(255);
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -454,9 +461,7 @@ int main(void)
 					break;
 				}
 				if ((tag_status == TAG_END_READINGS))
-				{
-					debug_distance_new(tag, tag_status, distance_a, distance_b);
-					//					uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list,&list_od);
+				{					//					uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list,&list_od);
 					save_two_maps_and_clear_tag(distance_a, distance_b, tag_map_od, tag, lora_send_ticks, tag_map);
 					tag_status = TAG_DISCOVERY;
 				}
@@ -478,7 +483,6 @@ int main(void)
 			}
 			if (HAL_GetTick() - query_ticks > query_timeout)
 			{
-				debug_distance_new(tag, tag_status, distance_a, distance_b);
 				save_two_maps_and_clear_tag(distance_a, distance_b, tag_map_od, tag, lora_send_ticks, tag_map);
 				tag_status = TAG_DISCOVERY;
 			}
@@ -516,13 +520,15 @@ int main(void)
 			}
 
 			//---------------- Recepción por lora  ----------------
-			lora_rcv_bytes = rxlora.read_data_after_interrupt(lora_rcv_buffer);
-			if (lora_rcv_bytes > 0)
+			lora_rcv_bytes = rxlora.read_data_after_lora_rx_done(lora_rcv_buffer);
+			if ((lora_rcv_bytes > 0) && (lora_rcv_bytes <= 256))
 			{
 				gpio_handler.on(lora_rx_led);
 				CommandMessage cmd = CommandMessage(
 					static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER), 0x00);
 				STATUS status_data = cmd.validate_crc_ptrotocol(lora_rcv_buffer, lora_rcv_bytes);
+				if (status_data == STATUS::CRC_ERROR)
+					uint8_t prueba_status_data = 1;
 				if (status_data == STATUS::RDSS_DATA_OK)
 				{
 					cmd.save_frame(lora_rcv_buffer, lora_rcv_bytes); // llegan 197 bytes

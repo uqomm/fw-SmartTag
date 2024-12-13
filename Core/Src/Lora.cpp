@@ -94,7 +94,7 @@ int8_t Lora::receive(uint8_t *data_received, LINKMODE mode) {
 		return 0;
 }
 
-uint8_t Lora::read_data_after_interrupt(uint8_t *data_recived){
+uint8_t Lora::read_data_after_lora_rx_done(uint8_t *data_recived){
 	if (!wait_irq(RX_DONE_MASK, 0)) {
 		uint8_t rx_nb_bytes = read_8bit_reg(LoraRegisters::RegRxNbBytes); //Number for received bytes
 		uint8_t fifo_ptr = 0;

@@ -95,7 +95,7 @@ public:
 	uint32_t read_settings();
 	bool channel_detection();
 	void set_rx_continuous_mode(LINKMODE mode);
-	uint8_t read_data_after_interrupt(uint8_t *data_received);
+	uint8_t read_data_after_lora_rx_done(uint8_t *data_received);
 	bool rxdone();
 private:
 	Memory* eeprom;
