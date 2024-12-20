@@ -112,10 +112,34 @@ void Led_OnOff(const Gpio &VddLed, Ws2812Color led[1], PcbLed &pcb_led,
 
 void sleep_in_out(dwt_config_t defatult_dwt_config,
 		dwt_txconfig_t defatult_dwt_txconfig, dwt_local_data_t dwt_local_data,
+		uint32_t sleep_time) {
+	HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET); /* Target specific drive of RSTn line into DW IC low for a period. */
+
+	// Calcula el periodo del LPTIM para el sleep_time
+	uint32_t lpt_period = (uint32_t) (sleep_time * 0.25f); //sleep_time in ms
+	HAL_LPTIM_TimeOut_Start_IT(&hlptim1, lpt_period);
+
+	// Entra en modo STOP
+	HAL_SuspendTick();
+	HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+	HAL_ResumeTick();
+	SystemClock_Config();
+	HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_SET);
+	if (tag_init(&defatult_dwt_config, &defatult_dwt_txconfig, &dwt_local_data,
+			running_device, RATE_6M8) == 1)
+		Error_Handler();
+	tag->readings = 0;
+	tag->sniffer_state = MASTER_ONE_DETECTION;
+	tag->distance_a = 0;
+	tag->distance_b = 0;
+	tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
+}
+
+void sleep_in_out_new(dwt_config_t defatult_dwt_config,
+		dwt_txconfig_t defatult_dwt_txconfig, dwt_local_data_t dwt_local_data,
 		uint8_t sleep_time) {
 	HAL_GPIO_WritePin(hw.nrstPort, hw.nrstPin, GPIO_PIN_RESET); /* Target specific drive of RSTn line into DW IC low for a period. */
-	HAL_LPTIM_TimeOut_Start_IT(&hlptim1,
-			(LSI_CLOCK / CLK_DIVIDER) * sleep_time);
+	HAL_LPTIM_TimeOut_Start_IT(&hlptim1,125);
 	// Entra en modo STOP
 	HAL_SuspendTick();
 	HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_SLEEPENTRY_WFI);
@@ -278,10 +302,14 @@ int main(void)
 	tag->id = _dwt_otpread(PARTID_ADDRESS);
 	dwt_configuresleep(DWT_RUNSAR, DWT_WAKE_WUP);
 	dwt_configuresleepcnt(4095);
-	tag->sleep_time = 15;
+	tag->sleep_time = 1000;
+	tag->sleep_time_not_recived = 500;
+	tag->sleep_time_recived = 15000;
 
-	uint8_t sleep_time_not_recived = 1;
-	uint8_t sleep_time_recived = 15;
+	uint32_t sleep_time_not_recived = 500;
+	uint32_t sleep_time_recived = 15000;
+	uint32_t sleep_time = 1000;
+
 	uint8_t STAT0_Reg = 0;
 	uint8_t charge_done = 0x20;
 	uint8_t charge_const = 0x40;
@@ -306,7 +334,7 @@ int main(void)
 				query_ticks = HAL_GetTick();
 
 			if ((tag_status != TAG_WAIT_FOR_TIMESTAMPT_QUERY)
-					&& (tag_status != TAG_WAIT_SEND_TX)) {
+					&& (tag_status != TAG_WAIT_SEND_TX) && (tag_status != TAG_SLEEP_NOT_RECIVED)) {
 				tag_status = TAG_SLEEP;
 			}
 			break;
@@ -317,7 +345,7 @@ int main(void)
 			if (tag_status == TAG_SLEEP)
 				tag_status = TAG_SLEEP_RECIVED;
 			else
-				tag_status = TAG_SLEEP;
+				tag_status = TAG_SLEEP_NOT_RECIVED;
 			break;
 
 		case TAG_WAIT_FOR_TIMESTAMPT_QUERY:
@@ -355,11 +383,23 @@ int main(void)
 		case TAG_SLEEP_RECIVED:
 			battery_charging_led_on_off(VddLed, STAT0_Reg, charge_const, led, charge_done, pcb_led);
 
-			Counter_INT_Led3 = 15;
+			Counter_INT_Led3 = 0;
 			Led_OnOff(VddLed, led, pcb_led, Power_Good);
 
 			sleep_in_out(defatult_dwt_config, defatult_dwt_txconfig,
 					dwt_local_data, sleep_time_recived);
+			break;
+
+		case TAG_SLEEP_NOT_RECIVED:
+			battery_charging_led_on_off(VddLed, STAT0_Reg, charge_const, led,
+					charge_done, pcb_led);
+
+			if ((Counter_INT_Led3) > 14) {
+				Counter_INT_Led3 = 0;
+				Led_OnOff(VddLed, led, pcb_led, Power_Good);
+			}
+			sleep_in_out(defatult_dwt_config, defatult_dwt_txconfig,
+					dwt_local_data, sleep_time_not_recived);
 			break;
 
 		default:
@@ -369,9 +409,8 @@ int main(void)
 				Counter_INT_Led3 = 0;
 				Led_OnOff(VddLed, led, pcb_led, Power_Good);
 			}
-
-			sleep_in_out(defatult_dwt_config, defatult_dwt_txconfig,
-					dwt_local_data, sleep_time_not_recived);
+			sleep_in_out_new(defatult_dwt_config, defatult_dwt_txconfig,
+					dwt_local_data, sleep_time);
 
 			Counter_INT_Led3++;
 			break;

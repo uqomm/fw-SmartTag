@@ -130,7 +130,7 @@ int main(void) {
 	CommandMessage command = CommandMessage(
 			static_cast<uint8_t>(MODULE_FUNCTION::SERVER), 0x00);
 
-	UartHandler uart = UartHandler(&huart1);
+	UartHandler uart = UartHandler(&huart2);
 
 	Memory eeprom = Memory(&hi2c1);
 
@@ -146,7 +146,7 @@ int main(void) {
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-		uint8_t bytes_reciv = uart.read_timeout_new(data_reciv, 1);
+		uint8_t bytes_reciv = uart.read_timeout(data_reciv, 1);
 		if (bytes_reciv > 0) {
 
 			STATUS status_data = command.validate(data_reciv, bytes_reciv);
@@ -169,14 +169,14 @@ int main(void) {
 				}
 
 			} else if (status_data == STATUS::RETRANSMIT_FRAME) {
-				if (lora.transmit(data_reciv, leng, LinkMode::DOWNLINK)
+				if (lora.transmit(data_reciv, bytes_reciv, LinkMode::DOWNLINK)
 						== HAL_OK) {
 					HAL_GPIO_TogglePin(LORA_TX_OK_GPIO_Port, LORA_TX_OK_Pin);
 					//HAL_Delay(1000);
 				}
 			}
 		}
-		memset(data_reciv, 0, sizeof(data_reciv));
+		memset(data_reciv, 0, bytes_reciv);
 		bytes_reciv = 0;
 		HAL_GPIO_TogglePin(LORA_TX_OK_GPIO_Port, LORA_TX_OK_Pin);
 

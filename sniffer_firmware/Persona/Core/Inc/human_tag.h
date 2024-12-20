@@ -25,6 +25,7 @@ extern "C" {
 #define RESPONSE_TX_TIME_SHIFT_AMOUNT 8
 
 #define TX_BUFFER_SIZE (sizeof(uint8_t) + 3 * sizeof(uint32_t) + sizeof(uint16_t)) //Modificar para tamaño de batería de 16bits unsigned
+#define TX_BUFFER_SIZE_TAG_RESPONSE (sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint8_t))
 #define RX_BUFFER_SIZE_TIMESTAMP_QUERY  (sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t))
 #define TAG_TIMESTAMP_QUERY 0x11
 #define TAG_SET_SLEEP_MODE 0x12
@@ -45,7 +46,9 @@ typedef struct {
 	uint64_t poll_rx_timestamp;
 	uint32_t resp_tx_time;
 	uint8_t sniffer_state;
-	uint8_t sleep_time;
+	uint32_t sleep_time;
+	uint32_t sleep_time_recived;
+	uint32_t sleep_time_not_recived;
 	uint16_t distance_a;
 	uint16_t distance_b;
 } TAG_t;
@@ -78,6 +81,7 @@ typedef enum{
 	TAG_RX_COMMAND_ERROR,
 	TAG_TX_ERROR,
 	TAG_SLEEP,
+	TAG_SLEEP_NOT_RECIVED,
 	TAG_WAKE_UP,
 	TAG_WAIT_FOR_FIRST_DETECTION,
 	TAG_WAIT_FOR_TIMESTAMPT_QUERY,

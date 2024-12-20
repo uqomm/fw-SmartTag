@@ -27,12 +27,11 @@ TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 	if (rx_buffer_size == 0)
 		return (TAG_RX_DATA_ZERO);
 
-	uint8_t rx_buffer[3];
+	uint8_t rx_buffer[5];
 	dwt_readrxdata(rx_buffer, (uint16_t) rx_buffer_size, 0);
 
 	uint8_t received_command = rx_buffer[0];
 	tag->sniffer_state = rx_buffer[1];
-	tag->sleep_time = rx_buffer[2];
 
 	if (tag->command != received_command)
 		return (TAG_RX_COMMAND_ERROR);
@@ -74,10 +73,11 @@ TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 		return (TAG_TX_ERROR);
 	}
 	//return (TAG_WAIT_FOR_FIRST_DETECTION);
-	if (tag->sniffer_state == MASTER_ONE_DETECTION){
+	if (tag->sniffer_state == MASTER_ONE_DETECTION)
 		return (TAG_WAIT_SEND_TX);
-	}
-	return (TAG_WAIT_FOR_TIMESTAMPT_QUERY);
+	if (tag->sniffer_state == MASTER_MULTIPLE_DETECTION)
+		return (TAG_WAIT_FOR_TIMESTAMPT_QUERY);
+	return TAG_SLEEP_NOT_RECIVED;
 }
 
 TAG_STATUS_t process_second(TAG_t *tag) {
@@ -98,7 +98,7 @@ TAG_STATUS_t process_second(TAG_t *tag) {
 		return (TAG_WAIT_FOR_FIRST_DETECTION);
 
 
-	uint8_t rx_buffer[5];
+	uint8_t rx_buffer[TX_BUFFER_SIZE_TAG_RESPONSE];
 	dwt_readrxdata(rx_buffer, (uint16_t) rx_buffer_size, 0);
 
 	uint8_t received_command = rx_buffer[0];
@@ -109,6 +109,9 @@ TAG_STATUS_t process_second(TAG_t *tag) {
 
 	if (tag->id != received_id)
 		return (TAG_WRONG_ID_MATCH);
+
+	tag->sleep_time_recived = rx_buffer[5]*1000;
+	tag->sleep_time_not_recived = rx_buffer[6]*100;
 
 	return (TAG_SLEEP);
 }
