@@ -68,7 +68,8 @@ typedef struct {
 	float Float_Battery_Voltage;
 	uint8_t Estado_Final;
 	Sniffer_State master_state;
-	uint8_t sleep_time;
+	uint8_t sleep_time_recived;
+	uint8_t sleep_time_not_recived;
 } TAG_t;
 
 typedef struct tag_node {
@@ -112,6 +113,7 @@ typedef enum {
 } TAG_STATUS_t;
 
 #define TX_BUFFER_SIZE (sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t))
+#define TX_BUFFER_SIZE_TAG_RESPONSE (sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint8_t))
 #define TX_DISCOVERY_SIZE (4* sizeof(uint8_t))
 #define TX_TIMESTAMP_SIZE (sizeof(uint8_t) + sizeof(uint32_t))
 #define TAG_TIMESTAMP_QUERY 0x11
@@ -194,6 +196,8 @@ void serialize_limit_cplusplus(std::map<uint32_t, TAG_t> *tag_map, uint8_t *buff
 void serialize_cplusplus(std::map<uint32_t, TAG_t> *tag_map, uint8_t *buffer,
 		uint8_t _total_tags, uint32_t _sniffer_id,Sniffer_State interface_state);
 void erase_limit_map(std::map<uint32_t, TAG_t>* tag_map_ptr, size_t limit);
+int serialize_header(uint8_t count, uint8_t *buffer, uint8_t limit,
+		uint8_t _total_tags, uint32_t _sniffer_id);
 
 
 

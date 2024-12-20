@@ -198,7 +198,7 @@ TAG_STATUS_t tag_discovery_new_new(TAG_t *tag, Sniffer_State _interfaz_state,
 
 	tx_buffer[0] = tag->command;
 	tx_buffer[1] = _interfaz_state;
-	tx_buffer[2] = tag->sleep_time;
+	tx_buffer[2] = tag->sleep_time_not_recived;
 	tx_buffer[3] = DEV_UWB3000F27;
 
 	TAG_STATUS_t status_reg = setup_and_transmit(tag, tx_buffer,
@@ -282,12 +282,15 @@ TAG_STATUS_t tag_receive_cmd(TAG_t *tag, uint8_t *rx_buffer,
 TAG_STATUS_t tag_response(TAG_t *tag) {
 	assert_param(tag != NULL);
 
-	uint8_t tx_buffer[TX_BUFFER_SIZE] = { 0 };
+	uint8_t tx_buffer[TX_BUFFER_SIZE_TAG_RESPONSE] = { 0 };
 
 	tx_buffer[0] = tag->command;
 	*(uint32_t*) (tx_buffer + sizeof(tag->command)) = tag->id;
 
-	TAG_STATUS_t status_reg = transmit_(tx_buffer, TX_BUFFER_SIZE);
+	*(uint8_t*) (tx_buffer + sizeof(tag->command) + sizeof(tag->id)) = tag->sleep_time_recived;
+	*(uint8_t*) (tx_buffer + sizeof(tag->command) + sizeof(tag->id) + sizeof(tag->sleep_time_recived)) = tag->sleep_time_not_recived;
+
+	TAG_STATUS_t status_reg = transmit_(tx_buffer, TX_BUFFER_SIZE_TAG_RESPONSE);
 
 	return status_reg;
 }
@@ -1029,10 +1032,10 @@ void switch_hw(TAG_t *tag, DistanceHandler *&dist_ptr, Uwb_HW_t *&hw,
 
 void switch_hw_timestamp_query(TAG_t *tag, DistanceHandler *&dist_ptr,
 		Uwb_HW_t *&hw, DistanceHandler *dist_a, DistanceHandler *dist_b) {
-	if ((hw == &uwb_hw_a) && (dist_b->get_counter() < DISTANCE_READINGS / 2)) {
+	if ((hw == &uwb_hw_a) && (dist_b->get_counter() < dist_b->get_total_readings_for_two_transcievers() / 2)) {
 		hw = &uwb_hw_b;
 		dist_ptr = dist_b; // Asigna directamente al puntero
-	} else if (dist_a->get_counter() < DISTANCE_READINGS / 2){
+	} else if (dist_a->get_counter() < dist_a->get_total_readings_for_two_transcievers() / 2){
 		hw = &uwb_hw_a;
 		dist_ptr = dist_a; // Asigna directamente al puntero
 	}
@@ -1120,7 +1123,7 @@ void print_qty_tags(int qty) {
 }
 
 
-static int serialize_header(uint8_t count, uint8_t *buffer, uint8_t limit,
+int serialize_header(uint8_t count, uint8_t *buffer, uint8_t limit,
 		uint8_t _total_tags, uint32_t _sniffer_id){
 	int offset = 0;
 

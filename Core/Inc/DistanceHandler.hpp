@@ -22,7 +22,10 @@ public:
 	uint8_t get_counter();
 	uint8_t get_error_track();
 	uint8_t get_error_crc_times();
+	uint8_t get_total_readings_for_two_transcievers();
 	void error_crc_increment();
+	void set_total_readings(uint8_t _total_readings);
+	void change_total_readings(uint8_t _total_readings);
 
 private:
 	uint8_t total_readings;

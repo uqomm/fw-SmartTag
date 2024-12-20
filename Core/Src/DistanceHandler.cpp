@@ -8,10 +8,8 @@
 #include "DistanceHandler.hpp"
 
 DistanceHandler::DistanceHandler(uint8_t _total_readings) {
-	// TODO Auto-generated constructor stub
 	total_readings =_total_readings/2;
 	readings = new double[total_readings];
-
 }
 
 DistanceHandler::~DistanceHandler() {
@@ -63,6 +61,10 @@ uint8_t DistanceHandler::get_error_crc_times(){
 	return error_crc_times;
 }
 
+uint8_t DistanceHandler::get_total_readings_for_two_transcievers(){
+	return total_readings*2;
+}
+
 uint16_t DistanceHandler::get_media_multiplier(uint8_t multiplier) {
 	return get_media() * multiplier;
 }
@@ -78,7 +80,21 @@ void DistanceHandler::clear() {
 
 double DistanceHandler::get_last_distance(){
 	return readings[counter-1];
+}
 
+void DistanceHandler::set_total_readings(uint8_t _total_readings){
+	total_readings = _total_readings/2;
+}
+
+void DistanceHandler::change_total_readings(uint8_t _total_readings) {
+
+  delete[] readings;
+  total_readings = _total_readings / 2;
+  readings = new double[total_readings];
+
+  for (uint8_t i = 0; i < total_readings; ++i) {
+    readings[i] = 0.0;
+  }
 }
 
 

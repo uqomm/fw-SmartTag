@@ -121,13 +121,11 @@ size_t calculate_serialize_size(uint32_t sniffer_id,
 	size_t tags_size;
 
 	if (tag_map_size >= max_tag_number)
-		tags_size = sizeof(sniffer_id) +
-					sizeof(uint8_t) * 2 +
-					(max_tag_number * serialized_tag_size);
+		tags_size = sizeof(sniffer_id) + sizeof(uint8_t) * 2
+				+ (max_tag_number * serialized_tag_size);
 	else
-		tags_size = sizeof(sniffer_id) +
-							sizeof(uint8_t) * 2 +
-							(tag_map_size * serialized_tag_size);
+		tags_size = sizeof(sniffer_id) + sizeof(uint8_t) * 2
+				+ (tag_map_size * serialized_tag_size);
 	return tags_size;
 }
 
@@ -180,8 +178,6 @@ void sendLoRaMessage(std::map<uint32_t, TAG_t> &tag_map,
 	cmd_lora_send.reset();
 
 	lora_send_ticks = HAL_GetTick();
-
-
 }
 
 bool is_ready_to_send(uint32_t lora_send_ticks, uint32_t lora_send_timeout,
@@ -191,18 +187,48 @@ bool is_ready_to_send(uint32_t lora_send_ticks, uint32_t lora_send_timeout,
            (interfaz_state == expected_state);
 }
 
-void send_lora_message_if_ready(uint32_t lora_send_ticks, uint32_t lora_send_timeout, std::map<uint32_t, TAG_t> &tag_map,
+void send_lora_message_if_ready(uint32_t *lora_send_ticks, uint32_t lora_send_timeout, std::map<uint32_t, TAG_t> &tag_map,
                              Sniffer_State interfaz_state, Sniffer_State expected_state, int max_tags, 
                              uint8_t command_id, int tag_size, uint32_t sniffer_id, 
 							 const Gpio& lora_rx_led, const Gpio& lora_tx_led,
 							 Lora& txlora) { // Assuming these are the correct types for your arguments
 
-    if (is_ready_to_send(lora_send_ticks, lora_send_timeout, tag_map.size(), interfaz_state, expected_state)) {
-        sendLoRaMessage(tag_map, max_tags, command_id, tag_size, lora_send_ticks, lora_send_timeout,
+    if (is_ready_to_send(*lora_send_ticks, lora_send_timeout, tag_map.size(), interfaz_state, expected_state)) {
+        sendLoRaMessage(tag_map, max_tags, command_id, tag_size, *lora_send_ticks, lora_send_timeout,
                         sniffer_id, lora_rx_led, lora_tx_led, txlora, interfaz_state);
         tag_map.clear(); // Clear the tag map *after* sending.
+        *lora_send_ticks = HAL_GetTick();
 
     }
+}
+
+void send_lora_message_if_not_ready(uint32_t *lora_send_ticks, uint32_t lora_send_timeout, uint32_t sniffer_id,
+							 const Gpio& lora_rx_led, const Gpio& lora_tx_led,
+							 Lora& txlora) { // Assuming these are the correct types for your arguments
+
+	if (HAL_GetTick() - *lora_send_ticks > lora_send_timeout){
+		CommandMessage cmd_lora_send(static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER),
+					0x00);
+			print_qty_tags(0);
+
+			uint8_t tags_size = sizeof(sniffer_id) + sizeof(uint8_t) * 2;
+			uint8_t serialized_tags[tags_size] = {0};
+			serialize_header(0, serialized_tags, 0, 0, sniffer_id);
+
+			for (int i = 0; i < tags_size; i++)
+				tx_vect.push_back(serialized_tags[i]);
+
+			cmd_lora_send.setCommandId(ONE_DETECTION);
+			cmd_lora_send.composeMessage(&tx_vect);
+			tx_vect.clear();
+			message_composed = cmd_lora_send.get_composed_message();
+			sendMessageWithRetry(lora_rx_led, lora_tx_led, txlora, message_composed);
+
+			message_composed.clear();
+			cmd_lora_send.reset();
+
+			*lora_send_ticks = HAL_GetTick();
+	}
 }
 
 
@@ -292,13 +318,16 @@ int main(void)
 	TAG_t tag;
 	reset_TAG_values(&tag);
 	tag_ptr = &tag;
+	tag.sleep_time_recived = 15; //time in seconds
+	tag.sleep_time_not_recived = 5;  //time in seconds*10
+
 
 	uint32_t sniffer_id = _dwt_otpread(PARTID_ADDRESS);
 
-	Sniffer_State interfaz_state = MASTER_MULTIPLE_DETECTION; // MASTER_MULTIPLE_DETECTION      MASTER_ONE_DETECTION
-	tag.sleep_time = 15;									  // tiempo de sleep
+	Sniffer_State interfaz_state = MASTER_ONE_DETECTION; // MASTER_MULTIPLE_DETECTION      MASTER_ONE_DETECTION									  // tiempo de sleep
 	TAG_STATUS_t tag_status = TAG_DISCOVERY;
 	uint32_t lora_send_timeout = 5000;
+	uint32_t lora_send_timeout_for_not_detection = 10000;
 	uint32_t lora_send_ticks = HAL_GetTick();
 	uint32_t query_timeout = 1000;
 	uint32_t query_ticks;
@@ -352,8 +381,9 @@ int main(void)
 
 			tx_buffer[0] = tag.command;
 			tx_buffer[1] = interfaz_state;
-			tx_buffer[2] = tag.sleep_time;
+			tx_buffer[2] = tag.sleep_time_recived;
 			tx_buffer[3] = DEV_UWB3000F27;
+
 
 			tag_status = setup_and_transmit(&tag, tx_buffer,
 											TX_DISCOVERY_SIZE, rx_buffer, &rx_buffer_size);
@@ -369,7 +399,7 @@ int main(void)
 					if (tag.command == rx_buffer[0])
 					{
 						tag.id = *(const uint32_t *)(rx_buffer + 1);
-						debug_distance_new(tag, tag_status, distance_a, distance_b);
+//						debug_distance_new(tag, tag_status, distance_a, distance_b);
 
 						const int poll_rx_offset = 5;
 						const int resp_tx_offset = 9;
@@ -413,7 +443,7 @@ int main(void)
 		else if (tag_status == TAG_SEND_TIMESTAMP_QUERY)
 		{
 
-			if (tag.readings < DISTANCE_READINGS - 1)
+			if (tag.readings < distance_ptr->get_total_readings_for_two_transcievers() - 1)
 			{
 				switch_hw_timestamp_query(&tag, distance_ptr, hw, &distance_a,
 										  &distance_b);
@@ -492,7 +522,7 @@ int main(void)
 			tag.command = TAG_SET_SLEEP_MODE;
 			HAL_Delay(1);
 			tag_status = tag_response(&tag);
-			debug_distance_new(tag, tag_status, distance_a, distance_b);
+//			debug_distance_new(tag, tag_status, distance_a, distance_b);
 			uint8_t _found_new = save_map_and_clear_tag(&tag, &distance_a, &distance_b, &tag_map_od);
 			if (_found_new == 0)
 				lora_send_ticks = HAL_GetTick();
@@ -507,17 +537,31 @@ int main(void)
 
 		if (tag_status == TAG_DISCOVERY)
 		{
-			if (interfaz_state == MASTER_MULTIPLE_DETECTION){
 
-					send_lora_message_if_ready(lora_send_ticks, lora_send_timeout, tag_map, interfaz_state, MASTER_MULTIPLE_DETECTION,
-						MAX_TAG_NUMBER_MULTIPLE_DETECTTION, MULTIPLE_DETECTION, SERIALIZED_TAG_SIZE,
-						sniffer_id, lora_rx_led, lora_tx_led, txlora);
-			} else if (interfaz_state == MASTER_ONE_DETECTION){
+			if ((tag_map.size() == 0) && (tag_map_od.size() == 0)) {
 
-					send_lora_message_if_ready(lora_send_ticks, lora_send_timeout, tag_map_od, interfaz_state, MASTER_ONE_DETECTION,
-						MAX_TAG_NUMBER_ONE_DETECTTION, ONE_DETECTION, SERIALIZED_TAG_SIZE_ONE_DETECTION,
-						sniffer_id, lora_rx_led, lora_tx_led, txlora);
+				send_lora_message_if_not_ready(&lora_send_ticks,
+						lora_send_timeout_for_not_detection, sniffer_id,
+						lora_rx_led, lora_tx_led, txlora);
+
+			} if (interfaz_state == MASTER_MULTIPLE_DETECTION){
+
+				send_lora_message_if_ready(&lora_send_ticks, lora_send_timeout,
+						tag_map, interfaz_state, MASTER_MULTIPLE_DETECTION,
+						MAX_TAG_NUMBER_MULTIPLE_DETECTTION, MULTIPLE_DETECTION,
+						SERIALIZED_TAG_SIZE, sniffer_id, lora_rx_led,
+						lora_tx_led, txlora);
+
+			} else if (interfaz_state == MASTER_ONE_DETECTION) {
+
+				send_lora_message_if_ready(&lora_send_ticks, lora_send_timeout,
+						tag_map_od, interfaz_state, MASTER_ONE_DETECTION,
+						MAX_TAG_NUMBER_ONE_DETECTTION, ONE_DETECTION,
+						SERIALIZED_TAG_SIZE_ONE_DETECTION, sniffer_id,
+						lora_rx_led, lora_tx_led, txlora);
 			}
+
+
 
 			//---------------- Recepción por lora  ----------------
 			lora_rcv_bytes = rxlora.read_data_after_lora_rx_done(lora_rcv_buffer);
@@ -527,8 +571,6 @@ int main(void)
 				CommandMessage cmd = CommandMessage(
 					static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER), 0x00);
 				STATUS status_data = cmd.validate_crc_ptrotocol(lora_rcv_buffer, lora_rcv_bytes);
-				if (status_data == STATUS::CRC_ERROR)
-					uint8_t prueba_status_data = 1;
 				if (status_data == STATUS::RDSS_DATA_OK)
 				{
 					cmd.save_frame(lora_rcv_buffer, lora_rcv_bytes); // llegan 197 bytes
@@ -539,17 +581,35 @@ int main(void)
 						std::memcpy(&recived_id_from_lora, &recived_data_lora[0], sizeof(uint32_t));
 						if (recived_id_from_lora == sniffer_id)
 						{
-							switch (cmd.getCommandId())
-							{
-							case CHANGE_SLEEP_TIME:
-								tag.sleep_time = recived_data_lora[5];
+							switch (cmd.getCommandId()){
+							case CHANGE_SLEEP_TIME_RECIVED:{
+								uint8_t _sleep_time_recived = recived_data_lora[4];
+								if ((_sleep_time_recived <= 25)  && (_sleep_time_recived >= 5))
+									tag.sleep_time_recived = _sleep_time_recived;
 								break;
-							case ONE_DETECTION:
+							}
+							case CHANGE_SLEEP_NOT_RECIVED:{
+								uint8_t _sleep_time_not_recived = recived_data_lora[4];
+								if ((_sleep_time_not_recived < 10) && (_sleep_time_not_recived >= 5))
+									tag.sleep_time_not_recived = recived_data_lora[4];
+								break;
+							}
+							case ONE_DETECTION:{
 								interfaz_state = MASTER_ONE_DETECTION;
 								break;
-							case MULTIPLE_DETECTION:
+							}
+							case MULTIPLE_DETECTION:{
 								interfaz_state = MASTER_MULTIPLE_DETECTION;
 								break;
+							}
+							case CHANGE_TAG_READINGS:{
+								uint8_t _total_readings = recived_data_lora[5];
+								if (_total_readings % 2 == 0) {
+									distance_a.change_total_readings(_total_readings);
+									distance_b.change_total_readings(_total_readings);
+								}
+								break;
+							}
 							}
 						}
 					}
