@@ -1,8 +1,0 @@
-../Core/Src/human_tag.c:17:14:process_first_tag_information	112	static
-../Core/Src/human_tag.c:85:14:process_second	40	static
-../Core/Src/human_tag.c:118:14:process_queried_tag_information	40	static
-../Core/Src/human_tag.c:152:14:process_response	104	static
-../Core/Src/human_tag.c:190:10:send_response_with_timestamps	104	static
-../Core/Src/human_tag.c:243:6:start_tag_reception_inmediate	16	static
-../Core/Src/human_tag.c:256:14:wait_rx_data	24	static
-../Core/Src/human_tag.c:306:6:sleep_config	16	static
