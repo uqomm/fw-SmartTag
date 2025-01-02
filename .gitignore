@@ -14,14 +14,6 @@ Release/
 *.lib
 *.so
 
-# IDE files
-/.idea/
-/.vscode/
-*.project
-*.cproject
-*.settings
-*.mxproject
-
 # STM32CubeIDE specific files
 .cstat
 .pcy
