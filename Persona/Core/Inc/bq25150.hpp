@@ -97,6 +97,7 @@ public:
 	void register_init_all();
 	void register_Factory_Reset();
 	void register_init_all_2();
+	void enter_ship_mode();
 	HAL_StatusTypeDef I2C_write(uint8_t deviceAddress, uint8_t registerAddress, uint8_t registerData, I2C_HandleTypeDef* i2c);
 
 };

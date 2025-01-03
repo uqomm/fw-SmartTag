@@ -305,6 +305,7 @@ int main(void)
 	tag->sleep_time = 1000;
 	tag->sleep_time_not_recived = 500;
 	tag->sleep_time_recived = 15000;
+	tag->ship_mode = SHIP_MODE_OFF;
 
 	uint32_t sleep_time_not_recived = 500;
 	uint32_t sleep_time_recived = 15000;
@@ -316,6 +317,8 @@ int main(void)
 
 	uint32_t query_timeout = 1000;
 	uint32_t query_ticks;
+
+	battery_charger.enter_ship_mode();
 
   /* USER CODE END 2 */
 
@@ -344,7 +347,7 @@ int main(void)
 			tag_status = process_second(tag);
 			if (tag_status == TAG_SLEEP)
 				tag_status = TAG_SLEEP_RECIVED;
-			else
+			else if (tag_status != TAG_SHIP_MODE_SET)
 				tag_status = TAG_SLEEP_NOT_RECIVED;
 			break;
 
@@ -378,6 +381,10 @@ int main(void)
 				else
 					tag_status = TAG_SLEEP;
 			}
+			break;
+
+		case TAG_SHIP_MODE_SET:
+			battery_charger.enter_ship_mode();
 			break;
 
 		case TAG_SLEEP_RECIVED:

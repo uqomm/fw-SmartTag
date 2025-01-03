@@ -94,7 +94,7 @@ TAG_STATUS_t process_second(TAG_t *tag) {
 	if (rx_buffer_size == 0)
 		return (TAG_RX_DATA_ZERO);
 
-	if ((rx_buffer_size < 5))
+	if ((rx_buffer_size < 8))
 		return (TAG_WAIT_FOR_FIRST_DETECTION);
 
 
@@ -112,6 +112,10 @@ TAG_STATUS_t process_second(TAG_t *tag) {
 
 	tag->sleep_time_recived = rx_buffer[5]*1000;
 	tag->sleep_time_not_recived = rx_buffer[6]*100;
+	tag->ship_mode = rx_buffer[7];
+
+	if (tag->ship_mode == SHIP_MODE_ON)
+		return (TAG_SHIP_MODE_SET);
 
 	return (TAG_SLEEP);
 }
