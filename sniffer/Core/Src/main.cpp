@@ -319,8 +319,8 @@ int main(void)
 	reset_TAG_values(&tag);
 	tag_ptr = &tag;
 	tag.sleep_time_recived = 15; //time in seconds
-	tag.sleep_time_not_recived = 5;  //time in seconds*10
-
+	tag.sleep_time_not_recived = 5;  //(time in seconds)*10
+	tag.ship_mode = SHIP_MODE_OFF;
 
 	uint32_t sniffer_id = _dwt_otpread(PARTID_ADDRESS);
 

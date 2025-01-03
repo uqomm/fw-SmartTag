@@ -287,8 +287,17 @@ TAG_STATUS_t tag_response(TAG_t *tag) {
 	tx_buffer[0] = tag->command;
 	*(uint32_t*) (tx_buffer + sizeof(tag->command)) = tag->id;
 
-	*(uint8_t*) (tx_buffer + sizeof(tag->command) + sizeof(tag->id)) = tag->sleep_time_recived;
-	*(uint8_t*) (tx_buffer + sizeof(tag->command) + sizeof(tag->id) + sizeof(tag->sleep_time_recived)) = tag->sleep_time_not_recived;
+	*(uint8_t*) (tx_buffer + sizeof(tag->command)
+			+ sizeof(tag->id)) = tag->sleep_time_recived;
+
+	*(uint8_t*) (tx_buffer + sizeof(tag->command)
+			+ sizeof(tag->id)
+			+ sizeof(tag->sleep_time_recived)) = tag->sleep_time_not_recived;
+
+	*(uint8_t*) (tx_buffer + sizeof(tag->command)
+			+ sizeof(tag->id)
+			+ sizeof(tag->sleep_time_recived)
+			+ sizeof(tag->sleep_time_not_recived)) = tag->ship_mode;
 
 	TAG_STATUS_t status_reg = transmit_(tx_buffer, TX_BUFFER_SIZE_TAG_RESPONSE);
 
