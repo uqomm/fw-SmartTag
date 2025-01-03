@@ -318,7 +318,6 @@ int main(void)
 	uint32_t query_timeout = 1000;
 	uint32_t query_ticks;
 
-	battery_charger.enter_ship_mode();
 
   /* USER CODE END 2 */
 

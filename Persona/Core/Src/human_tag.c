@@ -83,6 +83,7 @@ TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 TAG_STATUS_t process_second(TAG_t *tag) {
 	TAG_STATUS_t status_reg = 0;
 	tag->command = TAG_SET_SLEEP_MODE;
+	tag->ship_mode = SHIP_MODE_OFF;
 
 	start_tag_reception_inmediate(0, 0);
 	status_reg = wait_rx_data();
