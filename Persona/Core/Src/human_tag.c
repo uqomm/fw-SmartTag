@@ -257,7 +257,7 @@ void start_tag_reception_inmediate(uint8_t preamble_timeout, uint8_t rx_timeout)
 	/* Poll for reception of a frame or error/timeout. See NOTE 8 below. */
 }
 
-#define RX_DATA_TIMEOUT_MS 150 // Timeout in millisecondspasé de 1000 a 100 para probar
+#define RX_DATA_TIMEOUT_MS 100 // Timeout in millisecondspasé de 1000 a 100 para probar
 
 TAG_STATUS_t wait_rx_data() {
 	uint32_t status_reg;

@@ -99,7 +99,7 @@ void Led_OnOff(const Gpio &VddLed, Ws2812Color led[1], PcbLed &pcb_led,
 
 	if (_charger_state == true) {
 		pins.on(VddLed);
-		if (tag->Voltaje_Bat <= 0xA222)
+		if (tag->Voltaje_Bat <= 0x9555)
 			pcb_led.set_and_send_led_color(led, 1, 15, Color::RED);
 		else if ((0xA222 < tag->Voltaje_Bat) && (tag->Voltaje_Bat <= 0xAAAA))
 			pcb_led.set_and_send_led_color(led, 1, 15, Color::YELLOW);
@@ -415,7 +415,7 @@ int main(void)
 				Counter_INT_Led3 = 0;
 				Led_OnOff(VddLed, led, pcb_led, Power_Good);
 			}
-			sleep_in_out_new(defatult_dwt_config, defatult_dwt_txconfig,
+			sleep_in_out(defatult_dwt_config, defatult_dwt_txconfig,
 					dwt_local_data, sleep_time);
 
 			Counter_INT_Led3++;
