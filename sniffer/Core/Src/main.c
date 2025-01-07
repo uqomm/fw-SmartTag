@@ -419,8 +419,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : DW3000_A_IRQ_Pin DW3000_B_IRQ_Pin */
-  GPIO_InitStruct.Pin = DW3000_A_IRQ_Pin|DW3000_B_IRQ_Pin;
+  /*Configure GPIO pins : DW3000_A_IRQ_Pin SWITCH_SHIP_MODE_Pin DW3000_B_IRQ_Pin */
+  GPIO_InitStruct.Pin = DW3000_A_IRQ_Pin|SWITCH_SHIP_MODE_Pin|DW3000_B_IRQ_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);

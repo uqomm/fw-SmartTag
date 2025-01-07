@@ -321,6 +321,7 @@ int main(void)
 	tag.sleep_time_recived = 15; //time in seconds
 	tag.sleep_time_not_recived = 5;  //(time in seconds)*10
 	tag.ship_mode = SHIP_MODE_OFF;
+	bool switch_ship_mode = 0;
 
 	uint32_t sniffer_id = _dwt_otpread(PARTID_ADDRESS);
 
@@ -352,6 +353,7 @@ int main(void)
 
 	Gpio lora_rx_led = Gpio(LORA_RX_LED_GPIO_Port, LORA_RX_LED_Pin);
 	Gpio lora_tx_led = Gpio(LORA_TX_LED_GPIO_Port, LORA_TX_LED_Pin);
+	Gpio switch_ship_mode_state = Gpio(SWITCH_SHIP_MODE_GPIO_Port,SWITCH_SHIP_MODE_Pin);
 
 	uint8_t recive_test[255] = {0};
 
@@ -619,6 +621,14 @@ int main(void)
 				memset(lora_rcv_buffer, 0, sizeof(lora_rcv_buffer));
 				gpio_handler.off(lora_rx_led);
 			}
+
+			switch_ship_mode = gpio_handler.state(switch_ship_mode_state);
+			if (switch_ship_mode == 0)
+				tag.ship_mode = SHIP_MODE_OFF;
+			else
+				tag.ship_mode = SHIP_MODE_ON;
+
+
 		}
 		/* USER CODE END WHILE */
 
@@ -840,7 +850,7 @@ static void MX_USART1_UART_Init(void)
 
 	/* USER CODE END USART1_Init 1 */
 	huart1.Instance = USART1;
-	huart1.Init.BaudRate = 250000;
+	huart1.Init.BaudRate = 115200;
 	huart1.Init.WordLength = UART_WORDLENGTH_8B;
 	huart1.Init.StopBits = UART_STOPBITS_1;
 	huart1.Init.Parity = UART_PARITY_NONE;
@@ -909,8 +919,8 @@ static void MX_GPIO_Init(void)
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-	/*Configure GPIO pins : DW3000_A_IRQ_Pin DW3000_B_IRQ_Pin */
-	GPIO_InitStruct.Pin = DW3000_A_IRQ_Pin | DW3000_B_IRQ_Pin;
+	/*Configure GPIO pins : DW3000_A_IRQ_Pin SWITCH_SHIP_MODE_Pin DW3000_B_IRQ_Pin */
+	GPIO_InitStruct.Pin = DW3000_A_IRQ_Pin | SWITCH_SHIP_MODE_Pin | DW3000_B_IRQ_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);

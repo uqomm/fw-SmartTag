@@ -69,6 +69,8 @@ void Error_Handler(void);
 #define DW3000_A_WKUP_GPIO_Port GPIOA
 #define DW3000_B_WKUP_Pin GPIO_PIN_6
 #define DW3000_B_WKUP_GPIO_Port GPIOA
+#define SWITCH_SHIP_MODE_Pin GPIO_PIN_7
+#define SWITCH_SHIP_MODE_GPIO_Port GPIOA
 #define LORA_TX_DIO0_Pin GPIO_PIN_1
 #define LORA_TX_DIO0_GPIO_Port GPIOB
 #define LORA_TX_LED_Pin GPIO_PIN_2
