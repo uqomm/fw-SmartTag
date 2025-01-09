@@ -181,13 +181,120 @@ int main(void) {
 
 				} else if (command.getCommandId() == SET_BANDWIDTH) {
 
-				} else if (command.getCommandId() == SET_CODING_RATE) {
+				} (command.getCommandId() ==  SET_CODING_RATE) {
 
 				} else if (command.getCommandId() == 0x00) {
 					// NO command setted
 				}
+					switch (rdss->cmd) {
+				} else if (command.getCommandId() == QUERY_RX_FREQ){
+					// convertir float a arreglog the bytes (en este caso son 4 bytes)
+					uint8_t freq_array[4];
+					uint32_t rx_freq = lora.get_rx_frequency();
+					uint32_t freq = 149500000;
+					float freqOut;
+					freqOut.f = freqOut / 1000000.0f;
+					memcpy(freq_array, &freqOut.i, sizeof(freqOut.i));
+					// crear commandMessage con trama y datos (en este caso con 4 bytes) 
+					command.set_message(freq_array, sizeof(freq_array));
+					message_composed = command.get_composed_message();
 
-			}
+					// transmitir trata por uart 
+					uart_cfg.transmitMessage(message_composed.data(), message_composed.size());
+				};
+				case QUERY_TX_FREQ:
+					freqEncode(buffer + index, loRa->upFreq);
+					index += sizeof(loRa->upFreq);
+					index++;
+					break;
+				case QUERY_SPREAD_FACTOR:
+					buffer[index++] = 1;
+					buffer[index++] = loRa->spreadFactor - 6;
+					break;
+				case QUERY_CODING_RATE:
+					buffer[index++] = 1;
+					buffer[index++] = loRa->codingRate;
+					break;
+				case QUERY_BANDWIDTH:
+					buffer[index++] = 1;
+					buffer[index++] = loRa->bandwidth + 1;
+					break;
+				case QUERY_MODULE_ID:
+				// no es necesario
+					index = 0;
+					buffer[index++] = LTEL_START_MARK;
+					buffer[index++] = VLADR;
+					buffer[index++] = rdss->id;
+					buffer[index++] = QUERY_MODULE_ID;
+					buffer[index++] = 0x00;
+					buffer[index++] = 2;
+					buffer[index++] = VLADR;
+					buffer[index++] = rdss->id;
+					break;
+				case SET_MODULE_ID:
+
+			// no es necesario
+					vlad->function = rdss->buff[6];
+					vlad->id = rdss->buff[7];
+					rdss->id = vlad->id;
+					index = setRdssStartData(rdss, buffer);
+					buffer[index++] = VLADR;
+					buffer[index++] = rdss->id;
+					savePage(CAT24C02_PAGE0_START_ADDR, (uint8_t*) &(vlad->function), 3, 1);
+					savePage(CAT24C02_PAGE0_START_ADDR, (uint8_t*) &(vlad->id), 4, 1);
+					break;
+				case SET_TX_FREQ:
+				// obtener data de commandMessage y convertir a float
+					freq = command.getDataAsFloat()
+				
+				// guardar la data en la eeprom
+					lora.set_tx_freq(freq);
+				// guardar la data en la clase lora
+					lora.save_settings()
+				// configurar lora con la nueva frecuencia
+					lora.configure_modem()
+					break;
+				case SET_RX_FREQ:
+					buffer[index++] = 4;
+					loRa->dlFreq = freqDecode(rdss->buff + index);
+					index += sizeof(loRa->dlFreq);
+					savePage(CAT24C02_PAGE1_START_ADDR, (uint8_t*) &(loRa->dlFreq), 4, 4);
+					changeMode(loRa, loRa->mode);
+					writeLoRaParametersReg(loRa);
+					break;
+				case SET_BANDWIDTH:
+					buffer[index++] = 1;
+					loRa->bandwidth = rdss->buff[index++] - 1;
+					savePage(CAT24C02_PAGE0_START_ADDR, &(loRa->bandwidth), 1, 1);
+					changeMode(loRa, loRa->mode);
+					writeLoRaParametersReg(loRa);
+					break;
+				case SET_SPREAD_FACTOR:
+					buffer[index++] = 1;
+					loRa->spreadFactor = rdss->buff[index++] + 6;
+					savePage(CAT24C02_PAGE0_START_ADDR, &(loRa->spreadFactor), 0, 1);
+					changeMode(loRa, loRa->mode);
+					writeLoRaParametersReg(loRa);
+					break;
+				case SET_CODING_RATE:
+					buffer[index++] = 1;
+					loRa->codingRate = rdss->buff[index++];
+					savePage(CAT24C02_PAGE0_START_ADDR, &(loRa->codingRate), 2, 1);
+					changeMode(loRa, loRa->mode);
+					writeLoRaParametersReg(loRa);
+					break;
+				case SET_VLAD_ATTENUATION:
+					attenuationCommand[0] = SET_VLAD_ATTENUATION;
+					attenuationCommand[1] = rdss->buff[ATTENUATION_VALUE_INDEX];
+					vlad->is_attenuation_updated = i2c1MasterTransmit(i2cSlaveAddress,
+							attenuationCommand, sizeof(attenuationCommand), 10);
+					buffer[index++] = vlad->is_attenuation_updated;
+					break;
+				default:
+					break;
+				}
+
+						}
 		}
 		memset(data_reciv, 0, bytes_reciv);
 		bytes_reciv = 0;

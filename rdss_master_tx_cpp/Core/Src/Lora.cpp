@@ -128,6 +128,23 @@ void Lora::set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,
 	save_settings();
 }
 
+
+void Lora::configure_modem(){
+	uint8_t modem_cfg1 = 0;
+	uint8_t modem_cfg2 = 0;
+
+	modem_cfg1 = static_cast<uint8_t>(bandwidth) << 4;
+	modem_cfg1 |= static_cast<uint8_t>(coding_rate) << 1;
+	modem_cfg1 |= static_cast<uint8_t>(header_mode);
+
+	modem_cfg2 = static_cast<uint8_t>(spread_factor) << 4;
+	modem_cfg2 |= static_cast<uint8_t>(CrcSum::CRC_DISABLE) << 2; //TODO revisar este valor
+	modem_cfg2 |= static_cast<uint8_t>(symb_timeout_msb);
+	set_low_frequency_mode(DeviceOperatingMode::SLEEP);
+	setRegModemConfig(modem_cfg1, modem_cfg2);
+
+	save_settings();
+}
 void Lora::set_low_frequency_mode(DeviceOperatingMode mode) {
 	uint8_t cmd = LORA_MODE_ACTIVATION | LOW_FREQUENCY_MODE
 			| static_cast<uint8_t>(mode);
