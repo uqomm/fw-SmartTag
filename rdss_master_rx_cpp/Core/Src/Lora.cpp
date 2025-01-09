@@ -77,6 +77,13 @@ bool Lora::channel_detection() {
 }
 
 
+void Lora::check_already_store_data(){
+
+
+	this.read_settings()
+	this.set_lora_settings(bandwidth, coding_rate, spread_factor, downlink_frequency, uplink_frequency);
+}
+
 void Lora::set_link_frequency(LINKMODE mode) {
 	if (mode == LINKMODE::DOWNLINK) {
 		set_carrier_frquency(downlink_frequency);
@@ -96,13 +103,6 @@ uint8_t Lora::transmit(uint8_t *data, uint8_t data_len, LINKMODE mode) {
 	if((wait_irq(TX_DONE_MASK, 1000)))
 			return -1;
 	return 0;
-}
-
-void Lora::check_already_store_data(){
-
-
-	this.read_settings()
-	this.set_lora_settings(bandwidth, coding_rate, spread_factor, downlink_frequency, uplink_frequency);
 }
 
 void Lora::set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,

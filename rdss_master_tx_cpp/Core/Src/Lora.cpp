@@ -75,6 +75,14 @@ uint8_t Lora::transmit(uint8_t *data, uint8_t data_len, LinkMode mode) {
 
 }
 
+
+void Lora::check_already_store_data(){
+
+
+	this.read_settings()
+	this.set_lora_settings(bandwidth, coding_rate, spread_factor, downlink_frequency, uplink_frequency);
+}
+
 void Lora::set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,
 		uint32_t dl_freq, uint32_t up_freq) {
 	uint8_t symb_timeout_msb = 0;

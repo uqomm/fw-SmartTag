@@ -171,23 +171,26 @@ int main(void) {
 			STATUS status_data = command.validate(data_reciv, bytes_reciv);
 			if (status_data == STATUS::CONFIG_FRAME) {
 
-				if (command.getCommandId() == SET_TX_FREQ) {
 
-				} else if (command.getCommandId() == SET_RX_FREQ) {
+				switch (command.getCommandId()) {
+
+				case SET_TX_FREQ:
+					break;
+				case SET_RX_FREQ:
 					uint16_t test = command.getDataAsUint16();
 					HAL_GPIO_TogglePin(LORA_TX_OK_GPIO_Port, LORA_TX_OK_Pin);
+					break;
 
-				} else if (command.getCommandId() == SET_SPREAD_FACTOR) {
-
-				} else if (command.getCommandId() == SET_BANDWIDTH) {
-
-				} (command.getCommandId() ==  SET_CODING_RATE) {
-
-				} else if (command.getCommandId() == 0x00) {
+				case SET_SPREAD_FACTOR:
+					break;
+				case SET_BANDWIDTH:
+					break;
+				case SET_CODING_RATE:
+					break;
+				case 0x00:
 					// NO command setted
-				}
-					switch (rdss->cmd) {
-				} else if (command.getCommandId() == QUERY_RX_FREQ){
+					break;
+				case QUERY_RX_FREQ:
 					// convertir float a arreglog the bytes (en este caso son 4 bytes)
 					uint8_t freq_array[4];
 					uint32_t rx_freq = lora.get_rx_frequency();
@@ -200,8 +203,10 @@ int main(void) {
 					message_composed = command.get_composed_message();
 
 					// transmitir trata por uart 
-					uart_cfg.transmitMessage(message_composed.data(), message_composed.size());
-				};
+					uart_cfg.transmitMessage(message_composed.data(),
+							message_composed.size());
+					break;
+					;
 				case QUERY_TX_FREQ:
 					freqEncode(buffer + index, loRa->upFreq);
 					index += sizeof(loRa->upFreq);
@@ -220,7 +225,7 @@ int main(void) {
 					buffer[index++] = loRa->bandwidth + 1;
 					break;
 				case QUERY_MODULE_ID:
-				// no es necesario
+					// no es necesario
 					index = 0;
 					buffer[index++] = LTEL_START_MARK;
 					buffer[index++] = VLADR;
@@ -233,71 +238,79 @@ int main(void) {
 					break;
 				case SET_MODULE_ID:
 
-			// no es necesario
+					// no es necesario
 					vlad->function = rdss->buff[6];
 					vlad->id = rdss->buff[7];
 					rdss->id = vlad->id;
 					index = setRdssStartData(rdss, buffer);
 					buffer[index++] = VLADR;
 					buffer[index++] = rdss->id;
-					savePage(CAT24C02_PAGE0_START_ADDR, (uint8_t*) &(vlad->function), 3, 1);
-					savePage(CAT24C02_PAGE0_START_ADDR, (uint8_t*) &(vlad->id), 4, 1);
+					savePage(CAT24C02_PAGE0_START_ADDR,
+							(uint8_t*) &(vlad->function), 3, 1);
+					savePage(CAT24C02_PAGE0_START_ADDR, (uint8_t*) &(vlad->id),
+							4, 1);
 					break;
 				case SET_TX_FREQ:
-				// obtener data de commandMessage y convertir a float
+					// obtener data de commandMessage y convertir a float
 					freq = command.getDataAsFloat()
-				
-				// guardar la data en la eeprom
+
+					// guardar la data en la eeprom
 					lora.set_tx_freq(freq);
-				// guardar la data en la clase lora
+					// guardar la data en la clase lora
 					lora.save_settings()
-				// configurar lora con la nueva frecuencia
+					// configurar lora con la nueva frecuencia
 					lora.configure_modem()
 
-				// enviar la trama con la nueva configuración
-					uart_cfg.transmitMessage(message_composed.data(), message_composed.size());	
+					// enviar la trama con la nueva configuración
+					uart_cfg.transmitMessage(message_composed.data(),
+							message_composed.size());
 					break;
 				case SET_RX_FREQ:
 					buffer[index++] = 4;
 					loRa->dlFreq = freqDecode(rdss->buff + index);
 					index += sizeof(loRa->dlFreq);
-					savePage(CAT24C02_PAGE1_START_ADDR, (uint8_t*) &(loRa->dlFreq), 4, 4);
+					savePage(CAT24C02_PAGE1_START_ADDR,
+							(uint8_t*) &(loRa->dlFreq), 4, 4);
 					changeMode(loRa, loRa->mode);
-					writeLoRaParametersReg(loRa);
+					writeLoRaParametersReg (loRa);
 					break;
 				case SET_BANDWIDTH:
 					buffer[index++] = 1;
 					loRa->bandwidth = rdss->buff[index++] - 1;
-					savePage(CAT24C02_PAGE0_START_ADDR, &(loRa->bandwidth), 1, 1);
+					savePage(CAT24C02_PAGE0_START_ADDR, &(loRa->bandwidth), 1,
+							1);
 					changeMode(loRa, loRa->mode);
 					writeLoRaParametersReg(loRa);
 					break;
 				case SET_SPREAD_FACTOR:
 					buffer[index++] = 1;
 					loRa->spreadFactor = rdss->buff[index++] + 6;
-					savePage(CAT24C02_PAGE0_START_ADDR, &(loRa->spreadFactor), 0, 1);
+					savePage(CAT24C02_PAGE0_START_ADDR, &(loRa->spreadFactor),
+							0, 1);
 					changeMode(loRa, loRa->mode);
 					writeLoRaParametersReg(loRa);
 					break;
 				case SET_CODING_RATE:
 					buffer[index++] = 1;
 					loRa->codingRate = rdss->buff[index++];
-					savePage(CAT24C02_PAGE0_START_ADDR, &(loRa->codingRate), 2, 1);
+					savePage(CAT24C02_PAGE0_START_ADDR, &(loRa->codingRate), 2,
+							1);
 					changeMode(loRa, loRa->mode);
 					writeLoRaParametersReg(loRa);
 					break;
 				case SET_VLAD_ATTENUATION:
 					attenuationCommand[0] = SET_VLAD_ATTENUATION;
 					attenuationCommand[1] = rdss->buff[ATTENUATION_VALUE_INDEX];
-					vlad->is_attenuation_updated = i2c1MasterTransmit(i2cSlaveAddress,
-							attenuationCommand, sizeof(attenuationCommand), 10);
+					vlad->is_attenuation_updated = i2c1MasterTransmit(
+							i2cSlaveAddress, attenuationCommand,
+							sizeof(attenuationCommand), 10);
 					buffer[index++] = vlad->is_attenuation_updated;
 					break;
 				default:
 					break;
 				}
 
-						}
+			}
 		}
 		memset(data_reciv, 0, bytes_reciv);
 		bytes_reciv = 0;
