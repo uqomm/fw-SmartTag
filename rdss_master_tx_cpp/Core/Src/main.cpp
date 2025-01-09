@@ -253,6 +253,9 @@ int main(void) {
 					lora.save_settings()
 				// configurar lora con la nueva frecuencia
 					lora.configure_modem()
+
+				// enviar la trama con la nueva configuración
+					uart_cfg.transmitMessage(message_composed.data(), message_composed.size());	
 					break;
 				case SET_RX_FREQ:
 					buffer[index++] = 4;
