@@ -142,8 +142,6 @@ void Lora::configure_modem(){
 	modem_cfg2 |= static_cast<uint8_t>(symb_timeout_msb);
 	set_low_frequency_mode(DeviceOperatingMode::SLEEP);
 	setRegModemConfig(modem_cfg1, modem_cfg2);
-
-	save_settings();
 }
 void Lora::set_low_frequency_mode(DeviceOperatingMode mode) {
 	uint8_t cmd = LORA_MODE_ACTIVATION | LOW_FREQUENCY_MODE
