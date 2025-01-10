@@ -10,14 +10,15 @@ UartHandler::~UartHandler() {
 }
 
 uint8_t UartHandler::transmitMessage(uint8_t *data_sen, uint16_t data_len) {
-	if (HAL_UART_Transmit(huart, data_sen, data_len, 1000)) {
-		return HAL_OK;
+	if (HAL_UART_Transmit(huart, data_sen, data_len, 1000) == HAL_OK) {
+		return (uint8_t)HAL_OK;
 	}
+	return (uint8_t)HAL_ERROR;
 }
 
 bool UartHandler::get_and_send_command(CommandMessage command) {
-	uint8_t *data = command.getMessage().data();
-	uint8_t size = command.getMessage().size();
+	uint8_t *data = command.get_composed_message().data();
+	uint8_t size = command.get_composed_message().size();
 	if (HAL_UART_Transmit(huart, data, size, 1000)) {
 		return HAL_OK;
 	}

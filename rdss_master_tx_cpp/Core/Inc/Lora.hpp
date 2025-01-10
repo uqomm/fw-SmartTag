@@ -47,7 +47,7 @@ enum class LinkMode {
 };
 
 enum class LoraBandWidth {
-	BW_7_8KHZ,
+	BW_7_8KHZ = 1,
 	BW_10_4KHZ,
 	BW_15_6KHZ,
 	BW_20_8KHZ,
@@ -64,7 +64,7 @@ enum class CodingRate {
 };
 
 enum class SpreadFactor {
-	SF_6 = 6, SF_7, SF_8, SF_9, SF_10, SF_11, SF_12
+	SF_6 = 1, SF_7, SF_8, SF_9, SF_10, SF_11, SF_12
 };
 
 enum class LoraHeaderMode {
@@ -83,6 +83,20 @@ public:
 
 	void set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,
 			uint32_t dl_freq, uint32_t up_freq);
+
+	void configure_modem();
+	uint32_t get_rx_frequency();
+	uint32_t get_tx_frequency();
+	uint8_t get_spread_factor();
+	uint8_t get_coding_rate();
+	uint8_t get_bandwidth();
+	void set_tx_freq(uint32_t freq);
+	void set_rx_freq(uint32_t freq);
+	void set_bandwidth(uint8_t bd);
+	void set_spread_factor(uint8_t spread);
+	void set_coding_rate(uint8_t cr);
+	void check_already_store_data();
+
 
 	void setRxFifoAddr();
 	void set_downlink_frequency(uint32_t freq);

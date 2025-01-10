@@ -77,11 +77,55 @@ uint8_t Lora::transmit(uint8_t *data, uint8_t data_len, LinkMode mode) {
 
 
 void Lora::check_already_store_data(){
-
-
-	this.read_settings()
-	this.set_lora_settings(bandwidth, coding_rate, spread_factor, downlink_frequency, uplink_frequency);
+	this->read_settings();
+	this->set_lora_settings(bandwidth, coding_rate, spread_factor, downlink_frequency, uplink_frequency);
 }
+
+
+
+uint32_t Lora::get_rx_frequency(){
+	return uplink_frequency;
+}
+
+uint32_t Lora::get_tx_frequency(){
+	return downlink_frequency;
+}
+
+uint8_t Lora::get_spread_factor(){
+	return (uint8_t)spread_factor;
+}
+
+uint8_t Lora::get_coding_rate(){
+	return (uint8_t)coding_rate;
+}
+
+uint8_t Lora::get_bandwidth(){
+	return (uint8_t)bandwidth;
+}
+
+void Lora::set_tx_freq(uint32_t freq){
+	downlink_frequency = freq;
+}
+
+void Lora::set_rx_freq(uint32_t freq){
+	uplink_frequency = freq;
+}
+
+void Lora::set_bandwidth(uint8_t bw){
+	bandwidth = (LoraBandWidth)bw;
+}
+
+void Lora::set_spread_factor(uint8_t spread){
+	spread_factor = (SpreadFactor)spread;
+}
+
+void Lora::set_coding_rate(uint8_t cr){
+	coding_rate = (CodingRate)cr;
+}
+
+
+
+
 
 void Lora::set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,
 		uint32_t dl_freq, uint32_t up_freq) {
@@ -138,6 +182,21 @@ void Lora::set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,
 
 
 void Lora::configure_modem(){
+
+	uint8_t symb_timeout_msb = 0;
+	if (spread_factor < SpreadFactor::SF_6 || spread_factor > SpreadFactor::SF_12)
+		spread_factor = SpreadFactor::SF_10;
+	else {
+		if (spread_factor == SpreadFactor::SF_6) {
+			header_mode = LoraHeaderMode::IMPLICIT;
+			symb_timeout_msb = 0x03;
+			setDetectionParametersReg();
+		} else {
+			header_mode = LoraHeaderMode::EXPLICIT;
+			symb_timeout_msb = 0x00;
+		}
+	}
+
 	uint8_t modem_cfg1 = 0;
 	uint8_t modem_cfg2 = 0;
 
@@ -151,6 +210,8 @@ void Lora::configure_modem(){
 	set_low_frequency_mode(DeviceOperatingMode::SLEEP);
 	setRegModemConfig(modem_cfg1, modem_cfg2);
 }
+
+
 void Lora::set_low_frequency_mode(DeviceOperatingMode mode) {
 	uint8_t cmd = LORA_MODE_ACTIVATION | LOW_FREQUENCY_MODE
 			| static_cast<uint8_t>(mode);
@@ -191,11 +252,11 @@ void Lora::save_settings(){
 }
 
 uint32_t Lora::read_settings(){
-	uint8_t i = eeprom->getValue<uint8_t>(sf_key);
-	uint8_t o = eeprom->getValue<uint8_t>(bw_key);
-	uint8_t p = eeprom->getValue<uint8_t>(cr_key);
-	uint32_t l = eeprom->getValue<uint32_t>(frq_key);
-	uint32_t j = eeprom->getValue<uint32_t>(frq_dw_key);
-	uint32_t h = eeprom->getValue<uint32_t>(frq_up_key);
-	return i;
+	spread_factor = (SpreadFactor)eeprom->getValue<uint8_t>(sf_key);
+	bandwidth = (LoraBandWidth)eeprom->getValue<uint8_t>(bw_key);
+	coding_rate = (CodingRate)eeprom->getValue<uint8_t>(cr_key);
+	frequency = eeprom->getValue<uint32_t>(frq_key);
+	downlink_frequency = eeprom->getValue<uint32_t>(frq_dw_key);
+	uplink_frequency = eeprom->getValue<uint32_t>(frq_up_key);
+	return frequency;
 }

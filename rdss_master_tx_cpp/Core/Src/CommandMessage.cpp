@@ -335,5 +335,27 @@ float CommandMessage::getDataAsFloat() const {
 }
 
 
+int CommandMessage::freqDecode() const{
+    if (message.size() < 4) {
+        return 0; // O lanza una excepción
+    }
+
+    union {
+        uint32_t i;
+        float f;
+    } freq;
+
+    // Copia segura de los 4 bytes usando memcpy (metodo más eficiente si siempre hay 4 bytes)
+    memcpy(&freq.i, message.data(), 4);
+
+    // Manejo del Endianness (solo necesario si es crítico la portabilidad)
+    // Si necesitas manejarlo, aquí deberías incluir el código para el intercambio de bytes
+
+
+    return static_cast<int>(freq.f * 1000000.0f);
+
+}
+
+
 
 

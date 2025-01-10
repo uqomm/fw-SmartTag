@@ -16,8 +16,8 @@ uint8_t UartHandler::transmitMessage(uint8_t *data_sen, uint16_t data_len) {
 }
 
 bool UartHandler::get_and_send_command(CommandMessage command) {
-	uint8_t *data = command.getMessage().data();
-	uint8_t size = command.getMessage().size();
+	uint8_t *data = command.get_composed_message().data();
+	uint8_t size = command.get_composed_message().size();
 	if (HAL_UART_Transmit(huart, data, size, 1000)) {
 		return HAL_OK;
 	}
