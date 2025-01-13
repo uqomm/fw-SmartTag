@@ -101,7 +101,7 @@ void Led_OnOff(const Gpio &VddLed, Ws2812Color led[1], PcbLed &pcb_led,
 		pins.on(VddLed);
 		if (tag->Voltaje_Bat <= 0x9555)
 			pcb_led.set_and_send_led_color(led, 1, 15, Color::RED);
-		else if ((0xA222 < tag->Voltaje_Bat) && (tag->Voltaje_Bat <= 0xAAAA))
+		else if ((0x9555 < tag->Voltaje_Bat) && (tag->Voltaje_Bat <= 0xAAAA))
 			pcb_led.set_and_send_led_color(led, 1, 15, Color::YELLOW);
 		else
 			pcb_led.set_and_send_led_color(led, 1, 15, Color::GREEN);
