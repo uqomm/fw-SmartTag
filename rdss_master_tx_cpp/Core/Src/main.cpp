@@ -141,6 +141,7 @@ int main(void) {
 	Lora lora = Lora(nss_lora, rst_lora, &hspi1, &eeprom);
 	lora.set_lora_settings(LoraBandWidth::BW_500KHZ, CodingRate::CR_4_6,
 			SpreadFactor::SF_7, DOWNLINK_FREQ, UPLINK_FREQ);
+	lora.check_already_store_data();
 
 	/* USER CODE END 2 */
 
