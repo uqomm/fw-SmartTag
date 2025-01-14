@@ -269,3 +269,95 @@ uint32_t Lora::read_settings(){
 	uint32_t h = eeprom->getValue<uint32_t>(frq_up_key);
 	return i;
 }
+
+
+
+
+
+
+
+
+
+
+void Lora::configure_modem(){
+
+	uint8_t symb_timeout_msb = 0;
+	if (spread_factor < SpreadFactor::SF_6 || spread_factor > SpreadFactor::SF_12)
+		spread_factor = SpreadFactor::SF_10;
+	else {
+		if (spread_factor == SpreadFactor::SF_6) {
+			header_mode = LoraHeaderMode::IMPLICIT;
+			symb_timeout_msb = 0x03;
+			setDetectionParametersReg();
+		} else {
+			header_mode = LoraHeaderMode::EXPLICIT;
+			symb_timeout_msb = 0x00;
+		}
+	}
+
+	uint8_t modem_cfg1 = 0;
+	uint8_t modem_cfg2 = 0;
+
+	modem_cfg1 = static_cast<uint8_t>(bandwidth) << 4;
+	modem_cfg1 |= static_cast<uint8_t>(coding_rate) << 1;
+	modem_cfg1 |= static_cast<uint8_t>(header_mode);
+
+	modem_cfg2 = static_cast<uint8_t>(spread_factor) << 4;
+	modem_cfg2 |= static_cast<uint8_t>(CrcSum::CRC_DISABLE) << 2; //TODO revisar este valor
+	modem_cfg2 |= static_cast<uint8_t>(symb_timeout_msb);
+	set_low_frequency_mode(DeviceOperatingMode::SLEEP);
+	setRegModemConfig(modem_cfg1, modem_cfg2);
+}
+
+
+void Lora::check_already_store_data(){
+	this->read_settings();
+	this->set_lora_settings(bandwidth, coding_rate, spread_factor, downlink_frequency, uplink_frequency);
+}
+
+
+uint32_t Lora::get_rx_frequency(){
+	return uplink_frequency;
+}
+
+uint32_t Lora::get_tx_frequency(){
+	return downlink_frequency;
+}
+
+uint8_t Lora::get_spread_factor(){
+	return (uint8_t)spread_factor;
+}
+
+uint8_t Lora::get_coding_rate(){
+	return (uint8_t)coding_rate;
+}
+
+uint8_t Lora::get_bandwidth(){
+	return (uint8_t)bandwidth;
+}
+
+void Lora::set_tx_freq(uint32_t freq){
+	downlink_frequency = freq;
+}
+
+void Lora::set_rx_freq(uint32_t freq){
+	uplink_frequency = freq;
+}
+
+void Lora::set_bandwidth(uint8_t bw){
+	bandwidth = (LoraBandWidth)bw;
+}
+
+void Lora::set_spread_factor(uint8_t spread){
+	spread_factor = (SpreadFactor)spread;
+}
+
+void Lora::set_coding_rate(uint8_t cr){
+	coding_rate = (CodingRate)cr;
+}
+
+
+
+
+
+

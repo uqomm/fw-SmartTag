@@ -185,9 +185,10 @@ STATUS CommandMessage::validate(uint8_t *buffer, uint8_t length) {
 		return (crcStatus);
 
 	STATUS moduleStatus = validate_module(buffer, length);
-	if (moduleStatus != (STATUS::CONFIG_FRAME)) {
+	if ((moduleStatus != (STATUS::CONFIG_FRAME)) && (moduleStatus != (STATUS::RETRANSMIT_FRAME))) {
 		return (moduleStatus);
 	} else {
+		saveFrame(buffer, length);
 		return (STATUS::CONFIG_FRAME);
 	}
 }
@@ -345,6 +346,46 @@ float CommandMessage::getDataAsFloat() const {
 
 	return converter.value;
 }
+
+
+int CommandMessage::freqDecode() const{
+    if (message.size() < 4) {
+        return 0; // O lanza una excepción
+    }
+
+    union {
+        uint32_t i;
+        float f;
+    } freq;
+
+    // Copia segura de los 4 bytes usando memcpy (metodo más eficiente si siempre hay 4 bytes)
+    memcpy(&freq.i, message.data(), 4);
+
+    // Manejo del Endianness (solo necesario si es crítico la portabilidad)
+    // Si necesitas manejarlo, aquí deberías incluir el código para el intercambio de bytes
+
+
+    return static_cast<int>(freq.f * 1000000.0f);
+
+}
+
+
+void CommandMessage::saveFrame(uint8_t *buffer, uint8_t length) {
+
+	command_id = buffer[static_cast<int>(INDEX::CMD)];
+	module_id = buffer[static_cast<int>(INDEX::MODULE_ID)];
+	module_function = buffer[static_cast<int>(INDEX::MODULE_TYPE)];
+
+	num_byte_data = (buffer[static_cast<int>(INDEX::DATA_LENGHT1)]
+			+ buffer[static_cast<int>(INDEX::DATA_LENGHT2)]);
+
+	storeData(num_byte_data,
+			reinterpret_cast<const uint8_t*>(buffer)
+					+ static_cast<int>(INDEX::DATA_START));
+}
+
+
+
 
 
 
