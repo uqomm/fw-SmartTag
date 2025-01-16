@@ -360,6 +360,7 @@ int main(void)
 	txlora.set_lora_settings(LoraBandWidth::BW_500KHZ, CodingRate::CR_4_6,
 							 SpreadFactor::SF_7, DOWNLINK_FREQ, UPLINK_FREQ);
 
+
 	rxlora.set_rx_continuous_mode(LINKMODE::DOWNLINK);
 
 	Gpio lora_rx_led = Gpio(LORA_RX_LED_GPIO_Port, LORA_RX_LED_Pin);
@@ -695,6 +696,7 @@ int main(void)
 					case QUERY_SPREAD_FACTOR: {
 						uint8_t spread_array[1];
 						uint8_t spread_factor = txlora.get_spread_factor();
+						spread_factor = spread_factor - SPREAD_FACTOR_OFFSET;
 						memcpy(spread_array, &spread_factor,
 								sizeof(spread_factor));
 						command.set_message(spread_array, sizeof(spread_array));
@@ -726,6 +728,7 @@ int main(void)
 					case QUERY_BANDWIDTH: {
 						uint8_t bw_array[1];
 						uint8_t bw = txlora.get_bandwidth();
+						bw = bw + BANDWIDTH_OFFSET;
 						memcpy(bw_array, &bw, sizeof(bw));
 						command.set_message(bw_array, sizeof(bw_array));
 						std::vector<uint8_t> message_composed =
@@ -800,6 +803,7 @@ int main(void)
 					}
 					case SET_BANDWIDTH: {
 						uint8_t bd = command.getDataAsUint8();
+						bd = bd - BANDWIDTH_OFFSET;
 						txlora.set_bandwidth(bd);
 						txlora.save_settings();
 						txlora.configure_modem();
@@ -808,6 +812,7 @@ int main(void)
 						rxlora.configure_modem();
 						uint8_t bw_array[1];
 						uint8_t bw = txlora.get_bandwidth();
+						bw = bw + BANDWIDTH_OFFSET;
 						memcpy(bw_array, &bw, sizeof(bw));
 						command.set_message(bw_array, sizeof(bw_array));
 						std::vector<uint8_t> message_composed =
@@ -822,6 +827,7 @@ int main(void)
 					}
 					case SET_SPREAD_FACTOR: {
 						uint8_t sf = command.getDataAsUint8();
+						sf = sf + SPREAD_FACTOR_OFFSET;
 						txlora.set_spread_factor(sf);
 						txlora.save_settings();
 						txlora.configure_modem();
@@ -830,6 +836,7 @@ int main(void)
 						rxlora.configure_modem();
 						uint8_t spread_array[1];
 						uint8_t spread_factor = txlora.get_spread_factor();
+						spread_factor = spread_factor - SPREAD_FACTOR_OFFSET;
 						memcpy(spread_array, &spread_factor,
 								sizeof(spread_factor));
 						command.set_message(spread_array, sizeof(spread_array));

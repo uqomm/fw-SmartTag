@@ -260,14 +260,13 @@ void Lora::save_settings(){
 	eeprom->setValue(frq_up_key, static_cast<uint32_t>(uplink_frequency));
 }
 
-uint32_t Lora::read_settings(){
-	uint8_t i = eeprom->getValue<uint8_t>(sf_key);
-	uint8_t o = eeprom->getValue<uint8_t>(bw_key);
-	uint8_t p = eeprom->getValue<uint8_t>(cr_key);
-	uint32_t l = eeprom->getValue<uint32_t>(frq_key);
-	uint32_t j = eeprom->getValue<uint32_t>(frq_dw_key);
-	uint32_t h = eeprom->getValue<uint32_t>(frq_up_key);
-	return i;
+void Lora::read_settings(){
+	spread_factor = (SpreadFactor) eeprom->getValue<uint8_t>(sf_key);
+	bandwidth = (LoraBandWidth) eeprom->getValue<uint8_t>(bw_key);
+	coding_rate = (CodingRate) eeprom->getValue<uint8_t>(cr_key);
+	frequency = eeprom->getValue<uint32_t>(frq_key);
+	downlink_frequency = eeprom->getValue<uint32_t>(frq_dw_key);
+	uplink_frequency = eeprom->getValue<uint32_t>(frq_up_key);
 }
 
 

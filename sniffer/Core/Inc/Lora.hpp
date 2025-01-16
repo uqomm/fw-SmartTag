@@ -20,6 +20,9 @@ constexpr uint32_t UPLINK_FREQ_MAX = 180000000;
 constexpr uint32_t UPLINK_FREQ_MIN = 164000000;
 constexpr uint32_t UPLINK_FREQ = 173500000;
 
+constexpr uint8_t SPREAD_FACTOR_OFFSET = 6;
+constexpr uint8_t BANDWIDTH_OFFSET = 1;
+
 constexpr uint8_t SX1278_MAX_PACKET = 100;
 constexpr uint16_t SX1278_DEFAULT_TIMEOUT = 3000;
 constexpr uint16_t LORA_SEND_TIMEOUT = 2000;
@@ -65,7 +68,7 @@ enum class CodingRate {
 };
 
 enum class SpreadFactor {
-	SF_6 = 1, SF_7, SF_8, SF_9, SF_10, SF_11, SF_12
+	SF_6 = 6, SF_7, SF_8, SF_9, SF_10, SF_11, SF_12
 };
 
 enum class LoraHeaderMode {
@@ -110,7 +113,7 @@ public:
 	void save_settings();
 	int8_t receive(uint8_t *data_received, LINKMODE mode);
 	uint8_t transmit(uint8_t *data, uint8_t data_len, LINKMODE mode);
-	uint32_t read_settings();
+	void read_settings();
 	bool channel_detection();
 	void set_rx_continuous_mode(LINKMODE mode);
 	uint8_t read_data_after_lora_rx_done(uint8_t *data_received);
