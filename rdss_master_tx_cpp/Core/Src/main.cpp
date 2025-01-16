@@ -141,7 +141,7 @@ int main(void) {
 	Lora lora = Lora(nss_lora, rst_lora, &hspi1, &eeprom);
 	lora.set_lora_settings(LoraBandWidth::BW_500KHZ, CodingRate::CR_4_6,
 			SpreadFactor::SF_7, DOWNLINK_FREQ, UPLINK_FREQ);
-	lora.check_already_store_data();
+//	lora.check_already_store_data();
 
 	/* USER CODE END 2 */
 
@@ -209,6 +209,7 @@ int main(void) {
 				case QUERY_SPREAD_FACTOR:{
 					uint8_t spread_array[1];
 					uint8_t spread_factor = lora.get_spread_factor();
+					spread_factor = spread_factor - SPREAD_FACTOR_OFFSET;
 					memcpy(spread_array, &spread_factor, sizeof(spread_factor));
 					command.set_message(spread_array, sizeof(spread_array));
 					std::vector<uint8_t> message_composed = command.get_composed_message();
@@ -326,11 +327,13 @@ int main(void) {
 				}
 				case SET_SPREAD_FACTOR:{
 					uint8_t sf = command.getDataAsUint8();
+					sf = sf + SPREAD_FACTOR_OFFSET;
 					lora.set_spread_factor(sf);
 					lora.save_settings();
 					lora.configure_modem();
 					uint8_t spread_array[1];
 					uint8_t spread_factor = lora.get_spread_factor();
+					spread_factor = spread_factor - SPREAD_FACTOR_OFFSET;
 					memcpy(spread_array, &spread_factor, sizeof(spread_factor));
 					command.set_message(spread_array, sizeof(spread_array));
 					std::vector<uint8_t> message_composed = command.get_composed_message();

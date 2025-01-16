@@ -122,7 +122,7 @@ uint8_t Sx1278::write_tx_fifo_data(uint8_t *data, uint8_t data_len) {
 	if (data_len > 0) {
 		write_8bit_reg(LoraRegisters::RegPayloadLength, data_len);
 		write_8bit_reg(LoraRegisters::RegFifoAddrPtr, DATA_BUFFER_BASE_ADDR); //DATA_BUFFER_BASE_ADDR
-		for (int i = 0; i < txSize; i++)
+		for (int i = 0; i < data_len; i++)
 			write_8bit_reg(LoraRegisters::RegFifo, data[i]);
 
 		//write_reg_addr(LoraRegisters::RegFifo,data, data_len);
