@@ -30,13 +30,6 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-uint8_t Data_trans_test[9] = { 0x7E, 0x05, 0x04, 0x11, 0x00, 0x00, 0xf5, 0x9d,
-		0x7F };
-uint8_t Data_ok[9] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-uint8_t leng2 = sizeof(Data_ok);
-
-uint8_t data_reciv[50] = { 0 };
-uint8_t leng = sizeof(data_reciv);
 
 /* USER CODE END PTD */
 
@@ -66,6 +59,15 @@ UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
+
+
+UartHandler uart_minipc = UartHandler(&huart2);
+UartHandler uart_cfg = UartHandler(&huart1);
+
+uint8_t bytes_reciv_mini_pc;
+uint8_t bytes_reciv_software;
+uint8_t data_reciv_mini_pc[255] = { 0 };
+uint8_t data_reciv_software[255] = { 0 };
 
 /* USER CODE END PV */
 
@@ -130,9 +132,6 @@ int main(void) {
 	CommandMessage command = CommandMessage(
 			static_cast<uint8_t>(MODULE_FUNCTION::SERVER), 0x00);
 
-	UartHandler uart_minipc = UartHandler(&huart2);
-	UartHandler uart_cfg = UartHandler(&huart1);
-
 	Memory eeprom = Memory(&hi2c1);
 
 	Gpio nss_lora = Gpio(LORA_NSS_GPIO_Port, LORA_NSS_Pin);
@@ -141,34 +140,41 @@ int main(void) {
 	Lora lora = Lora(nss_lora, rst_lora, &hspi1, &eeprom);
 	lora.set_lora_settings(LoraBandWidth::BW_500KHZ, CodingRate::CR_4_6,
 			SpreadFactor::SF_7, DOWNLINK_FREQ, UPLINK_FREQ);
-//	lora.check_already_store_data();
+
+
+	uart_cfg.enable_receive_interrupt(13);
+	uart_minipc.enable_receive_interrupt(13);
+
+
 
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-		uint8_t bytes_reciv = uart_minipc.read_timeout(data_reciv, 1);
-		if (bytes_reciv > 0) {
 
-			STATUS status_data = command.validate(data_reciv, bytes_reciv);
+
+		//Recepcion mini pc
+		uart_minipc.enable_receive_interrupt(13);
+		if (bytes_reciv_mini_pc > 0) {
+
+			STATUS status_data = command.validate(data_reciv_mini_pc,bytes_reciv_mini_pc);
 			if (status_data == STATUS::RETRANSMIT_FRAME) {
-				if (lora.transmit(data_reciv, bytes_reciv, LinkMode::DOWNLINK)
-						== HAL_OK) {
+				if (lora.transmit(data_reciv_mini_pc, bytes_reciv_mini_pc,
+						LinkMode::DOWNLINK) == HAL_OK) {
 					HAL_GPIO_TogglePin(LORA_TX_OK_GPIO_Port, LORA_TX_OK_Pin);
 					//HAL_Delay(1000);
 				}
 			}
+			memset(data_reciv_mini_pc, 0, bytes_reciv_mini_pc);
+			bytes_reciv_mini_pc = 0;
 		}
-		memset(data_reciv, 0, bytes_reciv);
-		bytes_reciv = 0;
 
 
-
-		bytes_reciv = uart_cfg.read_timeout(data_reciv, 1);
-		if (bytes_reciv > 0) {
-
-			STATUS status_data = command.validate(data_reciv, bytes_reciv);
+		//Configuracion Lora por UART de forma local
+		uart_cfg.enable_receive_interrupt(13);
+		if (bytes_reciv_software > 0) {
+			STATUS status_data = command.validate(data_reciv_software, bytes_reciv_software);
 			if (status_data == STATUS::CONFIG_FRAME) {
 
 
@@ -236,6 +242,7 @@ int main(void) {
 				case QUERY_BANDWIDTH:{
 					uint8_t bw_array[1];
 					uint8_t bw = lora.get_bandwidth();
+					bw = bw + BANDWIDTH_OFFSET;
 					memcpy(bw_array, &bw, sizeof(bw));
 					command.set_message(bw_array, sizeof(bw_array));
 					std::vector<uint8_t> message_composed = command.get_composed_message();
@@ -249,22 +256,11 @@ int main(void) {
 				case SET_TX_FREQ:{
 					// obtener data de commandMessage y convertir a float
 					uint32_t freq = command.getDataAsUint32();
-
 					int freq_int = command.freqDecode();
-
 					freq = (uint32_t) freq_int;
-
-
-
-					// guardar la data en la clase lora
 					lora.set_tx_freq(freq);
-					// guardar la data en la eeprom
 					lora.save_settings();
-					// configurar lora con la nueva frecuencia
 					lora.configure_modem();
-					// enviar la trama con la nueva configuración
-
-
 					uint8_t freq_array[4];
 					uint32_t tx_freq = lora.get_tx_frequency();
 					float freqOut;
@@ -278,8 +274,6 @@ int main(void) {
 					uart_cfg.transmitMessage(message_composed.data(),message_composed.size());
 					command.reset(1);
 					message_composed.clear();
-
-
 
 					break;
 				}
@@ -310,11 +304,13 @@ int main(void) {
 				}
 				case SET_BANDWIDTH:{
 					uint8_t bd = command.getDataAsUint8();
+					bd = bd - BANDWIDTH_OFFSET;
 					lora.set_bandwidth(bd);
 					lora.save_settings();
 					lora.configure_modem();
 					uint8_t bw_array[1];
 					uint8_t bw = lora.get_bandwidth();
+					bw = bw + BANDWIDTH_OFFSET;
 					memcpy(bw_array, &bw, sizeof(bw));
 					command.set_message(bw_array, sizeof(bw_array));
 					std::vector<uint8_t> message_composed = command.get_composed_message();
@@ -366,9 +362,10 @@ int main(void) {
 				}
 
 			}
+			memset(data_reciv_software, 0, bytes_reciv_software);
+			bytes_reciv_software = 0;
 		}
-		memset(data_reciv, 0, bytes_reciv);
-		bytes_reciv = 0;
+
 
 
 
@@ -628,17 +625,18 @@ static void MX_USART1_UART_Init(void) {
 	/* USER CODE BEGIN USART1_Init 1 */
 
 	/* USER CODE END USART1_Init 1 */
-	huart1.Instance = USART1;
-	huart1.Init.BaudRate = 115200;
-	huart1.Init.WordLength = UART_WORDLENGTH_8B;
-	huart1.Init.StopBits = UART_STOPBITS_1;
-	huart1.Init.Parity = UART_PARITY_NONE;
-	huart1.Init.Mode = UART_MODE_TX_RX;
-	huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-	if (HAL_UART_Init(&huart1) != HAL_OK) {
-		Error_Handler();
-	}
+	  huart1.Instance = USART1;
+	  huart1.Init.BaudRate = 115200;
+	  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+	  huart1.Init.StopBits = UART_STOPBITS_1;
+	  huart1.Init.Parity = UART_PARITY_NONE;
+	  huart1.Init.Mode = UART_MODE_TX_RX;
+	  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+	  if (HAL_UART_Init(&huart1) != HAL_OK)
+	  {
+	    Error_Handler();
+	  }
 	/* USER CODE BEGIN USART1_Init 2 */
 
 	/* USER CODE END USART1_Init 2 */
@@ -659,17 +657,18 @@ static void MX_USART2_UART_Init(void) {
 	/* USER CODE BEGIN USART2_Init 1 */
 
 	/* USER CODE END USART2_Init 1 */
-	huart2.Instance = USART2;
-	huart2.Init.BaudRate = 115200;
-	huart2.Init.WordLength = UART_WORDLENGTH_8B;
-	huart2.Init.StopBits = UART_STOPBITS_1;
-	huart2.Init.Parity = UART_PARITY_NONE;
-	huart2.Init.Mode = UART_MODE_TX_RX;
-	huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-	huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-	if (HAL_UART_Init(&huart2) != HAL_OK) {
-		Error_Handler();
-	}
+	  huart2.Instance = USART2;
+	  huart2.Init.BaudRate = 115200;
+	  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+	  huart2.Init.StopBits = UART_STOPBITS_1;
+	  huart2.Init.Parity = UART_PARITY_NONE;
+	  huart2.Init.Mode = UART_MODE_TX_RX;
+	  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+	  if (HAL_UART_Init(&huart2) != HAL_OK)
+	  {
+	    Error_Handler();
+	  }
 	/* USER CODE BEGIN USART2_Init 2 */
 
 	/* USER CODE END USART2_Init 2 */
@@ -745,7 +744,13 @@ static void MX_GPIO_Init(void) {
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if (&huart1 == huart)
+		bytes_reciv_software = uart_cfg.read_timeout_new(data_reciv_software);
+	else
+		bytes_reciv_mini_pc = uart_minipc.read_timeout_new(data_reciv_mini_pc);
+}
 /* USER CODE END 4 */
 
 /**

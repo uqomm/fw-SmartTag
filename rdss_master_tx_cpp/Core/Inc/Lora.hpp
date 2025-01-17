@@ -20,8 +20,8 @@ constexpr uint32_t UPLINK_FREQ_MAX = 180000000;
 constexpr uint32_t UPLINK_FREQ_MIN = 164000000;
 constexpr uint32_t UPLINK_FREQ = 173500000;
 
-constexpr uint8_t SPREAD_FACTOR_OFFSET = 5;
-
+constexpr uint8_t SPREAD_FACTOR_OFFSET = 6;
+constexpr uint8_t BANDWIDTH_OFFSET = 1;
 
 constexpr uint8_t SX1278_MAX_PACKET = 100;
 constexpr uint16_t SX1278_DEFAULT_TIMEOUT = 3000;

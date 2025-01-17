@@ -52,12 +52,16 @@ uint8_t UartHandler::read_timeout(uint8_t *data_received, uint16_t timeout_ms) {
 	}
 }
 
-uint8_t UartHandler::read_timeout_new(uint8_t *data_received, uint16_t timeout_ms) {
+
+void UartHandler::enable_receive_interrupt(uint8_t _bytes_it){
+	HAL_UART_Receive_IT(huart, buffer , _bytes_it);
+}
+
+
+uint8_t UartHandler::read_timeout_new(uint8_t *data_received) {
 	int i = 0;
 	uint8_t size = sizeof(buffer);
 	HAL_StatusTypeDef resp;
-
-	uint8_t buffer[14] = {0x7E, 0x10, 0x00, 0x17, 0x00, 0x05, 0xB5 ,0x30, 0x48, 0x6A, 0x05, 0xF3, 0x0C, 0x7F};
 
 	for (i = 0; buffer[0] == 0x7e && buffer[i] != 0x7f; i++) {
 		if (i == 255) {
@@ -69,10 +73,10 @@ uint8_t UartHandler::read_timeout_new(uint8_t *data_received, uint16_t timeout_m
 	if (i > 0) {
 		i++;
 		memcpy(data_received, buffer, i);
-		memset(buffer,0,sizeof(buffer));
+		memset(buffer, 0, sizeof(buffer));
 		return i;
-	} else{
-		memset(buffer,0,sizeof(buffer));
+	} else {
+		memset(buffer, 0, sizeof(buffer));
 		return 0;
 	}
 }

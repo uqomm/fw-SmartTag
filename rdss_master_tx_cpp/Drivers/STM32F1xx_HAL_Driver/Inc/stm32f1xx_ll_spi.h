@@ -357,36 +357,6 @@ __STATIC_INLINE uint32_t LL_SPI_GetMode(const SPI_TypeDef *SPIx)
   return (uint32_t)(READ_BIT(SPIx->CR1, SPI_CR1_MSTR | SPI_CR1_SSI));
 }
 
-<<<<<<<< HEAD:sniffer/Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_ll_spi.h
-/**
-  * @brief  Set serial protocol used
-  * @note   This bit should be written only when SPI is disabled (SPE = 0) for correct operation.
-  * @rmtoll CR2          FRF           LL_SPI_SetStandard
-  * @param  SPIx SPI Instance
-  * @param  Standard This parameter can be one of the following values:
-  *         @arg @ref LL_SPI_PROTOCOL_MOTOROLA
-  *         @arg @ref LL_SPI_PROTOCOL_TI
-  * @retval None
-  */
-__STATIC_INLINE void LL_SPI_SetStandard(SPI_TypeDef *SPIx, uint32_t Standard)
-{
-  MODIFY_REG(SPIx->CR2, SPI_CR2_FRF, Standard);
-}
-
-/**
-  * @brief  Get serial protocol used
-  * @rmtoll CR2          FRF           LL_SPI_GetStandard
-  * @param  SPIx SPI Instance
-  * @retval Returned value can be one of the following values:
-  *         @arg @ref LL_SPI_PROTOCOL_MOTOROLA
-  *         @arg @ref LL_SPI_PROTOCOL_TI
-  */
-__STATIC_INLINE uint32_t LL_SPI_GetStandard(const SPI_TypeDef *SPIx)
-{
-  return (uint32_t)(READ_BIT(SPIx->CR2, SPI_CR2_FRF));
-}
-========
->>>>>>>> origin/2detection:rdss_master_tx_cpp/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_spi.h
 
 /**
   * @brief  Set clock phase
@@ -575,38 +545,7 @@ __STATIC_INLINE void LL_SPI_SetDataWidth(SPI_TypeDef *SPIx, uint32_t DataWidth)
   */
 __STATIC_INLINE uint32_t LL_SPI_GetDataWidth(const SPI_TypeDef *SPIx)
 {
-<<<<<<<< HEAD:sniffer/Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_ll_spi.h
-  return (uint32_t)(READ_BIT(SPIx->CR2, SPI_CR2_DS));
-}
-
-/**
-  * @brief  Set threshold of RXFIFO that triggers an RXNE event
-  * @rmtoll CR2          FRXTH         LL_SPI_SetRxFIFOThreshold
-  * @param  SPIx SPI Instance
-  * @param  Threshold This parameter can be one of the following values:
-  *         @arg @ref LL_SPI_RX_FIFO_TH_HALF
-  *         @arg @ref LL_SPI_RX_FIFO_TH_QUARTER
-  * @retval None
-  */
-__STATIC_INLINE void LL_SPI_SetRxFIFOThreshold(SPI_TypeDef *SPIx, uint32_t Threshold)
-{
-  MODIFY_REG(SPIx->CR2, SPI_CR2_FRXTH, Threshold);
-}
-
-/**
-  * @brief  Get threshold of RXFIFO that triggers an RXNE event
-  * @rmtoll CR2          FRXTH         LL_SPI_GetRxFIFOThreshold
-  * @param  SPIx SPI Instance
-  * @retval Returned value can be one of the following values:
-  *         @arg @ref LL_SPI_RX_FIFO_TH_HALF
-  *         @arg @ref LL_SPI_RX_FIFO_TH_QUARTER
-  */
-__STATIC_INLINE uint32_t LL_SPI_GetRxFIFOThreshold(const SPI_TypeDef *SPIx)
-{
-  return (uint32_t)(READ_BIT(SPIx->CR2, SPI_CR2_FRXTH));
-========
   return (uint32_t)(READ_BIT(SPIx->CR1, SPI_CR1_DFF));
->>>>>>>> origin/2detection:rdss_master_tx_cpp/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_spi.h
 }
 
 /**
@@ -654,37 +593,6 @@ __STATIC_INLINE uint32_t LL_SPI_IsEnabledCRC(const SPI_TypeDef *SPIx)
 }
 
 /**
-<<<<<<<< HEAD:sniffer/Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_ll_spi.h
-  * @brief  Set CRC Length
-  * @note   This bit should be written only when SPI is disabled (SPE = 0) for correct operation.
-  * @rmtoll CR1          CRCL          LL_SPI_SetCRCWidth
-  * @param  SPIx SPI Instance
-  * @param  CRCLength This parameter can be one of the following values:
-  *         @arg @ref LL_SPI_CRC_8BIT
-  *         @arg @ref LL_SPI_CRC_16BIT
-  * @retval None
-  */
-__STATIC_INLINE void LL_SPI_SetCRCWidth(SPI_TypeDef *SPIx, uint32_t CRCLength)
-{
-  MODIFY_REG(SPIx->CR1, SPI_CR1_CRCL, CRCLength);
-}
-
-/**
-  * @brief  Get CRC Length
-  * @rmtoll CR1          CRCL          LL_SPI_GetCRCWidth
-  * @param  SPIx SPI Instance
-  * @retval Returned value can be one of the following values:
-  *         @arg @ref LL_SPI_CRC_8BIT
-  *         @arg @ref LL_SPI_CRC_16BIT
-  */
-__STATIC_INLINE uint32_t LL_SPI_GetCRCWidth(const SPI_TypeDef *SPIx)
-{
-  return (uint32_t)(READ_BIT(SPIx->CR1, SPI_CR1_CRCL));
-}
-
-/**
-========
->>>>>>>> origin/2detection:rdss_master_tx_cpp/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_spi.h
   * @brief  Set CRCNext to transfer CRC on the line
   * @note   This bit has to be written as soon as the last data is written in the SPIx_DR register.
   * @rmtoll CR1          CRCNEXT       LL_SPI_SetCRCNext
@@ -785,45 +693,6 @@ __STATIC_INLINE uint32_t LL_SPI_GetNSSMode(const SPI_TypeDef *SPIx)
 }
 
 /**
-<<<<<<<< HEAD:sniffer/Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_ll_spi.h
-  * @brief  Enable NSS pulse management
-  * @note   This bit should not be changed when communication is ongoing. This bit is not used in SPI TI mode.
-  * @rmtoll CR2          NSSP          LL_SPI_EnableNSSPulseMgt
-  * @param  SPIx SPI Instance
-  * @retval None
-  */
-__STATIC_INLINE void LL_SPI_EnableNSSPulseMgt(SPI_TypeDef *SPIx)
-{
-  SET_BIT(SPIx->CR2, SPI_CR2_NSSP);
-}
-
-/**
-  * @brief  Disable NSS pulse management
-  * @note   This bit should not be changed when communication is ongoing. This bit is not used in SPI TI mode.
-  * @rmtoll CR2          NSSP          LL_SPI_DisableNSSPulseMgt
-  * @param  SPIx SPI Instance
-  * @retval None
-  */
-__STATIC_INLINE void LL_SPI_DisableNSSPulseMgt(SPI_TypeDef *SPIx)
-{
-  CLEAR_BIT(SPIx->CR2, SPI_CR2_NSSP);
-}
-
-/**
-  * @brief  Check if NSS pulse is enabled
-  * @note   This bit should not be changed when communication is ongoing. This bit is not used in SPI TI mode.
-  * @rmtoll CR2          NSSP          LL_SPI_IsEnabledNSSPulse
-  * @param  SPIx SPI Instance
-  * @retval State of bit (1 or 0).
-  */
-__STATIC_INLINE uint32_t LL_SPI_IsEnabledNSSPulse(const SPI_TypeDef *SPIx)
-{
-  return ((READ_BIT(SPIx->CR2, SPI_CR2_NSSP) == (SPI_CR2_NSSP)) ? 1UL : 0UL);
-}
-
-/**
-========
->>>>>>>> origin/2detection:rdss_master_tx_cpp/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_spi.h
   * @}
   */
 
@@ -904,49 +773,6 @@ __STATIC_INLINE uint32_t LL_SPI_IsActiveFlag_BSY(const SPI_TypeDef *SPIx)
   return ((READ_BIT(SPIx->SR, SPI_SR_BSY) == (SPI_SR_BSY)) ? 1UL : 0UL);
 }
 
-<<<<<<<< HEAD:sniffer/Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_ll_spi.h
-/**
-  * @brief  Get frame format error flag
-  * @rmtoll SR           FRE           LL_SPI_IsActiveFlag_FRE
-  * @param  SPIx SPI Instance
-  * @retval State of bit (1 or 0).
-  */
-__STATIC_INLINE uint32_t LL_SPI_IsActiveFlag_FRE(const SPI_TypeDef *SPIx)
-{
-  return ((READ_BIT(SPIx->SR, SPI_SR_FRE) == (SPI_SR_FRE)) ? 1UL : 0UL);
-}
-
-/**
-  * @brief  Get FIFO reception Level
-  * @rmtoll SR           FRLVL         LL_SPI_GetRxFIFOLevel
-  * @param  SPIx SPI Instance
-  * @retval Returned value can be one of the following values:
-  *         @arg @ref LL_SPI_RX_FIFO_EMPTY
-  *         @arg @ref LL_SPI_RX_FIFO_QUARTER_FULL
-  *         @arg @ref LL_SPI_RX_FIFO_HALF_FULL
-  *         @arg @ref LL_SPI_RX_FIFO_FULL
-  */
-__STATIC_INLINE uint32_t LL_SPI_GetRxFIFOLevel(const SPI_TypeDef *SPIx)
-{
-  return (uint32_t)(READ_BIT(SPIx->SR, SPI_SR_FRLVL));
-}
-
-/**
-  * @brief  Get FIFO Transmission Level
-  * @rmtoll SR           FTLVL         LL_SPI_GetTxFIFOLevel
-  * @param  SPIx SPI Instance
-  * @retval Returned value can be one of the following values:
-  *         @arg @ref LL_SPI_TX_FIFO_EMPTY
-  *         @arg @ref LL_SPI_TX_FIFO_QUARTER_FULL
-  *         @arg @ref LL_SPI_TX_FIFO_HALF_FULL
-  *         @arg @ref LL_SPI_TX_FIFO_FULL
-  */
-__STATIC_INLINE uint32_t LL_SPI_GetTxFIFOLevel(const SPI_TypeDef *SPIx)
-{
-  return (uint32_t)(READ_BIT(SPIx->SR, SPI_SR_FTLVL));
-}
-========
->>>>>>>> origin/2detection:rdss_master_tx_cpp/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_spi.h
 
 /**
   * @brief  Clear CRC error flag
@@ -983,7 +809,7 @@ __STATIC_INLINE void LL_SPI_ClearFlag_MODF(SPI_TypeDef *SPIx)
   * @param  SPIx SPI Instance
   * @retval None
   */
-__STATIC_INLINE void LL_SPI_ClearFlag_OVR(const SPI_TypeDef *SPIx)
+__STATIC_INLINE void LL_SPI_ClearFlag_OVR(SPI_TypeDef *SPIx)
 {
   __IO uint32_t tmpreg;
   tmpreg = SPIx->DR;
@@ -999,7 +825,7 @@ __STATIC_INLINE void LL_SPI_ClearFlag_OVR(const SPI_TypeDef *SPIx)
   * @param  SPIx SPI Instance
   * @retval None
   */
-__STATIC_INLINE void LL_SPI_ClearFlag_FRE(const SPI_TypeDef *SPIx)
+__STATIC_INLINE void LL_SPI_ClearFlag_FRE(SPI_TypeDef *SPIx)
 {
   __IO uint32_t tmpreg;
   tmpreg = SPIx->SR;
@@ -1192,63 +1018,6 @@ __STATIC_INLINE uint32_t LL_SPI_IsEnabledDMAReq_TX(const SPI_TypeDef *SPIx)
 }
 
 /**
-<<<<<<<< HEAD:sniffer/Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_ll_spi.h
-  * @brief  Set parity of  Last DMA reception
-  * @rmtoll CR2          LDMARX        LL_SPI_SetDMAParity_RX
-  * @param  SPIx SPI Instance
-  * @param  Parity This parameter can be one of the following values:
-  *         @arg @ref LL_SPI_DMA_PARITY_ODD
-  *         @arg @ref LL_SPI_DMA_PARITY_EVEN
-  * @retval None
-  */
-__STATIC_INLINE void LL_SPI_SetDMAParity_RX(SPI_TypeDef *SPIx, uint32_t Parity)
-{
-  MODIFY_REG(SPIx->CR2, SPI_CR2_LDMARX, (Parity << SPI_CR2_LDMARX_Pos));
-}
-
-/**
-  * @brief  Get parity configuration for  Last DMA reception
-  * @rmtoll CR2          LDMARX        LL_SPI_GetDMAParity_RX
-  * @param  SPIx SPI Instance
-  * @retval Returned value can be one of the following values:
-  *         @arg @ref LL_SPI_DMA_PARITY_ODD
-  *         @arg @ref LL_SPI_DMA_PARITY_EVEN
-  */
-__STATIC_INLINE uint32_t LL_SPI_GetDMAParity_RX(const SPI_TypeDef *SPIx)
-{
-  return (uint32_t)(READ_BIT(SPIx->CR2, SPI_CR2_LDMARX) >> SPI_CR2_LDMARX_Pos);
-}
-
-/**
-  * @brief  Set parity of  Last DMA transmission
-  * @rmtoll CR2          LDMATX        LL_SPI_SetDMAParity_TX
-  * @param  SPIx SPI Instance
-  * @param  Parity This parameter can be one of the following values:
-  *         @arg @ref LL_SPI_DMA_PARITY_ODD
-  *         @arg @ref LL_SPI_DMA_PARITY_EVEN
-  * @retval None
-  */
-__STATIC_INLINE void LL_SPI_SetDMAParity_TX(SPI_TypeDef *SPIx, uint32_t Parity)
-{
-  MODIFY_REG(SPIx->CR2, SPI_CR2_LDMATX, (Parity << SPI_CR2_LDMATX_Pos));
-}
-
-/**
-  * @brief  Get parity configuration for Last DMA transmission
-  * @rmtoll CR2          LDMATX        LL_SPI_GetDMAParity_TX
-  * @param  SPIx SPI Instance
-  * @retval Returned value can be one of the following values:
-  *         @arg @ref LL_SPI_DMA_PARITY_ODD
-  *         @arg @ref LL_SPI_DMA_PARITY_EVEN
-  */
-__STATIC_INLINE uint32_t LL_SPI_GetDMAParity_TX(const SPI_TypeDef *SPIx)
-{
-  return (uint32_t)(READ_BIT(SPIx->CR2, SPI_CR2_LDMATX) >> SPI_CR2_LDMATX_Pos);
-}
-
-/**
-========
->>>>>>>> origin/2detection:rdss_master_tx_cpp/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_spi.h
   * @brief  Get the data register address used for DMA transfer
   * @rmtoll DR           DR            LL_SPI_DMA_GetRegAddr
   * @param  SPIx SPI Instance
@@ -1813,44 +1582,6 @@ __STATIC_INLINE uint32_t LL_I2S_IsEnabledMasterClock(const SPI_TypeDef *SPIx)
   return ((READ_BIT(SPIx->I2SPR, SPI_I2SPR_MCKOE) == (SPI_I2SPR_MCKOE)) ? 1UL : 0UL);
 }
 
-<<<<<<<< HEAD:sniffer/Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_ll_spi.h
-#if defined(SPI_I2SCFGR_ASTRTEN)
-/**
-  * @brief  Enable asynchronous start
-  * @rmtoll I2SCFGR      ASTRTEN       LL_I2S_EnableAsyncStart
-  * @param  SPIx SPI Instance
-  * @retval None
-  */
-__STATIC_INLINE void LL_I2S_EnableAsyncStart(SPI_TypeDef *SPIx)
-{
-  SET_BIT(SPIx->I2SCFGR, SPI_I2SCFGR_ASTRTEN);
-}
-
-/**
-  * @brief  Disable  asynchronous start
-  * @rmtoll I2SCFGR      ASTRTEN       LL_I2S_DisableAsyncStart
-  * @param  SPIx SPI Instance
-  * @retval None
-  */
-__STATIC_INLINE void LL_I2S_DisableAsyncStart(SPI_TypeDef *SPIx)
-{
-  CLEAR_BIT(SPIx->I2SCFGR, SPI_I2SCFGR_ASTRTEN);
-}
-
-/**
-  * @brief  Check if asynchronous start is enabled
-  * @rmtoll I2SCFGR      ASTRTEN       LL_I2S_IsEnabledAsyncStart
-  * @param  SPIx SPI Instance
-  * @retval State of bit (1 or 0).
-  */
-__STATIC_INLINE uint32_t LL_I2S_IsEnabledAsyncStart(const SPI_TypeDef *SPIx)
-{
-  return ((READ_BIT(SPIx->I2SCFGR, SPI_I2SCFGR_ASTRTEN) == (SPI_I2SCFGR_ASTRTEN)) ? 1UL : 0UL);
-}
-#endif /* SPI_I2SCFGR_ASTRTEN */
-
-========
->>>>>>>> origin/2detection:rdss_master_tx_cpp/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_spi.h
 /**
   * @}
   */
@@ -1914,19 +1645,6 @@ __STATIC_INLINE uint32_t LL_I2S_IsActiveFlag_UDR(const SPI_TypeDef *SPIx)
   return ((READ_BIT(SPIx->SR, SPI_SR_UDR) == (SPI_SR_UDR)) ? 1UL : 0UL);
 }
 
-<<<<<<<< HEAD:sniffer/Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_ll_spi.h
-/**
-  * @brief  Get frame format error flag
-  * @rmtoll SR           FRE           LL_I2S_IsActiveFlag_FRE
-  * @param  SPIx SPI Instance
-  * @retval State of bit (1 or 0).
-  */
-__STATIC_INLINE uint32_t LL_I2S_IsActiveFlag_FRE(const SPI_TypeDef *SPIx)
-{
-  return LL_SPI_IsActiveFlag_FRE(SPIx);
-}
-========
->>>>>>>> origin/2detection:rdss_master_tx_cpp/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_spi.h
 
 /**
   * @brief  Get channel side flag.
@@ -1959,7 +1677,7 @@ __STATIC_INLINE void LL_I2S_ClearFlag_OVR(SPI_TypeDef *SPIx)
   * @param  SPIx SPI Instance
   * @retval None
   */
-__STATIC_INLINE void LL_I2S_ClearFlag_UDR(const SPI_TypeDef *SPIx)
+__STATIC_INLINE void LL_I2S_ClearFlag_UDR(SPI_TypeDef *SPIx)
 {
   __IO uint32_t tmpreg;
   tmpreg = SPIx->SR;
@@ -1972,7 +1690,7 @@ __STATIC_INLINE void LL_I2S_ClearFlag_UDR(const SPI_TypeDef *SPIx)
   * @param  SPIx SPI Instance
   * @retval None
   */
-__STATIC_INLINE void LL_I2S_ClearFlag_FRE(const SPI_TypeDef *SPIx)
+__STATIC_INLINE void LL_I2S_ClearFlag_FRE(SPI_TypeDef *SPIx)
 {
   LL_SPI_ClearFlag_FRE(SPIx);
 }
