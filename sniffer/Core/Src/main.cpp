@@ -1159,12 +1159,14 @@ static void MX_GPIO_Init(void)
 
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(GPIOA,
-					  DW3000_A_RST_Pin | KA_Pin | DW3000_A_CS_Pin | DW3000_A_WKUP_Pin | DW3000_B_WKUP_Pin | DW3000_B_RST_Pin | DW3000_B_CS_Pin | LORA_RX_LED_Pin | LORA_TX_NSS_Pin, GPIO_PIN_RESET);
+			DW3000_A_RST_Pin | KA_Pin | DW3000_A_CS_Pin | DW3000_A_WKUP_Pin
+					| DW3000_B_WKUP_Pin | DW3000_B_RST_Pin | DW3000_B_CS_Pin
+					| LORA_RX_LED_Pin | LORA_TX_NSS_Pin, GPIO_PIN_RESET);
 
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(GPIOB,
-					  LORA_TX_DIO0_Pin | LORA_TX_LED_Pin | LORA_TX_NRST_Pin | LORA_RX_NSS_Pin,
-					  GPIO_PIN_RESET);
+	LORA_TX_DIO0_Pin | LORA_TX_LED_Pin | LORA_TX_NRST_Pin | LORA_RX_NSS_Pin,
+			GPIO_PIN_RESET);
 
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(LORA_RX_NRST_GPIO_Port, LORA_RX_NRST_Pin, GPIO_PIN_RESET);
@@ -1172,17 +1174,25 @@ static void MX_GPIO_Init(void)
 	/*Configure GPIO pins : DW3000_A_RST_Pin KA_Pin DW3000_A_CS_Pin DW3000_A_WKUP_Pin
 	 DW3000_B_WKUP_Pin DW3000_B_RST_Pin DW3000_B_CS_Pin LORA_RX_LED_Pin
 	 LORA_TX_NSS_Pin */
-	GPIO_InitStruct.Pin = DW3000_A_RST_Pin | KA_Pin | DW3000_A_CS_Pin | DW3000_A_WKUP_Pin | DW3000_B_WKUP_Pin | DW3000_B_RST_Pin | DW3000_B_CS_Pin | LORA_RX_LED_Pin | LORA_TX_NSS_Pin;
+	GPIO_InitStruct.Pin = DW3000_A_RST_Pin | KA_Pin | DW3000_A_CS_Pin
+			| DW3000_A_WKUP_Pin | DW3000_B_WKUP_Pin | DW3000_B_RST_Pin
+			| DW3000_B_CS_Pin | LORA_RX_LED_Pin | LORA_TX_NSS_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-	/*Configure GPIO pins : DW3000_A_IRQ_Pin SWITCH_SHIP_MODE_Pin DW3000_B_IRQ_Pin */
-	GPIO_InitStruct.Pin = DW3000_A_IRQ_Pin | SWITCH_SHIP_MODE_Pin | DW3000_B_IRQ_Pin;
+	/*Configure GPIO pins : DW3000_A_IRQ_Pin DW3000_B_IRQ_Pin */
+	GPIO_InitStruct.Pin = DW3000_A_IRQ_Pin | DW3000_B_IRQ_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	/*Configure GPIO pin : SWITCH_SHIP_MODE_Pin */
+	GPIO_InitStruct.Pin = SWITCH_SHIP_MODE_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	HAL_GPIO_Init(SWITCH_SHIP_MODE_GPIO_Port, &GPIO_InitStruct);
 
 	/*Configure GPIO pins : LORA_TX_DIO0_Pin LORA_TX_LED_Pin LORA_TX_NRST_Pin LORA_RX_NSS_Pin */
 	GPIO_InitStruct.Pin = LORA_TX_DIO0_Pin | LORA_TX_LED_Pin | LORA_TX_NRST_Pin | LORA_RX_NSS_Pin;
