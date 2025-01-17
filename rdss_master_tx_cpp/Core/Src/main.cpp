@@ -138,9 +138,10 @@ int main(void) {
 	Gpio rst_lora = Gpio(LORA_RST_GPIO_Port, LORA_RST_Pin);
 
 	Lora lora = Lora(nss_lora, rst_lora, &hspi1, &eeprom);
-	lora.set_lora_settings(LoraBandWidth::BW_500KHZ, CodingRate::CR_4_6,
-			SpreadFactor::SF_7, DOWNLINK_FREQ, UPLINK_FREQ);
-
+//	lora.set_lora_settings(LoraBandWidth::BW_500KHZ, CodingRate::CR_4_6,
+//			SpreadFactor::SF_7, DOWNLINK_FREQ, UPLINK_FREQ);
+//	lora.save_settings();
+	lora.check_already_store_data();
 
 	uart_cfg.enable_receive_interrupt(13);
 	uart_minipc.enable_receive_interrupt(13);
@@ -181,13 +182,12 @@ int main(void) {
 				switch (command.getCommandId()) {
 
 				case QUERY_RX_FREQ:{
-					// convertir float a arreglog the bytes (en este caso son 4 bytes)
 					uint8_t freq_array[4];
+					lora.read_settings();
 					uint32_t rx_freq = lora.get_rx_frequency();
 					float freqOut;
 					freqOut = rx_freq / 1000000.0f;
 					memcpy(freq_array, &freqOut, sizeof(freqOut));
-					// crear commandMessage con trama y datos (en este caso con 4 bytes) 
 					command.set_message(freq_array, sizeof(freq_array));
 					std::vector<uint8_t> message_composed = command.get_composed_message();
 					command.composeMessage(&message_composed);
@@ -199,6 +199,7 @@ int main(void) {
 				}
 				case QUERY_TX_FREQ:{
 					uint8_t freq_array[4];
+					lora.read_settings();
 					uint32_t tx_freq = lora.get_tx_frequency();
 					float freqOut;
 					freqOut = tx_freq / 1000000.0f;
@@ -214,6 +215,7 @@ int main(void) {
 				}
 				case QUERY_SPREAD_FACTOR:{
 					uint8_t spread_array[1];
+					lora.read_settings();
 					uint8_t spread_factor = lora.get_spread_factor();
 					spread_factor = spread_factor - SPREAD_FACTOR_OFFSET;
 					memcpy(spread_array, &spread_factor, sizeof(spread_factor));
@@ -228,6 +230,7 @@ int main(void) {
 				}
 				case QUERY_CODING_RATE:{
 					uint8_t coding_array[1];
+					lora.read_settings();
 					uint8_t coding_rate = lora.get_coding_rate();
 					memcpy(coding_array, &coding_rate, sizeof(coding_rate));
 					command.set_message(coding_array, sizeof(coding_array));
@@ -241,6 +244,7 @@ int main(void) {
 				}
 				case QUERY_BANDWIDTH:{
 					uint8_t bw_array[1];
+					lora.read_settings();
 					uint8_t bw = lora.get_bandwidth();
 					bw = bw + BANDWIDTH_OFFSET;
 					memcpy(bw_array, &bw, sizeof(bw));
@@ -254,7 +258,6 @@ int main(void) {
 					break;
 				}
 				case SET_TX_FREQ:{
-					// obtener data de commandMessage y convertir a float
 					uint32_t freq = command.getDataAsUint32();
 					int freq_int = command.freqDecode();
 					freq = (uint32_t) freq_int;
@@ -262,11 +265,11 @@ int main(void) {
 					lora.save_settings();
 					lora.configure_modem();
 					uint8_t freq_array[4];
+					lora.read_settings();
 					uint32_t tx_freq = lora.get_tx_frequency();
 					float freqOut;
 					freqOut = tx_freq / 1000000.0f;
 					memcpy(freq_array, &freqOut, sizeof(freqOut));
-					// crear commandMessage con trama y datos (en este caso con 4 bytes)
 					command.set_message(freq_array, sizeof(freq_array));
 					std::vector<uint8_t> message_composed = command.get_composed_message();
 					command.composeMessage(&message_composed);
@@ -289,6 +292,7 @@ int main(void) {
 					lora.save_settings();
 					lora.configure_modem();
 					uint8_t freq_array[4];
+					lora.read_settings();
 					uint32_t rx_freq = lora.get_rx_frequency();
 					float freqOut;
 					freqOut = rx_freq / 1000000.0f;
@@ -309,6 +313,7 @@ int main(void) {
 					lora.save_settings();
 					lora.configure_modem();
 					uint8_t bw_array[1];
+					lora.read_settings();
 					uint8_t bw = lora.get_bandwidth();
 					bw = bw + BANDWIDTH_OFFSET;
 					memcpy(bw_array, &bw, sizeof(bw));
@@ -328,6 +333,7 @@ int main(void) {
 					lora.save_settings();
 					lora.configure_modem();
 					uint8_t spread_array[1];
+					lora.read_settings();
 					uint8_t spread_factor = lora.get_spread_factor();
 					spread_factor = spread_factor - SPREAD_FACTOR_OFFSET;
 					memcpy(spread_array, &spread_factor, sizeof(spread_factor));
@@ -346,6 +352,7 @@ int main(void) {
 					lora.save_settings();
 					lora.configure_modem();
 					uint8_t coding_array[1];
+					lora.read_settings();
 					uint8_t coding_rate = lora.get_coding_rate();
 					memcpy(coding_array, &coding_rate, sizeof(coding_rate));
 					command.set_message(coding_array, sizeof(coding_array));
@@ -532,7 +539,7 @@ static void MX_I2C1_Init(void) {
 
 	/* USER CODE END I2C1_Init 1 */
 	hi2c1.Instance = I2C1;
-	hi2c1.Init.ClockSpeed = 100000;
+	hi2c1.Init.ClockSpeed = 400000;
 	hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
 	hi2c1.Init.OwnAddress1 = 0;
 	hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;

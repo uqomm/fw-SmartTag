@@ -79,6 +79,7 @@ uint8_t Lora::transmit(uint8_t *data, uint8_t data_len, LinkMode mode) {
 void Lora::check_already_store_data(){
 	this->read_settings();
 	this->set_lora_settings(bandwidth, coding_rate, spread_factor, downlink_frequency, uplink_frequency);
+	this->save_settings();
 }
 
 
@@ -131,7 +132,7 @@ void Lora::set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,
 		uint32_t dl_freq, uint32_t up_freq) {
 	uint8_t symb_timeout_msb = 0;
 	if (sf < SpreadFactor::SF_6 || sf > SpreadFactor::SF_12)
-		spread_factor = SpreadFactor::SF_10;
+		spread_factor = SpreadFactor::SF_7;
 	else {
 		spread_factor = sf;
 		if (spread_factor == SpreadFactor::SF_6) {
@@ -145,7 +146,7 @@ void Lora::set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,
 	}
 
 	if (bw < LoraBandWidth::BW_7_8KHZ || bw > LoraBandWidth::BW_500KHZ)
-		bw = LoraBandWidth::BW_62_5KHZ;
+		bw = LoraBandWidth::BW_500KHZ;
 	else
 		bandwidth = bw;
 
@@ -176,8 +177,6 @@ void Lora::set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,
 	modem_cfg2 |= static_cast<uint8_t>(symb_timeout_msb);
 	set_low_frequency_mode(DeviceOperatingMode::SLEEP);
 	setRegModemConfig(modem_cfg1, modem_cfg2);
-
-	save_settings();
 }
 
 
