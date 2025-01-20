@@ -102,7 +102,7 @@ public:
 	void set_spread_factor(uint8_t spread);
 	void set_coding_rate(uint8_t cr);
 	void check_already_store_data();
-
+	void set_default_parameters();
 
 
 

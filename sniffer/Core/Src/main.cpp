@@ -349,17 +349,20 @@ int main(void)
 
 	Memory eeprom = Memory(&hi2c3);
 
+
 	Gpio rx_lora_nss = Gpio(LORA_RX_NSS_GPIO_Port, LORA_RX_NSS_Pin);
 	Gpio rx_lora_rst = Gpio(LORA_RX_NRST_GPIO_Port, LORA_RX_NRST_Pin);
 	Gpio tx_lora_nss = Gpio(LORA_TX_NSS_GPIO_Port, LORA_TX_NSS_Pin);
 	Gpio tx_lora_rst = Gpio(LORA_TX_NRST_GPIO_Port, LORA_TX_NRST_Pin);
 	Lora rxlora = Lora(rx_lora_nss, rx_lora_rst, &hspi2, &eeprom, type);
 	Lora txlora = Lora(tx_lora_nss, tx_lora_rst, &hspi1, &eeprom);
-	rxlora.set_lora_settings(LoraBandWidth::BW_500KHZ, CodingRate::CR_4_6,
-							 SpreadFactor::SF_7, DOWNLINK_FREQ, UPLINK_FREQ);
-	txlora.set_lora_settings(LoraBandWidth::BW_500KHZ, CodingRate::CR_4_6,
-							 SpreadFactor::SF_7, DOWNLINK_FREQ, UPLINK_FREQ);
+//	rxlora.set_lora_settings(LoraBandWidth::BW_500KHZ, CodingRate::CR_4_6,
+//							 SpreadFactor::SF_7, DOWNLINK_FREQ, UPLINK_FREQ);
+//	txlora.set_lora_settings(LoraBandWidth::BW_500KHZ, CodingRate::CR_4_6,
+//							 SpreadFactor::SF_7, DOWNLINK_FREQ, UPLINK_FREQ);
 
+	txlora.check_already_store_data();
+	rxlora.check_already_store_data();
 
 	rxlora.set_rx_continuous_mode(LINKMODE::DOWNLINK);
 
@@ -660,6 +663,7 @@ int main(void)
 					case QUERY_RX_FREQ: {
 						// convertir float a arreglog the bytes (en este caso son 4 bytes)
 						uint8_t freq_array[4];
+						txlora.read_settings();
 						uint32_t rx_freq = txlora.get_rx_frequency();
 						float freqOut;
 						freqOut = rx_freq / 1000000.0f;
@@ -678,6 +682,7 @@ int main(void)
 					}
 					case QUERY_TX_FREQ: {
 						uint8_t freq_array[4];
+						rxlora.read_settings();
 						uint32_t tx_freq = rxlora.get_tx_frequency();
 						float freqOut;
 						freqOut = tx_freq / 1000000.0f;
@@ -695,6 +700,7 @@ int main(void)
 					}
 					case QUERY_SPREAD_FACTOR: {
 						uint8_t spread_array[1];
+						txlora.read_settings();
 						uint8_t spread_factor = txlora.get_spread_factor();
 						spread_factor = spread_factor - SPREAD_FACTOR_OFFSET;
 						memcpy(spread_array, &spread_factor,
@@ -712,6 +718,7 @@ int main(void)
 					}
 					case QUERY_CODING_RATE: {
 						uint8_t coding_array[1];
+						txlora.read_settings();
 						uint8_t coding_rate = txlora.get_coding_rate();
 						memcpy(coding_array, &coding_rate, sizeof(coding_rate));
 						command.set_message(coding_array, sizeof(coding_array));
@@ -727,6 +734,7 @@ int main(void)
 					}
 					case QUERY_BANDWIDTH: {
 						uint8_t bw_array[1];
+						txlora.read_settings();
 						uint8_t bw = txlora.get_bandwidth();
 						bw = bw + BANDWIDTH_OFFSET;
 						memcpy(bw_array, &bw, sizeof(bw));
@@ -742,27 +750,18 @@ int main(void)
 						break;
 					}
 					case SET_TX_FREQ: {
-						// obtener data de commandMessage y convertir a float
 						uint32_t freq = command.getDataAsUint32();
-
 						int freq_int = command.freqDecode();
-
 						freq = (uint32_t) freq_int;
-
-						// guardar la data en la clase lora
 						rxlora.set_tx_freq(freq);
-						// guardar la data en la eeprom
 						rxlora.save_settings();
-						// configurar lora con la nueva frecuencia
 						rxlora.configure_modem();
-						// enviar la trama con la nueva configuración
-
 						uint8_t freq_array[4];
+						rxlora.read_settings();
 						uint32_t tx_freq = rxlora.get_tx_frequency();
 						float freqOut;
 						freqOut = tx_freq / 1000000.0f;
 						memcpy(freq_array, &freqOut, sizeof(freqOut));
-						// crear commandMessage con trama y datos (en este caso con 4 bytes)
 						command.set_message(freq_array, sizeof(freq_array));
 						std::vector<uint8_t> message_composed =
 								command.get_composed_message();
@@ -777,15 +776,13 @@ int main(void)
 					}
 					case SET_RX_FREQ: {
 						uint32_t freq = command.getDataAsUint32();
-
 						int freq_int = command.freqDecode();
-
 						freq = (uint32_t) freq_int;
-
 						txlora.set_rx_freq(freq);
 						txlora.save_settings();
 						txlora.configure_modem();
 						uint8_t freq_array[4];
+						txlora.read_settings();
 						uint32_t rx_freq = txlora.get_rx_frequency();
 						float freqOut;
 						freqOut = rx_freq / 1000000.0f;
@@ -811,6 +808,7 @@ int main(void)
 						rxlora.save_settings();
 						rxlora.configure_modem();
 						uint8_t bw_array[1];
+						txlora.read_settings();
 						uint8_t bw = txlora.get_bandwidth();
 						bw = bw + BANDWIDTH_OFFSET;
 						memcpy(bw_array, &bw, sizeof(bw));
@@ -835,6 +833,7 @@ int main(void)
 						rxlora.save_settings();
 						rxlora.configure_modem();
 						uint8_t spread_array[1];
+						txlora.read_settings();
 						uint8_t spread_factor = txlora.get_spread_factor();
 						spread_factor = spread_factor - SPREAD_FACTOR_OFFSET;
 						memcpy(spread_array, &spread_factor,
@@ -859,6 +858,7 @@ int main(void)
 						rxlora.save_settings();
 						rxlora.configure_modem();
 						uint8_t coding_array[1];
+						rxlora.read_settings();
 						uint8_t coding_rate = txlora.get_coding_rate();
 						memcpy(coding_array, &coding_rate, sizeof(coding_rate));
 						command.set_message(coding_array, sizeof(coding_array));
@@ -871,6 +871,10 @@ int main(void)
 						command.reset(1);
 						message_composed.clear();
 						break;
+					}
+					case SET_UART_BAUDRATE:{
+						txlora.set_default_parameters();
+						rxlora.set_default_parameters();
 					}
 					default:
 						break;
