@@ -364,6 +364,9 @@ int main(void) {
 					message_composed.clear();
 					break;
 				}
+				case SET_UART_BAUDRATE:{
+					lora.set_default_parameters();
+				}
 				default:
 					break;
 				}

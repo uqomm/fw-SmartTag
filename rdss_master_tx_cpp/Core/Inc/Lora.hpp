@@ -86,6 +86,7 @@ public:
 
 	void set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,
 			uint32_t dl_freq, uint32_t up_freq);
+	void set_default_parameters();
 
 	void configure_modem();
 	uint32_t get_rx_frequency();

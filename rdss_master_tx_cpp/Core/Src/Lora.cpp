@@ -125,7 +125,15 @@ void Lora::set_coding_rate(uint8_t cr){
 }
 
 
-
+void Lora::set_default_parameters(){
+	downlink_frequency = (0xffff);
+	uplink_frequency = (0xffff);
+	bandwidth = (LoraBandWidth)(0xff);
+	spread_factor = (SpreadFactor)(0xff);
+	coding_rate = (CodingRate)(0xff);
+	this->set_lora_settings(bandwidth, coding_rate, spread_factor, downlink_frequency, uplink_frequency);
+	save_settings();
+}
 
 
 void Lora::set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,
@@ -146,12 +154,12 @@ void Lora::set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,
 	}
 
 	if (bw < LoraBandWidth::BW_7_8KHZ || bw > LoraBandWidth::BW_500KHZ)
-		bw = LoraBandWidth::BW_500KHZ;
+		bandwidth = LoraBandWidth::BW_500KHZ;
 	else
 		bandwidth = bw;
 
 	if (cr < CodingRate::CR_4_5 || cr > CodingRate::CR_4_8)
-		cr = CodingRate::CR_4_6;
+		coding_rate = CodingRate::CR_4_6;
 	else
 		coding_rate = cr;
 
