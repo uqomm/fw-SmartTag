@@ -74,12 +74,12 @@ void CommandMessage::reset() {
 	reset(false);
 }
 
-void CommandMessage::check_byte(uint8_t number) {
+void CommandMessage::checkByte(uint8_t number) {
 	if (listening) {
 		message.push_back(number);
 		if (number == getLTELEndMark()) {
 			listening = false;
-			ready = check_crc();
+			ready = checkCRC();
 			if (ready) {
 				setVars();
 			}
@@ -96,7 +96,7 @@ void CommandMessage::check_byte(uint8_t number) {
 	}
 }
 
-bool CommandMessage::check_crc() {
+bool CommandMessage::checkCRC() {
 #define CRC_BYTE_1_BACKWARD 3
 #define CRC_BYTE_2_BACKWARD 2
 
@@ -105,7 +105,7 @@ bool CommandMessage::check_crc() {
 	uint8_t crc_frame[2] = { message[message.size() - CRC_BYTE_1_BACKWARD],
 			message[message.size() - CRC_BYTE_2_BACKWARD] };
 
-	crc = crc_calc(1, 3);
+	crc = calculateCRC(1, 3);
 	memcpy(testframe, &crc, 2);
 	if (testframe[1] == crc_frame[1] && testframe[0] == crc_frame[0]) {
 		return true;
@@ -113,7 +113,7 @@ bool CommandMessage::check_crc() {
 	return false;
 }
 
-uint16_t CommandMessage::crc_calc(uint8_t start, uint8_t end) {
+uint16_t CommandMessage::calculateCRC(uint8_t start, uint8_t end) {
 	uint8_t b;
 	uint8_t i;
 	uint16_t generator = 0x1021; //divisor is 16bit
@@ -157,7 +157,7 @@ bool CommandMessage::composeMessage(std::vector<uint8_t> *data) {
 		message.insert(message.end(), data->begin(), data->end());
 	}
 
-	crc = crc_calc(1, 0);
+	crc = calculateCRC(1, 0);
 	message.push_back(static_cast<uint8_t>(crc & 0xFF));
 	message.push_back(static_cast<uint8_t>((crc >> 8) & 0xFF));
 
@@ -176,22 +176,21 @@ bool CommandMessage::composeMessage() {
 }
 
 STATUS CommandMessage::validate(uint8_t *buffer, uint8_t length) {
-	STATUS frameStatus = validate_protocol(buffer, length);
+	STATUS frameStatus = checkFrameValidity(buffer, length);
 	if (frameStatus != (STATUS::VALID_FRAME))
 		return (frameStatus);
-	STATUS crcStatus = validate_crc(buffer, length);
+	STATUS crcStatus = checkCRCValidity(buffer, length);
 	if (crcStatus != (STATUS::RDSS_DATA_OK))
 		return (crcStatus);
-
-	STATUS moduleStatus = validate_module(buffer, length);
+	STATUS moduleStatus = check_module(buffer, length);
 	if (moduleStatus != (STATUS::CONFIG_FRAME)) {
 		return (moduleStatus);
 	} else {
-		return (moduleStatus);
+		saveFrame(buffer, length);
+		return (STATUS::CONFIG_FRAME);
 	}
 }
-
-STATUS CommandMessage::validate_protocol(uint8_t *frame, uint8_t length) {
+STATUS CommandMessage::checkFrameValidity(uint8_t *frame, uint8_t length) {
 	if (length > (MINIMUN_FRAME_LEN)) {
 		if (frame[0] == RDSS_START_MARK) {
 			if (frame[length - 1] == RDSS_END_MARK)
@@ -204,16 +203,14 @@ STATUS CommandMessage::validate_protocol(uint8_t *frame, uint8_t length) {
 
 		return STATUS::WAITING;
 }
-
-STATUS CommandMessage::validate_module(uint8_t *frame, uint8_t length) {
+STATUS CommandMessage::check_module(uint8_t *frame, uint8_t length) {
 
 	if (frame[static_cast<int>(INDEX::MODULE_TYPE)] != module_function)
-		return STATUS::CONFIG_FRAME;
+		return STATUS::RETRANSMIT_FRAME;
 
-	return STATUS::RETRANSMIT_FRAME;
+	return STATUS::CONFIG_FRAME;
 }
-
-STATUS CommandMessage::validate_crc(uint8_t *frame, uint8_t len) {
+STATUS CommandMessage::checkCRCValidity(uint8_t *frame, uint8_t len) {
 	uint16_t calculatedCrc;
 	uint16_t savedCrc;
 	savedCrc = ((uint16_t) frame[len - CRC_HIGH_BYTE_OFFSET] << 8);
@@ -244,7 +241,7 @@ uint16_t CommandMessage::crc_get(uint8_t *buffer, uint8_t buff_len) {
 	return crc;
 }
 
-void CommandMessage::save_frame(uint8_t *buffer, uint8_t length) {
+void CommandMessage::saveFrame(uint8_t *buffer, uint8_t length) {
 
 	command_id = buffer[static_cast<int>(INDEX::CMD)];
 	module_id = buffer[static_cast<int>(INDEX::MODULE_ID)];
@@ -335,6 +332,28 @@ float CommandMessage::getDataAsFloat() const {
 	std::copy(message.begin(), message.begin() + 4, converter.bytes);
 
 	return converter.value;
+}
+
+
+int CommandMessage::freqDecode() const{
+    if (message.size() < 4) {
+        return 0; // O lanza una excepción
+    }
+
+    union {
+        uint32_t i;
+        float f;
+    } freq;
+
+    // Copia segura de los 4 bytes usando memcpy (metodo más eficiente si siempre hay 4 bytes)
+    memcpy(&freq.i, message.data(), 4);
+
+    // Manejo del Endianness (solo necesario si es crítico la portabilidad)
+    // Si necesitas manejarlo, aquí deberías incluir el código para el intercambio de bytes
+
+
+    return static_cast<int>(freq.f * 1000000.0f);
+
 }
 
 
