@@ -18,10 +18,10 @@ public:
 
 	uint8_t transmitMessage(uint8_t* data_sen, uint16_t data_len);
 	bool get_and_send_command(CommandMessage command);
-	uint8_t read(uint8_t* data_received);
+	void read(uint8_t* data_received);
 	uint8_t read_timeout(uint8_t* data_received, uint16_t timeout_ms);
 	uint8_t read_timeout_new(uint8_t* data_received);
-	void enable_receive_interrupt(uint8_t _bytes_it);
+	void enable_receive_interrupt();
 
 protected:
 	UART_HandleTypeDef* huart;

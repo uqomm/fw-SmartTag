@@ -30,19 +30,25 @@ public:
 	template <typename T>
 	void setValue(uint8_t key, T value);
 
+
+
 private:
-	I2C_HandleTypeDef* hi2c;
+	I2C_HandleTypeDef *hi2c;
 	uint8_t EEPROM_CHIP_ADDR;
+	void addres_scanner();
+	uint8_t EEPROM_Read(uint8_t address);
+	void EEPROM_Write(uint8_t address, uint8_t data);
+	uint8_t i2c_addres[5] = { 0 };
 	uint8_t EEPROM_PAGE_SIZE;
 	uint8_t EEPrOM_PAGE_NUM = 32;
 	std::vector<MemoryLocation> value_addr;
-	uint8_t EEPROM_Read(uint8_t address);
-	void EEPROM_Write(uint8_t address, uint8_t data);
+//	uint8_t EEPROM_Read(uint8_t address);
+//	void EEPROM_Write(uint8_t address, uint8_t data);
 
-	template <typename T>
+	template<typename T>
 	void EEPROM_byte_Write(uint8_t addr, T data);
 
-	template <typename T>
+	template<typename T>
 	T EEPROM_byte_Read(uint8_t address);
 };
 

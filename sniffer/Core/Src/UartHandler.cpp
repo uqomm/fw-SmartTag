@@ -24,8 +24,8 @@ bool UartHandler::get_and_send_command(CommandMessage command) {
 	}
 }
 
-uint8_t UartHandler::read(uint8_t *data_received) {
-	read_timeout(data_received, 2000);
+void UartHandler::read(uint8_t *data_received) {
+	memcpy(data_received, buffer, sizeof(buffer));
 }
 
 uint8_t UartHandler::read_timeout(uint8_t *data_received, uint16_t timeout_ms) {
@@ -53,8 +53,8 @@ uint8_t UartHandler::read_timeout(uint8_t *data_received, uint16_t timeout_ms) {
 }
 
 
-void UartHandler::enable_receive_interrupt(uint8_t _bytes_it){
-	HAL_UART_Receive_IT(huart, buffer , _bytes_it);
+void UartHandler::enable_receive_interrupt(){
+	HAL_UART_Receive_IT(huart, buffer , 13);
 }
 
 
