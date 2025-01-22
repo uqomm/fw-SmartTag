@@ -194,7 +194,6 @@ void Lora::set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,
 	set_low_frequency_mode(DeviceOperatingMode::SLEEP);
 	setRegModemConfig(modem_cfg1, modem_cfg2);
 
-	save_settings();
 }
 
 void Lora::set_low_frequency_mode(DeviceOperatingMode mode) {

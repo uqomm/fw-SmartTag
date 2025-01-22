@@ -205,7 +205,7 @@ STATUS CommandMessage::checkFrameValidity(uint8_t *frame, uint8_t length) {
 }
 STATUS CommandMessage::check_module(uint8_t *frame, uint8_t length) {
 
-	if (frame[static_cast<int>(INDEX::MODULE_TYPE)] != module_function)
+	if (frame[static_cast<int>(INDEX::MODULE_TYPE)] == module_function)
 		return STATUS::RETRANSMIT_FRAME;
 
 	return STATUS::CONFIG_FRAME;

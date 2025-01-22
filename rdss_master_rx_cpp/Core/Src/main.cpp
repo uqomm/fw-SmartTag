@@ -192,6 +192,9 @@ int main(void) {
 			memset(lora_rcv_buffer, 0, sizeof(lora_rcv_buffer));
 
 			gpio_handler.off(lora_rx_led);
+			memset(lora_rcv_buffer, 0, lora_rcv_bytes);
+			lora_rcv_bytes = 0;
+			cmd_sniffer.reset(1);
 			/* USER CODE BEGIN 3 */
 		}
 
