@@ -11,6 +11,8 @@
 #include "main.h"
 #include "CommandMessage.hpp"
 
+constexpr uint16_t MAX_BUFFER_UART = 256;
+
 class UartHandler {
 public:
 	UartHandler(UART_HandleTypeDef* _huart1 );
@@ -25,7 +27,7 @@ public:
 
 protected:
 	UART_HandleTypeDef* huart;
-	uint8_t buffer[255] = {0};
+	uint8_t buffer[MAX_BUFFER_UART] = {0};
 
 
 };

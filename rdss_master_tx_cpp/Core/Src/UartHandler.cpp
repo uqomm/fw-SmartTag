@@ -60,11 +60,10 @@ void UartHandler::enable_receive_interrupt(uint8_t _bytes_it){
 
 uint8_t UartHandler::read_timeout_new(uint8_t *data_received) {
 	int i = 0;
-	uint8_t size = sizeof(buffer);
-	HAL_StatusTypeDef resp;
+
 
 	for (i = 0; buffer[0] == 0x7e && buffer[i] != 0x7f; i++) {
-		if (i == 255) {
+		if (i == MAX_BUFFER_UART -1) {
 			i = 0;
 			break;
 		}
