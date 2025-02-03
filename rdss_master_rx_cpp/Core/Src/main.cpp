@@ -170,7 +170,7 @@ int main(void) {
 //	lora.set_lora_settings(LoraBandWidth::BW_500KHZ, CodingRate::CR_4_6,
 //			SpreadFactor::SF_7, DOWNLINK_FREQ, UPLINK_FREQ);
 	lora.check_already_store_data();
-	uart_cfg.enable_receive_interrupt(13);
+	uart_cfg.enable_receive_interrupt(1);
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -199,7 +199,6 @@ int main(void) {
 		}
 
 		//Configuracion Lora por UART de forma local
-		uart_cfg.enable_receive_interrupt(13);
 		if (bytes_reciv_software > 0) {
 			STATUS status_data = command.validate(data_reciv_software,
 					bytes_reciv_software);
@@ -432,7 +431,7 @@ int main(void) {
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if (&huart1 == huart)
-		bytes_reciv_software = uart_cfg.read_timeout_new(data_reciv_software);
+		bytes_reciv_software = uart_cfg.read_byte(data_reciv_software);
 
 }
 

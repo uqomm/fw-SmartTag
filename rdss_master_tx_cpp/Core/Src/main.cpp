@@ -64,10 +64,10 @@ UART_HandleTypeDef huart3;
 UartHandler uart_minipc = UartHandler(&huart2);
 UartHandler uart_cfg = UartHandler(&huart1);
 
-uint8_t bytes_reciv_mini_pc;
-uint8_t bytes_reciv_software;
-uint8_t data_reciv_mini_pc[255] = { 0 };
-uint8_t data_reciv_software[255] = { 0 };
+uint16_t bytes_reciv_mini_pc = 0;
+uint8_t bytes_reciv_software = 0;
+uint8_t data_reciv_mini_pc[MAX_BUFFER_UART] = { 0 };
+uint8_t data_reciv_software[MAX_BUFFER_UART] = { 0 };
 
 /* USER CODE END PV */
 
@@ -143,8 +143,8 @@ int main(void) {
 //	lora.save_settings();
 	lora.check_already_store_data();
 
-	uart_cfg.enable_receive_interrupt(13);
-	uart_minipc.enable_receive_interrupt(13);
+	uart_cfg.enable_receive_interrupt(1);
+	uart_minipc.enable_receive_interrupt(1);
 
 
 
@@ -156,9 +156,7 @@ int main(void) {
 
 
 		//Recepcion mini pc
-		uart_minipc.enable_receive_interrupt(13);
 		if (bytes_reciv_mini_pc > 0) {
-
 			STATUS status_data = command.validate(data_reciv_mini_pc,bytes_reciv_mini_pc);
 			if (status_data == STATUS::RETRANSMIT_FRAME) {
 				if (lora.transmit(data_reciv_mini_pc, bytes_reciv_mini_pc,
@@ -173,7 +171,6 @@ int main(void) {
 
 
 		//Configuracion Lora por UART de forma local
-		uart_cfg.enable_receive_interrupt(13);
 		if (bytes_reciv_software > 0) {
 			STATUS status_data = command.validate(data_reciv_software, bytes_reciv_software);
 			if (status_data == STATUS::CONFIG_FRAME) {
@@ -371,7 +368,6 @@ int main(void) {
 			memset(data_reciv_software, 0, bytes_reciv_software);
 			bytes_reciv_software = 0;
 		}
-
 
 
 
@@ -753,9 +749,9 @@ static void MX_GPIO_Init(void) {
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if (&huart1 == huart)
-		bytes_reciv_software = uart_cfg.read_timeout_new(data_reciv_software);
+		bytes_reciv_software = uart_cfg.read_byte(data_reciv_software);
 	else
-		bytes_reciv_mini_pc = uart_minipc.read_timeout_new(data_reciv_mini_pc);
+		bytes_reciv_mini_pc = uart_minipc.read_byte(data_reciv_mini_pc);
 }
 /* USER CODE END 4 */
 
