@@ -24,11 +24,11 @@ public:
 	uint8_t read_timeout(uint8_t* data_received, uint16_t timeout_ms);
 	uint8_t read_timeout_new(uint8_t* data_received);
 	void enable_receive_interrupt(uint8_t _bytes_it);
-
+	uint8_t read_byte(uint8_t *data_received);
 protected:
 	UART_HandleTypeDef* huart;
 	uint8_t buffer[MAX_BUFFER_UART] = {0};
-
+	uint8_t rx_index;
 
 };
 

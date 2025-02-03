@@ -515,6 +515,7 @@ int main(void)
 				}
 				if ((tag_status == TAG_END_READINGS))
 				{					//					uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list,&list_od);
+					debug_distance_new(tag, tag_status, distance_a, distance_b);
 					save_two_maps_and_clear_tag(distance_a, distance_b, tag_map_od, tag, lora_send_ticks, tag_map);
 					tag_status = TAG_DISCOVERY;
 				}
@@ -525,6 +526,7 @@ int main(void)
 				else
 				{
 					//					uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list, &list_od);
+					debug_distance_new(tag, tag_status, distance_a, distance_b);
 					save_two_maps_and_clear_tag(distance_a, distance_b, tag_map_od, tag, lora_send_ticks, tag_map);
 					tag_status = TAG_DISCOVERY;
 				}
@@ -536,6 +538,7 @@ int main(void)
 			}
 			if (HAL_GetTick() - query_ticks > query_timeout)
 			{
+				debug_distance_new(tag, tag_status, distance_a, distance_b);
 				save_two_maps_and_clear_tag(distance_a, distance_b, tag_map_od, tag, lora_send_ticks, tag_map);
 				tag_status = TAG_DISCOVERY;
 			}
@@ -652,7 +655,7 @@ int main(void)
 
 			//Configuracion Lora por UART
 
-			uart_cfg.enable_receive_interrupt();
+
 			if (bytes_reciv > 0) {
 
 				STATUS status_data = command.validate(data_reciv, bytes_reciv);
@@ -875,6 +878,7 @@ int main(void)
 					case SET_UART_BAUDRATE:{
 						txlora.set_default_parameters();
 						rxlora.set_default_parameters();
+						break;
 					}
 					default:
 						break;
@@ -1227,7 +1231,7 @@ static void MX_GPIO_Init(void)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	bytes_reciv = uart_cfg.read_timeout_new(data_reciv);
+	bytes_reciv = uart_cfg.read_byte(data_reciv);
 
 }
 
