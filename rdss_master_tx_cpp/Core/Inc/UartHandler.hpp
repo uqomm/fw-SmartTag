@@ -11,6 +11,8 @@
 #include "main.h"
 #include "CommandMessage.hpp"
 
+constexpr uint16_t MAX_BUFFER_UART = 256;
+
 class UartHandler {
 public:
 	UartHandler(UART_HandleTypeDef* _huart1 );
@@ -20,12 +22,13 @@ public:
 	bool get_and_send_command(CommandMessage command);
 	uint8_t read(uint8_t* data_received);
 	uint8_t read_timeout(uint8_t* data_received, uint16_t timeout_ms);
-	uint8_t read_timeout_new(uint8_t* data_received, uint16_t timeout_ms);
-
+	uint8_t read_timeout_new(uint8_t* data_received);
+	void enable_receive_interrupt(uint8_t _bytes_it);
+	uint8_t read_byte(uint8_t *data_received);
 protected:
 	UART_HandleTypeDef* huart;
-	uint8_t buffer[255] = {0};
-
+	uint8_t buffer[MAX_BUFFER_UART] = {0};
+	uint8_t rx_index;
 
 };
 

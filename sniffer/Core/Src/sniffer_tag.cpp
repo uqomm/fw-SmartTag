@@ -287,8 +287,17 @@ TAG_STATUS_t tag_response(TAG_t *tag) {
 	tx_buffer[0] = tag->command;
 	*(uint32_t*) (tx_buffer + sizeof(tag->command)) = tag->id;
 
-	*(uint8_t*) (tx_buffer + sizeof(tag->command) + sizeof(tag->id)) = tag->sleep_time_recived;
-	*(uint8_t*) (tx_buffer + sizeof(tag->command) + sizeof(tag->id) + sizeof(tag->sleep_time_recived)) = tag->sleep_time_not_recived;
+	*(uint8_t*) (tx_buffer + sizeof(tag->command)
+			+ sizeof(tag->id)) = tag->sleep_time_recived;
+
+	*(uint8_t*) (tx_buffer + sizeof(tag->command)
+			+ sizeof(tag->id)
+			+ sizeof(tag->sleep_time_recived)) = tag->sleep_time_not_recived;
+
+	*(uint8_t*) (tx_buffer + sizeof(tag->command)
+			+ sizeof(tag->id)
+			+ sizeof(tag->sleep_time_recived)
+			+ sizeof(tag->sleep_time_not_recived)) = tag->ship_mode;
 
 	TAG_STATUS_t status_reg = transmit_(tx_buffer, TX_BUFFER_SIZE_TAG_RESPONSE);
 
@@ -520,7 +529,7 @@ int send_message_with_human_tag_timestamp() {
 	return (ret);
 }
 
-#define RX_TIMEOUT_MS 150
+#define RX_TIMEOUT_MS 100
 
 uint32_t status_reg;
 TAG_STATUS_t wait_rx_data() {
@@ -1191,24 +1200,24 @@ void print_serialized_cplusplus(std::map<uint32_t, TAG_t> *tag_map, uint8_t limi
 	uint8_t header_size = 8+2+2;
 	char hex_output[tag_size * 2 + header_size + 1] = {0}; // Each byte is represented by 2 hex digits + null terminator
 
+	HAL_UART_Transmit(&huart1, (uint8_t*) "SnifferID:\n\r", (uint16_t) 12,
+			HAL_MAX_DELAY);
 	for (int i = 0; i < 4; ++i) {
-			snprintf(&hex_output[i*2], 3, "%02X", buffer[i]);
+			snprintf(&hex_output[i*2], 3, "%02X", buffer[3-i]);
 	}
 	HAL_UART_Transmit(&huart1, (uint8_t*) hex_output, (uint16_t) (4 * 2), HAL_MAX_DELAY);
-	HAL_UART_Transmit(&huart1, (uint8_t*) "\n\r\r", 2,HAL_MAX_DELAY);
-	uint8_t total_bytes = sprintf(hex_output, "%02X", buffer[4]);
-	HAL_UART_Transmit(&huart1, (uint8_t*) hex_output, total_bytes, HAL_MAX_DELAY);
-	HAL_UART_Transmit(&huart1, (uint8_t*) "\n\r\r", 2,	HAL_MAX_DELAY);
-	total_bytes = sprintf(hex_output, "%02X", buffer[5]);
-	HAL_UART_Transmit(&huart1, (uint8_t*) hex_output, total_bytes, HAL_MAX_DELAY);
-	HAL_UART_Transmit(&huart1, (uint8_t*) "\n\r\r", 2,	HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart1, (uint8_t*) "\n\r\r", 2,
+			HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart1, (uint8_t*) "####\n\r", (uint16_t) 6,
+			HAL_MAX_DELAY);
 
+	HAL_UART_Transmit(&huart1, (uint8_t*) "TagsID:\n\r", (uint16_t) 9,
+				HAL_MAX_DELAY);
 
 	for (int i = 0; i < tag_map->size(); ++i) {
-		for (uint32_t j = 0; j < tag_size; ++j) {
-			snprintf(&hex_output[j * 2], 3, "%02X", current[j]);
+		for (uint32_t j = 0; j < tag_size-1; ++j) {
+			snprintf(&hex_output[j * 2], 3, "%02X", current[tag_size-2-j]);
 		}
-
 		HAL_UART_Transmit(&huart1, (uint8_t*) hex_output,
 				(uint16_t) (tag_size * 2), HAL_MAX_DELAY);
 		HAL_UART_Transmit(&huart1, (uint8_t*) "\n\r\r", 2,
@@ -1217,6 +1226,7 @@ void print_serialized_cplusplus(std::map<uint32_t, TAG_t> *tag_map, uint8_t limi
 	}
 	HAL_UART_Transmit(&huart1, (uint8_t*) "####\n\r", (uint16_t) 6,
 	HAL_MAX_DELAY);
+
 }
 
 void erase_limit_map(std::map<uint32_t, TAG_t>* tag_map_ptr, size_t limit) {

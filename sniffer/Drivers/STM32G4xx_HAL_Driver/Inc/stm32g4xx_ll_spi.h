@@ -1,12 +1,12 @@
 /**
   ******************************************************************************
-  * @file    stm32f1xx_ll_spi.h
+  * @file    stm32g4xx_ll_spi.h
   * @author  MCD Application Team
   * @brief   Header file of SPI LL module.
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2016 STMicroelectronics.
+  * Copyright (c) 2019 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -17,21 +17,21 @@
   */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef STM32F1xx_LL_SPI_H
-#define STM32F1xx_LL_SPI_H
+#ifndef STM32G4xx_LL_SPI_H
+#define STM32G4xx_LL_SPI_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f1xx.h"
+#include "stm32g4xx.h"
 
-/** @addtogroup STM32F1xx_LL_Driver
+/** @addtogroup STM32G4xx_LL_Driver
   * @{
   */
 
-#if defined (SPI1) || defined (SPI2) || defined (SPI3)
+#if defined (SPI1) || defined (SPI2) || defined (SPI3) || defined (SPI4)
 
 /** @defgroup SPI_LL SPI
   * @{
@@ -163,6 +163,14 @@ typedef struct
   * @}
   */
 
+/** @defgroup SPI_LL_EC_PROTOCOL Serial Protocol
+  * @{
+  */
+#define LL_SPI_PROTOCOL_MOTOROLA           0x00000000U               /*!< Motorola mode. Used as default value */
+#define LL_SPI_PROTOCOL_TI                 (SPI_CR2_FRF)             /*!< TI mode                              */
+/**
+  * @}
+  */
 
 /** @defgroup SPI_LL_EC_PHASE Clock Phase
   * @{
@@ -230,8 +238,19 @@ typedef struct
 /** @defgroup SPI_LL_EC_DATAWIDTH Datawidth
   * @{
   */
-#define LL_SPI_DATAWIDTH_8BIT              0x00000000U                       /*!< Data length for SPI transfer:  8 bits */
-#define LL_SPI_DATAWIDTH_16BIT             (SPI_CR1_DFF)                     /*!< Data length for SPI transfer:  16 bits */
+#define LL_SPI_DATAWIDTH_4BIT              (SPI_CR2_DS_0 | SPI_CR2_DS_1)                               /*!< Data length for SPI transfer:  4 bits */
+#define LL_SPI_DATAWIDTH_5BIT              (SPI_CR2_DS_2)                                              /*!< Data length for SPI transfer:  5 bits */
+#define LL_SPI_DATAWIDTH_6BIT              (SPI_CR2_DS_2 | SPI_CR2_DS_0)                               /*!< Data length for SPI transfer:  6 bits */
+#define LL_SPI_DATAWIDTH_7BIT              (SPI_CR2_DS_2 | SPI_CR2_DS_1)                               /*!< Data length for SPI transfer:  7 bits */
+#define LL_SPI_DATAWIDTH_8BIT              (SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0)                /*!< Data length for SPI transfer:  8 bits */
+#define LL_SPI_DATAWIDTH_9BIT              (SPI_CR2_DS_3)                                              /*!< Data length for SPI transfer:  9 bits */
+#define LL_SPI_DATAWIDTH_10BIT             (SPI_CR2_DS_3 | SPI_CR2_DS_0)                               /*!< Data length for SPI transfer: 10 bits */
+#define LL_SPI_DATAWIDTH_11BIT             (SPI_CR2_DS_3 | SPI_CR2_DS_1)                               /*!< Data length for SPI transfer: 11 bits */
+#define LL_SPI_DATAWIDTH_12BIT             (SPI_CR2_DS_3 | SPI_CR2_DS_1 | SPI_CR2_DS_0)                /*!< Data length for SPI transfer: 12 bits */
+#define LL_SPI_DATAWIDTH_13BIT             (SPI_CR2_DS_3 | SPI_CR2_DS_2)                               /*!< Data length for SPI transfer: 13 bits */
+#define LL_SPI_DATAWIDTH_14BIT             (SPI_CR2_DS_3 | SPI_CR2_DS_2 | SPI_CR2_DS_0)                /*!< Data length for SPI transfer: 14 bits */
+#define LL_SPI_DATAWIDTH_15BIT             (SPI_CR2_DS_3 | SPI_CR2_DS_2 | SPI_CR2_DS_1)                /*!< Data length for SPI transfer: 15 bits */
+#define LL_SPI_DATAWIDTH_16BIT             (SPI_CR2_DS_3 | SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0) /*!< Data length for SPI transfer: 16 bits */
 /**
   * @}
   */
@@ -246,6 +265,56 @@ typedef struct
   * @}
   */
 #endif /* USE_FULL_LL_DRIVER */
+
+/** @defgroup SPI_LL_EC_CRC_LENGTH CRC Length
+  * @{
+  */
+#define LL_SPI_CRC_8BIT                    0x00000000U               /*!<  8-bit CRC length */
+#define LL_SPI_CRC_16BIT                   (SPI_CR1_CRCL)            /*!< 16-bit CRC length */
+/**
+  * @}
+  */
+
+/** @defgroup SPI_LL_EC_RX_FIFO_TH RX FIFO Threshold
+  * @{
+  */
+#define LL_SPI_RX_FIFO_TH_HALF             0x00000000U               /*!< RXNE event is generated if FIFO level is greater than or equal to 1/2 (16-bit) */
+#define LL_SPI_RX_FIFO_TH_QUARTER          (SPI_CR2_FRXTH)           /*!< RXNE event is generated if FIFO level is greater than or equal to 1/4 (8-bit)  */
+/**
+  * @}
+  */
+
+/** @defgroup SPI_LL_EC_RX_FIFO RX FIFO Level
+  * @{
+  */
+#define LL_SPI_RX_FIFO_EMPTY               0x00000000U                       /*!< FIFO reception empty */
+#define LL_SPI_RX_FIFO_QUARTER_FULL        (SPI_SR_FRLVL_0)                  /*!< FIFO reception 1/4   */
+#define LL_SPI_RX_FIFO_HALF_FULL           (SPI_SR_FRLVL_1)                  /*!< FIFO reception 1/2   */
+#define LL_SPI_RX_FIFO_FULL                (SPI_SR_FRLVL_1 | SPI_SR_FRLVL_0) /*!< FIFO reception full  */
+/**
+  * @}
+  */
+
+/** @defgroup SPI_LL_EC_TX_FIFO TX FIFO Level
+  * @{
+  */
+#define LL_SPI_TX_FIFO_EMPTY               0x00000000U                       /*!< FIFO transmission empty */
+#define LL_SPI_TX_FIFO_QUARTER_FULL        (SPI_SR_FTLVL_0)                  /*!< FIFO transmission 1/4   */
+#define LL_SPI_TX_FIFO_HALF_FULL           (SPI_SR_FTLVL_1)                  /*!< FIFO transmission 1/2   */
+#define LL_SPI_TX_FIFO_FULL                (SPI_SR_FTLVL_1 | SPI_SR_FTLVL_0) /*!< FIFO transmission full  */
+/**
+  * @}
+  */
+
+/** @defgroup SPI_LL_EC_DMA_PARITY DMA Parity
+  * @{
+  */
+#define LL_SPI_DMA_PARITY_EVEN             0x00000000U   /*!< Select DMA parity Even */
+#define LL_SPI_DMA_PARITY_ODD              0x00000001U   /*!< Select DMA parity Odd  */
+
+/**
+  * @}
+  */
 
 /**
   * @}
@@ -357,7 +426,6 @@ __STATIC_INLINE uint32_t LL_SPI_GetMode(const SPI_TypeDef *SPIx)
   return (uint32_t)(READ_BIT(SPIx->CR1, SPI_CR1_MSTR | SPI_CR1_SSI));
 }
 
-<<<<<<<< HEAD:sniffer/Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_ll_spi.h
 /**
   * @brief  Set serial protocol used
   * @note   This bit should be written only when SPI is disabled (SPE = 0) for correct operation.
@@ -385,8 +453,6 @@ __STATIC_INLINE uint32_t LL_SPI_GetStandard(const SPI_TypeDef *SPIx)
 {
   return (uint32_t)(READ_BIT(SPIx->CR2, SPI_CR2_FRF));
 }
-========
->>>>>>>> origin/2detection:rdss_master_tx_cpp/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_spi.h
 
 /**
   * @brief  Set clock phase
@@ -553,29 +619,50 @@ __STATIC_INLINE uint32_t LL_SPI_GetTransferDirection(const SPI_TypeDef *SPIx)
 
 /**
   * @brief  Set frame data width
-  * @rmtoll CR1          DFF           LL_SPI_SetDataWidth
+  * @rmtoll CR2          DS            LL_SPI_SetDataWidth
   * @param  SPIx SPI Instance
   * @param  DataWidth This parameter can be one of the following values:
+  *         @arg @ref LL_SPI_DATAWIDTH_4BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_5BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_6BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_7BIT
   *         @arg @ref LL_SPI_DATAWIDTH_8BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_9BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_10BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_11BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_12BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_13BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_14BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_15BIT
   *         @arg @ref LL_SPI_DATAWIDTH_16BIT
   * @retval None
   */
 __STATIC_INLINE void LL_SPI_SetDataWidth(SPI_TypeDef *SPIx, uint32_t DataWidth)
 {
-  MODIFY_REG(SPIx->CR1, SPI_CR1_DFF, DataWidth);
+  MODIFY_REG(SPIx->CR2, SPI_CR2_DS, DataWidth);
 }
 
 /**
   * @brief  Get frame data width
-  * @rmtoll CR1          DFF           LL_SPI_GetDataWidth
+  * @rmtoll CR2          DS            LL_SPI_GetDataWidth
   * @param  SPIx SPI Instance
   * @retval Returned value can be one of the following values:
+  *         @arg @ref LL_SPI_DATAWIDTH_4BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_5BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_6BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_7BIT
   *         @arg @ref LL_SPI_DATAWIDTH_8BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_9BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_10BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_11BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_12BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_13BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_14BIT
+  *         @arg @ref LL_SPI_DATAWIDTH_15BIT
   *         @arg @ref LL_SPI_DATAWIDTH_16BIT
   */
 __STATIC_INLINE uint32_t LL_SPI_GetDataWidth(const SPI_TypeDef *SPIx)
 {
-<<<<<<<< HEAD:sniffer/Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_ll_spi.h
   return (uint32_t)(READ_BIT(SPIx->CR2, SPI_CR2_DS));
 }
 
@@ -604,9 +691,6 @@ __STATIC_INLINE void LL_SPI_SetRxFIFOThreshold(SPI_TypeDef *SPIx, uint32_t Thres
 __STATIC_INLINE uint32_t LL_SPI_GetRxFIFOThreshold(const SPI_TypeDef *SPIx)
 {
   return (uint32_t)(READ_BIT(SPIx->CR2, SPI_CR2_FRXTH));
-========
-  return (uint32_t)(READ_BIT(SPIx->CR1, SPI_CR1_DFF));
->>>>>>>> origin/2detection:rdss_master_tx_cpp/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_spi.h
 }
 
 /**
@@ -654,7 +738,6 @@ __STATIC_INLINE uint32_t LL_SPI_IsEnabledCRC(const SPI_TypeDef *SPIx)
 }
 
 /**
-<<<<<<<< HEAD:sniffer/Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_ll_spi.h
   * @brief  Set CRC Length
   * @note   This bit should be written only when SPI is disabled (SPE = 0) for correct operation.
   * @rmtoll CR1          CRCL          LL_SPI_SetCRCWidth
@@ -683,8 +766,6 @@ __STATIC_INLINE uint32_t LL_SPI_GetCRCWidth(const SPI_TypeDef *SPIx)
 }
 
 /**
-========
->>>>>>>> origin/2detection:rdss_master_tx_cpp/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_spi.h
   * @brief  Set CRCNext to transfer CRC on the line
   * @note   This bit has to be written as soon as the last data is written in the SPIx_DR register.
   * @rmtoll CR1          CRCNEXT       LL_SPI_SetCRCNext
@@ -785,7 +866,6 @@ __STATIC_INLINE uint32_t LL_SPI_GetNSSMode(const SPI_TypeDef *SPIx)
 }
 
 /**
-<<<<<<<< HEAD:sniffer/Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_ll_spi.h
   * @brief  Enable NSS pulse management
   * @note   This bit should not be changed when communication is ongoing. This bit is not used in SPI TI mode.
   * @rmtoll CR2          NSSP          LL_SPI_EnableNSSPulseMgt
@@ -822,8 +902,6 @@ __STATIC_INLINE uint32_t LL_SPI_IsEnabledNSSPulse(const SPI_TypeDef *SPIx)
 }
 
 /**
-========
->>>>>>>> origin/2detection:rdss_master_tx_cpp/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_spi.h
   * @}
   */
 
@@ -904,7 +982,6 @@ __STATIC_INLINE uint32_t LL_SPI_IsActiveFlag_BSY(const SPI_TypeDef *SPIx)
   return ((READ_BIT(SPIx->SR, SPI_SR_BSY) == (SPI_SR_BSY)) ? 1UL : 0UL);
 }
 
-<<<<<<<< HEAD:sniffer/Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_ll_spi.h
 /**
   * @brief  Get frame format error flag
   * @rmtoll SR           FRE           LL_SPI_IsActiveFlag_FRE
@@ -945,8 +1022,6 @@ __STATIC_INLINE uint32_t LL_SPI_GetTxFIFOLevel(const SPI_TypeDef *SPIx)
 {
   return (uint32_t)(READ_BIT(SPIx->SR, SPI_SR_FTLVL));
 }
-========
->>>>>>>> origin/2detection:rdss_master_tx_cpp/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_spi.h
 
 /**
   * @brief  Clear CRC error flag
@@ -1192,7 +1267,6 @@ __STATIC_INLINE uint32_t LL_SPI_IsEnabledDMAReq_TX(const SPI_TypeDef *SPIx)
 }
 
 /**
-<<<<<<<< HEAD:sniffer/Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_ll_spi.h
   * @brief  Set parity of  Last DMA reception
   * @rmtoll CR2          LDMARX        LL_SPI_SetDMAParity_RX
   * @param  SPIx SPI Instance
@@ -1247,8 +1321,6 @@ __STATIC_INLINE uint32_t LL_SPI_GetDMAParity_TX(const SPI_TypeDef *SPIx)
 }
 
 /**
-========
->>>>>>>> origin/2detection:rdss_master_tx_cpp/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_spi.h
   * @brief  Get the data register address used for DMA transfer
   * @rmtoll DR           DR            LL_SPI_DMA_GetRegAddr
   * @param  SPIx SPI Instance
@@ -1813,7 +1885,6 @@ __STATIC_INLINE uint32_t LL_I2S_IsEnabledMasterClock(const SPI_TypeDef *SPIx)
   return ((READ_BIT(SPIx->I2SPR, SPI_I2SPR_MCKOE) == (SPI_I2SPR_MCKOE)) ? 1UL : 0UL);
 }
 
-<<<<<<<< HEAD:sniffer/Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_ll_spi.h
 #if defined(SPI_I2SCFGR_ASTRTEN)
 /**
   * @brief  Enable asynchronous start
@@ -1849,8 +1920,6 @@ __STATIC_INLINE uint32_t LL_I2S_IsEnabledAsyncStart(const SPI_TypeDef *SPIx)
 }
 #endif /* SPI_I2SCFGR_ASTRTEN */
 
-========
->>>>>>>> origin/2detection:rdss_master_tx_cpp/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_spi.h
 /**
   * @}
   */
@@ -1914,7 +1983,6 @@ __STATIC_INLINE uint32_t LL_I2S_IsActiveFlag_UDR(const SPI_TypeDef *SPIx)
   return ((READ_BIT(SPIx->SR, SPI_SR_UDR) == (SPI_SR_UDR)) ? 1UL : 0UL);
 }
 
-<<<<<<<< HEAD:sniffer/Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_ll_spi.h
 /**
   * @brief  Get frame format error flag
   * @rmtoll SR           FRE           LL_I2S_IsActiveFlag_FRE
@@ -1925,8 +1993,6 @@ __STATIC_INLINE uint32_t LL_I2S_IsActiveFlag_FRE(const SPI_TypeDef *SPIx)
 {
   return LL_SPI_IsActiveFlag_FRE(SPIx);
 }
-========
->>>>>>>> origin/2detection:rdss_master_tx_cpp/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_spi.h
 
 /**
   * @brief  Get channel side flag.
@@ -2219,7 +2285,7 @@ void        LL_I2S_ConfigPrescaler(SPI_TypeDef *SPIx, uint32_t PrescalerLinear, 
   */
 #endif /* SPI_I2S_SUPPORT */
 
-#endif /* defined (SPI1) || defined (SPI2) || defined (SPI3) */
+#endif /* defined (SPI1) || defined (SPI2) || defined (SPI3) || defined (SPI4) */
 
 /**
   * @}
@@ -2229,5 +2295,5 @@ void        LL_I2S_ConfigPrescaler(SPI_TypeDef *SPIx, uint32_t PrescalerLinear, 
 }
 #endif
 
-#endif /* STM32F1xx_LL_SPI_H */
+#endif /* STM32G4xx_LL_SPI_H */
 

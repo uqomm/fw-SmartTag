@@ -134,6 +134,7 @@ public:
     uint16_t getDataAsUint16() const;
     uint32_t getDataAsUint32() const;
     float getDataAsFloat() const;
+    int freqDecode() const;
 
 
     void set_message(uint8_t *arr, uint8_t size);
@@ -175,7 +176,7 @@ public:
         return max_message_size;
     }
 
-    std::vector<uint8_t> getMessage() {
+    std::vector<uint8_t> get_composed_message() {
         return message;
     }
 

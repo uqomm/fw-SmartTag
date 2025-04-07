@@ -55,6 +55,10 @@ typedef enum {
 	MASTER_MULTIPLE_DETECTION
 }Sniffer_State;
 
+typedef enum {
+	SHIP_MODE_OFF,
+	SHIP_MODE_ON
+}TAG_SHIP_MODE;
 
 typedef struct {
 	uint32_t id;
@@ -70,6 +74,7 @@ typedef struct {
 	Sniffer_State master_state;
 	uint8_t sleep_time_recived;
 	uint8_t sleep_time_not_recived;
+	TAG_SHIP_MODE ship_mode;
 } TAG_t;
 
 typedef struct tag_node {
@@ -113,7 +118,7 @@ typedef enum {
 } TAG_STATUS_t;
 
 #define TX_BUFFER_SIZE (sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t))
-#define TX_BUFFER_SIZE_TAG_RESPONSE (sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint8_t))
+#define TX_BUFFER_SIZE_TAG_RESPONSE (sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint8_t) + sizeof(uint8_t))
 #define TX_DISCOVERY_SIZE (4* sizeof(uint8_t))
 #define TX_TIMESTAMP_SIZE (sizeof(uint8_t) + sizeof(uint32_t))
 #define TAG_TIMESTAMP_QUERY 0x11

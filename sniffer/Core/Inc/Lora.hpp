@@ -15,10 +15,13 @@
 
 constexpr uint32_t DOWNLINK_FREQ_MAX = 157000000UL;
 constexpr uint32_t DOWNLINK_FREQ_MIN = 148000000;
-constexpr uint32_t DOWNLINK_FREQ = 155000000;
+constexpr uint32_t DOWNLINK_FREQ = 149500000;
 constexpr uint32_t UPLINK_FREQ_MAX = 180000000;
 constexpr uint32_t UPLINK_FREQ_MIN = 164000000;
-constexpr uint32_t UPLINK_FREQ = 180000000;
+constexpr uint32_t UPLINK_FREQ = 173500000;
+
+constexpr uint8_t SPREAD_FACTOR_OFFSET = 6;
+constexpr uint8_t BANDWIDTH_OFFSET = 1;
 
 constexpr uint8_t SX1278_MAX_PACKET = 100;
 constexpr uint16_t SX1278_DEFAULT_TIMEOUT = 3000;
@@ -86,13 +89,31 @@ public:
 	void set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,
 			uint32_t dl_freq, uint32_t up_freq);
 
+
+	void configure_modem();
+	uint32_t get_rx_frequency();
+	uint32_t get_tx_frequency();
+	uint8_t get_spread_factor();
+	uint8_t get_coding_rate();
+	uint8_t get_bandwidth();
+	void set_tx_freq(uint32_t freq);
+	void set_rx_freq(uint32_t freq);
+	void set_bandwidth(uint8_t bd);
+	void set_spread_factor(uint8_t spread);
+	void set_coding_rate(uint8_t cr);
+	void check_already_store_data();
+	void set_default_parameters();
+
+
+
+
 	void setRxFifoAddr();
 	void set_downlink_frequency(uint32_t freq);
 	void set_uplink_frequency(uint32_t freq);
 	void save_settings();
 	int8_t receive(uint8_t *data_received, LINKMODE mode);
 	uint8_t transmit(uint8_t *data, uint8_t data_len, LINKMODE mode);
-	uint32_t read_settings();
+	void read_settings();
 	bool channel_detection();
 	void set_rx_continuous_mode(LINKMODE mode);
 	uint8_t read_data_after_lora_rx_done(uint8_t *data_received);

@@ -83,6 +83,7 @@ TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 TAG_STATUS_t process_second(TAG_t *tag) {
 	TAG_STATUS_t status_reg = 0;
 	tag->command = TAG_SET_SLEEP_MODE;
+	tag->ship_mode = SHIP_MODE_OFF;
 
 	start_tag_reception_inmediate(0, 0);
 	status_reg = wait_rx_data();
@@ -94,7 +95,7 @@ TAG_STATUS_t process_second(TAG_t *tag) {
 	if (rx_buffer_size == 0)
 		return (TAG_RX_DATA_ZERO);
 
-	if ((rx_buffer_size < 5))
+	if ((rx_buffer_size < 8))
 		return (TAG_WAIT_FOR_FIRST_DETECTION);
 
 
@@ -112,6 +113,10 @@ TAG_STATUS_t process_second(TAG_t *tag) {
 
 	tag->sleep_time_recived = rx_buffer[5]*1000;
 	tag->sleep_time_not_recived = rx_buffer[6]*100;
+	tag->ship_mode = rx_buffer[7];
+
+	if (tag->ship_mode == SHIP_MODE_ON)
+		return (TAG_SHIP_MODE_SET);
 
 	return (TAG_SLEEP);
 }
@@ -252,7 +257,7 @@ void start_tag_reception_inmediate(uint8_t preamble_timeout, uint8_t rx_timeout)
 	/* Poll for reception of a frame or error/timeout. See NOTE 8 below. */
 }
 
-#define RX_DATA_TIMEOUT_MS 150 // Timeout in millisecondspasé de 1000 a 100 para probar
+#define RX_DATA_TIMEOUT_MS 100 // Timeout in millisecondspasé de 1000 a 100 para probar
 
 TAG_STATUS_t wait_rx_data() {
 	uint32_t status_reg;

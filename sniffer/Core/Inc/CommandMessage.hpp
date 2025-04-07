@@ -148,6 +148,7 @@ public:
 	uint16_t getDataAsUint16() const;
 	uint32_t getDataAsUint32() const;
 	float getDataAsFloat() const;
+	int freqDecode() const;
 
 	void set_message(uint8_t *arr, uint8_t size);
 	// Getters y Setters
@@ -218,6 +219,7 @@ protected:
 	uint16_t crc_calc(uint8_t start, uint8_t end);
 
 	void storeData(size_t dataLength, const void *dataPtr);
+	void saveFrame(uint8_t *buffer, uint8_t length);
 
 	//METODOS SACADOS DE rdss_protocol
 	STATUS validate_protocol(uint8_t *frame, uint8_t length);

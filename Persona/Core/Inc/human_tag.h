@@ -25,7 +25,7 @@ extern "C" {
 #define RESPONSE_TX_TIME_SHIFT_AMOUNT 8
 
 #define TX_BUFFER_SIZE (sizeof(uint8_t) + 3 * sizeof(uint32_t) + sizeof(uint16_t)) //Modificar para tamaño de batería de 16bits unsigned
-#define TX_BUFFER_SIZE_TAG_RESPONSE (sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint8_t))
+#define TX_BUFFER_SIZE_TAG_RESPONSE (sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint8_t)+ sizeof(uint8_t))
 #define RX_BUFFER_SIZE_TIMESTAMP_QUERY  (sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t))
 #define TAG_TIMESTAMP_QUERY 0x11
 #define TAG_SET_SLEEP_MODE 0x12
@@ -36,6 +36,11 @@ extern "C" {
 
 extern char *TAG_MESSAGES[];
 extern uint8_t Discovery_Counter;
+
+typedef enum {
+	SHIP_MODE_OFF,
+	SHIP_MODE_ON
+}TAG_SHIP_MODE;
 
 typedef struct {
 	uint32_t id;
@@ -51,6 +56,7 @@ typedef struct {
 	uint32_t sleep_time_not_recived;
 	uint16_t distance_a;
 	uint16_t distance_b;
+	TAG_SHIP_MODE ship_mode;
 } TAG_t;
 
 typedef struct buffer {
@@ -68,8 +74,6 @@ typedef enum {
 	MASTER_ONE_DETECTION,
 	MASTER_MULTIPLE_DETECTION
 }Sniffer_State;
-
-
 
 typedef enum{
 	TAG_NO_RESPONSE,
@@ -89,6 +93,7 @@ typedef enum{
 	TAG_WRONG_ID_MATCH,
 	TAG_WAIT_SEND_TX,
 	TAG_SLEEP_RECIVED,
+	TAG_SHIP_MODE_SET,
 	TAG_UNKNOWN
 }TAG_STATUS_t;
 

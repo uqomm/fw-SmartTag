@@ -57,3 +57,4 @@ rdss_master_rx_cpp/.settings/stm32cubeide.project.prefs
 rdss_master_tx_cpp/rdss_master_tx_cpp Debug.launch
 rdss_master_tx_cpp/.settings/language.settings.xml
 rdss_master_tx_cpp/.settings/stm32cubeide.project.prefs
+sniffer/sniffer-tag Debug.cfg

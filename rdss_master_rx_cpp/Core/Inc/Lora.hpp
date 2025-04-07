@@ -15,10 +15,13 @@
 
 constexpr uint32_t DOWNLINK_FREQ_MAX = 157000000UL;
 constexpr uint32_t DOWNLINK_FREQ_MIN = 148000000;
-constexpr uint32_t DOWNLINK_FREQ = 155000000;
+constexpr uint32_t DOWNLINK_FREQ = 149500000;
 constexpr uint32_t UPLINK_FREQ_MAX = 180000000;
 constexpr uint32_t UPLINK_FREQ_MIN = 164000000;
-constexpr uint32_t UPLINK_FREQ = 180000000;
+constexpr uint32_t UPLINK_FREQ = 173500000;
+
+constexpr uint8_t SPREAD_FACTOR_OFFSET = 6;
+constexpr uint8_t BANDWIDTH_OFFSET = 1;
 
 constexpr uint8_t SX1278_MAX_PACKET = 100;
 constexpr uint16_t SX1278_DEFAULT_TIMEOUT = 3000;
@@ -42,7 +45,7 @@ constexpr uint8_t LTEL_COMPATIBLE_PREAMBLE_LENGTH_LSB = 12;
 constexpr uint8_t CLEAR_IRQ_MASK = 0xFF;
 
 
-enum class LINKMODE {
+enum class LinkMode {
 	DOWNLINK,UPLINK
 };
 
@@ -83,16 +86,29 @@ public:
 
 	void set_lora_settings(LoraBandWidth bw, CodingRate cr, SpreadFactor sf,
 			uint32_t dl_freq, uint32_t up_freq);
+	void set_default_parameters();
+
+	void configure_modem();
+	uint32_t get_rx_frequency();
+	uint32_t get_tx_frequency();
+	uint8_t get_spread_factor();
+	uint8_t get_coding_rate();
+	uint8_t get_bandwidth();
+	void set_tx_freq(uint32_t freq);
+	void set_rx_freq(uint32_t freq);
+	void set_bandwidth(uint8_t bd);
+	void set_spread_factor(uint8_t spread);
+	void set_coding_rate(uint8_t cr);
+	void check_already_store_data();
+
 
 	void setRxFifoAddr();
-	void reset_base_fifo_base_addrs();
 	void set_downlink_frequency(uint32_t freq);
 	void set_uplink_frequency(uint32_t freq);
 	void save_settings();
-	uint8_t receive(uint8_t *data_received, LINKMODE mode);
-	uint8_t transmit(uint8_t *data, uint8_t data_len, LINKMODE mode);
+	int8_t receive(uint8_t *data_received, LinkMode mode);
+	uint8_t transmit(uint8_t *data, uint8_t data_len, LinkMode mode);
 	uint32_t read_settings();
-	bool channel_detection();
 private:
 	Memory* eeprom;
 	uint8_t len;
@@ -128,9 +144,8 @@ private:
 	void set_default_configurations();
 	void save_lora_settings();
 	void set_low_frequency_mode(DeviceOperatingMode mode);
-	void changeMode(LINKMODE mode);
-	void set_link_frequency(LINKMODE mode);
-
+	void changeMode(LinkMode mode);
+	void set_link_frequency(LinkMode mode);
 };
 
 #endif /* INC_LORA_HPP_ */

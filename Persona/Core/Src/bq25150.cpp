@@ -147,41 +147,10 @@ HAL_StatusTypeDef Bq25155::I2C_write(uint8_t deviceAddress, uint8_t registerAddr
 	  return HAL_I2C_Master_Transmit(i2c, (uint16_t)(deviceAddress<<1), buffer , 2, 1000);
 }
 
-/*
-void Bq25155::register_init_all(){
-	this->I2C_write(BQ25155_ADDR, BQ25155_MASK0, 0x20, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_MASK1, 0x00, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_MASK2, 0x80, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_MASK3, 0x00, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_VBAT_CTRL, 0x3C, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_ICHG_CTRL, 0xFF, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_PCHRGCTRL, 0x9E, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_TERMCTRL, 0x14, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_BUVLO, 0x06, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_CHARGERCTRL0, 0x42, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_CHARGERCTRL1, 0xC8, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_ILIMCTRL, 0x06, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_LDOCTRL, 0xB0, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_MRCTRL, 0xBE, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_ICCTRL0, 0x14, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_ICCTRL1, 0x40, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_ICCTRL2, 0x40, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_ADCCTRL0, 0x80, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_ADCCTRL1, 0x00, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_ADCALARM_COMP1_M, 0x00, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_ADCALARM_COMP1_L, 0x00, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_ADCALARM_COMP2_M, 0x00, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_ADCALARM_COMP2_L, 0x00, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_ADCALARM_COMP3_M, 0x00, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_ADCALARM_COMP3_L, 0x00, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_ADC_READ_EN, 0x08, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_TS_FASTCHGCTRL, 0x04, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_TS_COLD, 0x7E, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_TS_COOL, 0x6F, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_TS_WARM, 0x39, i2c);
-	this->I2C_write(BQ25155_ADDR, BQ25155_TS_HOT, 0x29, i2c);
+void Bq25155::enter_ship_mode(){
+	this->mr_reset();
+	this->I2C_write(BQ25155_ADDR, BQ25155_ICCTRL0, 0x90, i2c);
 }
-*/
 
 void Bq25155::register_init_all_2(){
 	this->I2C_write(BQ25155_ADDR, BQ25155_MASK0, 0x00, i2c);	//Modificado 0x20

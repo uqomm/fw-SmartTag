@@ -24,8 +24,8 @@ bool UartHandler::get_and_send_command(CommandMessage command) {
 	}
 }
 
-uint8_t UartHandler::read(uint8_t *data_received) {
-	read_timeout(data_received, 2000);
+void UartHandler::read(uint8_t *data_received) {
+	memcpy(data_received, buffer, sizeof(buffer));
 }
 
 uint8_t UartHandler::read_timeout(uint8_t *data_received, uint16_t timeout_ms) {
@@ -53,17 +53,18 @@ uint8_t UartHandler::read_timeout(uint8_t *data_received, uint16_t timeout_ms) {
 }
 
 
-void UartHandler::enable_receive_interrupt(uint8_t _bytes_it){
-	HAL_UART_Receive_IT(huart, buffer , _bytes_it);
+void UartHandler::enable_receive_interrupt(){
+	HAL_UART_Receive_IT(huart, buffer , 1);
 }
 
 
 uint8_t UartHandler::read_timeout_new(uint8_t *data_received) {
 	int i = 0;
-
+	uint8_t size = sizeof(buffer);
+	HAL_StatusTypeDef resp;
 
 	for (i = 0; buffer[0] == 0x7e && buffer[i] != 0x7f; i++) {
-		if (i == MAX_BUFFER_UART -1) {
+		if (i == 255) {
 			i = 0;
 			break;
 		}
@@ -80,11 +81,11 @@ uint8_t UartHandler::read_timeout_new(uint8_t *data_received) {
 	}
 }
 
-
 uint8_t UartHandler::read_byte(uint8_t *data_received) {
 	uint8_t length_data = 0;
 	// Add received byte to buffer
-	buffer[rx_index++] = huart->Instance->DR; // Read data register
+//	buffer[rx_index++] = huart->Instance->RDR; // Read data register
+	rx_index++;
 
 	// Check for frame completion (e.g., based on a delimiter or frame length)
 	if (buffer[rx_index - 1] == 0x7F) { // Example: Check for end-of-frame delimiter

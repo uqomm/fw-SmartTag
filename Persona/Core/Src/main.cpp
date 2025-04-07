@@ -99,9 +99,9 @@ void Led_OnOff(const Gpio &VddLed, Ws2812Color led[1], PcbLed &pcb_led,
 
 	if (_charger_state == true) {
 		pins.on(VddLed);
-		if (tag->Voltaje_Bat <= 0xA222)
+		if (tag->Voltaje_Bat <= 0x9555)
 			pcb_led.set_and_send_led_color(led, 1, 15, Color::RED);
-		else if ((0xA222 < tag->Voltaje_Bat) && (tag->Voltaje_Bat <= 0xAAAA))
+		else if ((0x9555 < tag->Voltaje_Bat) && (tag->Voltaje_Bat <= 0xAAAA))
 			pcb_led.set_and_send_led_color(led, 1, 15, Color::YELLOW);
 		else
 			pcb_led.set_and_send_led_color(led, 1, 15, Color::GREEN);
@@ -305,6 +305,7 @@ int main(void)
 	tag->sleep_time = 1000;
 	tag->sleep_time_not_recived = 500;
 	tag->sleep_time_recived = 15000;
+	tag->ship_mode = SHIP_MODE_OFF;
 
 	uint32_t sleep_time_not_recived = 500;
 	uint32_t sleep_time_recived = 15000;
@@ -316,6 +317,7 @@ int main(void)
 
 	uint32_t query_timeout = 1000;
 	uint32_t query_ticks;
+
 
   /* USER CODE END 2 */
 
@@ -344,7 +346,7 @@ int main(void)
 			tag_status = process_second(tag);
 			if (tag_status == TAG_SLEEP)
 				tag_status = TAG_SLEEP_RECIVED;
-			else
+			else if (tag_status != TAG_SHIP_MODE_SET)
 				tag_status = TAG_SLEEP_NOT_RECIVED;
 			break;
 
@@ -380,6 +382,10 @@ int main(void)
 			}
 			break;
 
+		case TAG_SHIP_MODE_SET:
+			battery_charger.enter_ship_mode();
+			break;
+
 		case TAG_SLEEP_RECIVED:
 			battery_charging_led_on_off(VddLed, STAT0_Reg, charge_const, led, charge_done, pcb_led);
 
@@ -409,7 +415,7 @@ int main(void)
 				Counter_INT_Led3 = 0;
 				Led_OnOff(VddLed, led, pcb_led, Power_Good);
 			}
-			sleep_in_out_new(defatult_dwt_config, defatult_dwt_txconfig,
+			sleep_in_out(defatult_dwt_config, defatult_dwt_txconfig,
 					dwt_local_data, sleep_time);
 
 			Counter_INT_Led3++;
