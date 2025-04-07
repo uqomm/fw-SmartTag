@@ -86,7 +86,7 @@ UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
 UartHandler uart_mini_pc = UartHandler(&huart2);
-UartHandler uart_cfg = UartHandler(&huart1);
+UartHandler uart_cfg = UartHandler(&huart2);
 
 uint8_t bytes_reciv_mini_pc;
 uint8_t bytes_reciv_software;
@@ -171,6 +171,10 @@ int main(void) {
 //			SpreadFactor::SF_7, DOWNLINK_FREQ, UPLINK_FREQ);
 	lora.check_already_store_data();
 	uart_cfg.enable_receive_interrupt(1);
+
+	HAL_GPIO_WritePin(KEEP_ALIVE_GPIO_Port, KEEP_ALIVE_Pin, GPIO_PIN_SET);
+	uint32_t keep_alive_counter = HAL_GetTick();
+
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -421,6 +425,21 @@ int main(void) {
 
 			/* USER CODE END 3 */
 		}
+
+
+		if (HAL_GetTick() - keep_alive_counter > 1000)
+			keep_alive_counter = HAL_GetTick();
+		else {
+			if (HAL_GetTick() - keep_alive_counter > 50)
+				HAL_GPIO_WritePin(KEEP_ALIVE_GPIO_Port, KEEP_ALIVE_Pin,
+						GPIO_PIN_RESET);
+			else
+				HAL_GPIO_WritePin(KEEP_ALIVE_GPIO_Port, KEEP_ALIVE_Pin,
+						GPIO_PIN_SET);
+		}
+
+
+
 	}
 }
 
@@ -430,7 +449,7 @@ int main(void) {
  */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	if (&huart1 == huart)
+	if (&huart2 == huart)
 		bytes_reciv_software = uart_cfg.read_byte(data_reciv_software);
 
 }

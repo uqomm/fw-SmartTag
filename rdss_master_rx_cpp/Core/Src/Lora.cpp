@@ -40,7 +40,7 @@ int8_t Lora::receive(uint8_t *data_received, LinkMode mode) {
 		write_8bit_reg(LoraRegisters::RegFifoAddrPtr, DATA_BUFFER_BASE_ADDR);
 		set_low_frequency_mode(DeviceOperatingMode::RX_CONTINUOUS);
 	}
-	if (!wait_irq(RX_DONE_MASK, 2000)) {
+	if (!wait_irq(RX_DONE_MASK, 0)) {
 		uint8_t rx_nb_bytes = read_8bit_reg(LoraRegisters::RegRxNbBytes); //Number for received bytes
 		uint8_t fifo_ptr = 0;
 		fifo_ptr = read_8bit_reg(LoraRegisters::RegFifoRxCurrentaddr);
