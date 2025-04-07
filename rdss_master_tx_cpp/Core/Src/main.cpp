@@ -62,7 +62,7 @@ UART_HandleTypeDef huart3;
 
 
 UartHandler uart_minipc = UartHandler(&huart2);
-UartHandler uart_cfg = UartHandler(&huart1);
+UartHandler uart_cfg = UartHandler(&huart2);
 
 uint16_t bytes_reciv_mini_pc = 0;
 uint8_t bytes_reciv_software = 0;
@@ -147,6 +147,9 @@ int main(void) {
 	uart_minipc.enable_receive_interrupt(1);
 
 
+	HAL_GPIO_WritePin(KEEP_ALIVE_GPIO_Port, KEEP_ALIVE_Pin, GPIO_PIN_SET);
+	uint32_t keep_alive_counter = HAL_GetTick();
+
 
 	/* USER CODE END 2 */
 
@@ -157,14 +160,229 @@ int main(void) {
 
 		//Recepcion mini pc
 		if (bytes_reciv_mini_pc > 0) {
-			STATUS status_data = command.validate(data_reciv_mini_pc,bytes_reciv_mini_pc);
+			STATUS status_data = command.validate(data_reciv_mini_pc,
+					bytes_reciv_mini_pc);
 			if (status_data == STATUS::RETRANSMIT_FRAME) {
 				if (lora.transmit(data_reciv_mini_pc, bytes_reciv_mini_pc,
 						LinkMode::DOWNLINK) == HAL_OK) {
 					HAL_GPIO_TogglePin(LORA_TX_OK_GPIO_Port, LORA_TX_OK_Pin);
+					HAL_GPIO_TogglePin(LORA_TX_OK_GPIO_Port, LORA_TX_OK_Pin);
 					//HAL_Delay(1000);
 				}
 			}
+
+			if (status_data == STATUS::CONFIG_FRAME) {
+
+				switch (command.getCommandId()) {
+
+				case QUERY_RX_FREQ: {
+					uint8_t freq_array[4];
+					lora.read_settings();
+					uint32_t rx_freq = lora.get_rx_frequency();
+					float freqOut;
+					freqOut = rx_freq / 1000000.0f;
+					memcpy(freq_array, &freqOut, sizeof(freqOut));
+					command.set_message(freq_array, sizeof(freq_array));
+					std::vector<uint8_t> message_composed =
+							command.get_composed_message();
+					command.composeMessage(&message_composed);
+					message_composed = command.get_composed_message();
+					uart_cfg.transmitMessage(message_composed.data(),
+							message_composed.size());
+					command.reset(1);
+					message_composed.clear();
+					break;
+				}
+				case QUERY_TX_FREQ: {
+					uint8_t freq_array[4];
+					lora.read_settings();
+					uint32_t tx_freq = lora.get_tx_frequency();
+					float freqOut;
+					freqOut = tx_freq / 1000000.0f;
+					memcpy(freq_array, &freqOut, sizeof(freqOut));
+					command.set_message(freq_array, sizeof(freq_array));
+					std::vector<uint8_t> message_composed =
+							command.get_composed_message();
+					command.composeMessage(&message_composed);
+					message_composed = command.get_composed_message();
+					uart_cfg.transmitMessage(message_composed.data(),
+							message_composed.size());
+					command.reset(1);
+					message_composed.clear();
+					break;
+				}
+				case QUERY_SPREAD_FACTOR: {
+					uint8_t spread_array[1];
+					lora.read_settings();
+					uint8_t spread_factor = lora.get_spread_factor();
+					spread_factor = spread_factor - SPREAD_FACTOR_OFFSET;
+					memcpy(spread_array, &spread_factor, sizeof(spread_factor));
+					command.set_message(spread_array, sizeof(spread_array));
+					std::vector<uint8_t> message_composed =
+							command.get_composed_message();
+					command.composeMessage(&message_composed);
+					message_composed = command.get_composed_message();
+					uart_cfg.transmitMessage(message_composed.data(),
+							message_composed.size());
+					command.reset(1);
+					message_composed.clear();
+					break;
+				}
+				case QUERY_CODING_RATE: {
+					uint8_t coding_array[1];
+					lora.read_settings();
+					uint8_t coding_rate = lora.get_coding_rate();
+					memcpy(coding_array, &coding_rate, sizeof(coding_rate));
+					command.set_message(coding_array, sizeof(coding_array));
+					std::vector<uint8_t> message_composed =
+							command.get_composed_message();
+					command.composeMessage(&message_composed);
+					message_composed = command.get_composed_message();
+					uart_cfg.transmitMessage(message_composed.data(),
+							message_composed.size());
+					command.reset(1);
+					message_composed.clear();
+					break;
+				}
+				case QUERY_BANDWIDTH: {
+					uint8_t bw_array[1];
+					lora.read_settings();
+					uint8_t bw = lora.get_bandwidth();
+					bw = bw + BANDWIDTH_OFFSET;
+					memcpy(bw_array, &bw, sizeof(bw));
+					command.set_message(bw_array, sizeof(bw_array));
+					std::vector<uint8_t> message_composed =
+							command.get_composed_message();
+					command.composeMessage(&message_composed);
+					message_composed = command.get_composed_message();
+					uart_cfg.transmitMessage(message_composed.data(),
+							message_composed.size());
+					command.reset(1);
+					message_composed.clear();
+					break;
+				}
+				case SET_TX_FREQ: {
+					uint32_t freq = command.getDataAsUint32();
+					int freq_int = command.freqDecode();
+					freq = (uint32_t) freq_int;
+					lora.set_tx_freq(freq);
+					lora.save_settings();
+					lora.configure_modem();
+					uint8_t freq_array[4];
+					lora.read_settings();
+					uint32_t tx_freq = lora.get_tx_frequency();
+					float freqOut;
+					freqOut = tx_freq / 1000000.0f;
+					memcpy(freq_array, &freqOut, sizeof(freqOut));
+					command.set_message(freq_array, sizeof(freq_array));
+					std::vector<uint8_t> message_composed =
+							command.get_composed_message();
+					command.composeMessage(&message_composed);
+					message_composed = command.get_composed_message();
+					uart_cfg.transmitMessage(message_composed.data(),
+							message_composed.size());
+					command.reset(1);
+					message_composed.clear();
+
+					break;
+				}
+				case SET_RX_FREQ: {
+					uint32_t freq = command.getDataAsUint32();
+					int freq_int = command.freqDecode();
+					freq = (uint32_t) freq_int;
+					lora.set_rx_freq(freq);
+					lora.save_settings();
+					lora.configure_modem();
+					uint8_t freq_array[4];
+					lora.read_settings();
+					uint32_t rx_freq = lora.get_rx_frequency();
+					float freqOut;
+					freqOut = rx_freq / 1000000.0f;
+					memcpy(freq_array, &freqOut, sizeof(freqOut));
+					command.set_message(freq_array, sizeof(freq_array));
+					std::vector<uint8_t> message_composed =
+							command.get_composed_message();
+					command.composeMessage(&message_composed);
+					message_composed = command.get_composed_message();
+					uart_cfg.transmitMessage(message_composed.data(),
+							message_composed.size());
+					command.reset(1);
+					message_composed.clear();
+					break;
+				}
+				case SET_BANDWIDTH: {
+					uint8_t bd = command.getDataAsUint8();
+					bd = bd - BANDWIDTH_OFFSET;
+					lora.set_bandwidth(bd);
+					lora.save_settings();
+					lora.configure_modem();
+					uint8_t bw_array[1];
+					lora.read_settings();
+					uint8_t bw = lora.get_bandwidth();
+					bw = bw + BANDWIDTH_OFFSET;
+					memcpy(bw_array, &bw, sizeof(bw));
+					command.set_message(bw_array, sizeof(bw_array));
+					std::vector<uint8_t> message_composed =
+							command.get_composed_message();
+					command.composeMessage(&message_composed);
+					message_composed = command.get_composed_message();
+					uart_cfg.transmitMessage(message_composed.data(),
+							message_composed.size());
+					command.reset(1);
+					message_composed.clear();
+					break;
+				}
+				case SET_SPREAD_FACTOR: {
+					uint8_t sf = command.getDataAsUint8();
+					sf = sf + SPREAD_FACTOR_OFFSET;
+					lora.set_spread_factor(sf);
+					lora.save_settings();
+					lora.configure_modem();
+					uint8_t spread_array[1];
+					lora.read_settings();
+					uint8_t spread_factor = lora.get_spread_factor();
+					spread_factor = spread_factor - SPREAD_FACTOR_OFFSET;
+					memcpy(spread_array, &spread_factor, sizeof(spread_factor));
+					command.set_message(spread_array, sizeof(spread_array));
+					std::vector<uint8_t> message_composed =
+							command.get_composed_message();
+					command.composeMessage(&message_composed);
+					message_composed = command.get_composed_message();
+					uart_cfg.transmitMessage(message_composed.data(),
+							message_composed.size());
+					command.reset(1);
+					message_composed.clear();
+					break;
+				}
+				case SET_CODING_RATE: {
+					uint8_t cr = command.getDataAsUint8();
+					lora.set_coding_rate(cr);
+					lora.save_settings();
+					lora.configure_modem();
+					uint8_t coding_array[1];
+					lora.read_settings();
+					uint8_t coding_rate = lora.get_coding_rate();
+					memcpy(coding_array, &coding_rate, sizeof(coding_rate));
+					command.set_message(coding_array, sizeof(coding_array));
+					std::vector<uint8_t> message_composed =
+							command.get_composed_message();
+					command.composeMessage(&message_composed);
+					message_composed = command.get_composed_message();
+					uart_cfg.transmitMessage(message_composed.data(),
+							message_composed.size());
+					command.reset(1);
+					message_composed.clear();
+					break;
+				}
+				case SET_UART_BAUDRATE: {
+					lora.set_default_parameters();
+				}
+				default:
+					break;
+				}
+
+			}
+
 			memset(data_reciv_mini_pc, 0, bytes_reciv_mini_pc);
 			bytes_reciv_mini_pc = 0;
 		}
@@ -369,7 +587,14 @@ int main(void) {
 			bytes_reciv_software = 0;
 		}
 
-
+		if (HAL_GetTick() - keep_alive_counter > 1000)
+			keep_alive_counter = HAL_GetTick();
+		else {
+			if (HAL_GetTick() - keep_alive_counter > 50)
+				HAL_GPIO_WritePin(KEEP_ALIVE_GPIO_Port, KEEP_ALIVE_Pin, GPIO_PIN_RESET);
+			else
+				HAL_GPIO_WritePin(KEEP_ALIVE_GPIO_Port, KEEP_ALIVE_Pin, GPIO_PIN_SET);
+		}
 
 
 
