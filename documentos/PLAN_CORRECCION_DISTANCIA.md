@@ -340,56 +340,100 @@ void switch_hw_timestamp_query_improved(TAG_t *tag, DistanceHandler *&dist_ptr,
 
 ### 🟡 PRIORIDAD 5: Logging y Diagnóstico (IMPACTO: 20% directo, 100% para debugging)
 
-**Problema**: Sin logs detallados es imposible saber qué falla exactamente (timeout tipo, antena afectada, RSSI, etc).
+**Problema**: Sin logs detallados es imposible saber qué falla exactamente (timeout tipo, antena afectada, etc).
 
-#### Solución 5A: Sistema de Logging Completo
+#### Solución 5A: Sistema de Logging Diferido (Solo Errores)
 
+**⚠️ CRÍTICO**: No usar logging en tiempo real porque interrumpe timing UWB crítico.
+
+**Estrategia**: Buffer de eventos en RAM, UART solo al final cuando timing ya no importa.
+
+**📄 Ver documento completo**: `documentos/SOLUCION_LOGGING_DIFERIDO.md`
+
+**Resumen de la implementación**:
+
+1. **Estructuras de datos** (en `sniffer_tag.hpp`):
 ```cpp
-// sniffer/Core/Src/sniffer_tag.cpp - Agregar después de cada wait_rx_data()
+#define MAX_LOG_EVENTS 50
 
-void log_rx_result(uint8_t result, TAG_t *tag, Uwb_HW_t *hw, 
-                   DistanceHandler *dist_ptr, uint32_t elapsed_ms) {
-    const char* hw_name = (hw == &uwb_hw_a) ? "A" : "B";
-    
-    switch(result) {
-        case TAG_RX_CRC_VALID:
-            debug_printf("[%s] Tag %08X: RX OK, lecturas=%d, tiempo=%dms\n", 
-                        hw_name, tag->id, dist_ptr->get_counter(), elapsed_ms);
-            break;
-        case TAG_RX_PREAMBLE_DETECTION_TIMEOUT:
-            debug_printf("[%s] Tag %08X: PREAMBULO TIMEOUT (señal débil?)\n", 
-                        hw_name, tag->id);
-            break;
-        case TAG_RX_FRAME_TIMEOUT:
-            debug_printf("[%s] Tag %08X: FRAME TIMEOUT (ventana cerró)\n", 
-                        hw_name, tag->id);
-            break;
-        case TAG_NO_RXCG_DETECTED:
-            debug_printf("[%s] Tag %08X: NO_RXCG (100ms sin evento)\n", 
-                        hw_name, tag->id);
-            break;
-        case TAG_RX_ERROR:
-            debug_printf("[%s] Tag %08X: CRC ERROR\n", 
-                        hw_name, tag->id);
-            break;
-    }
+typedef struct {
+    uint8_t antenna;           // 0=A, 1=B
+    uint8_t result;            // TAG_RX_PREAMBLE_DETECTION_TIMEOUT, etc
+    uint8_t reading_counter;   // Contador de lecturas en esa antena
+    uint32_t elapsed_ms;       // Tiempo que tomó el intento
+} LogEvent_t;
+
+typedef struct {
+    LogEvent_t events[MAX_LOG_EVENTS];
+    uint8_t count;
+    uint32_t tag_id;
+} LogBuffer_t;
+```
+
+2. **Registrar evento SOLO cuando hay error** (en `main.cpp`):
+```cpp
+uint32_t query_start = HAL_GetTick();
+tag_status = tag_receive_cmd(&tag, rx_buffer, distance_a, distance_b);
+uint32_t query_elapsed = HAL_GetTick() - query_start;
+
+if (tag_status == TAG_RX_CRC_VALID)
+{
+    // procesar respuesta...
 }
+else
+{
+    // ✅ SOLO registra cuando hay error (overhead <0.1µs)
+    uint8_t antenna_id = (hw == &uwb_hw_a) ? 0 : 1;
+    log_event_add(&log_buffer, antenna_id, tag_status, 
+                  distance_ptr->get_counter(), query_elapsed);
+    
+    distance_ptr->error_crc_increment();
+    tag_status = TAG_SEND_TIMESTAMP_QUERY;
+}
+```
+
+3. **Imprimir buffer al final** (en 3 ubicaciones: END_READINGS, NO_COMMAND, timeout):
+```cpp
+if (tag_status == TAG_END_READINGS)
+{
+    debug_distance_new(tag, tag_status, distance_a, distance_b);
+    log_buffer_print(&log_buffer);  // ← UART aquí (no afecta timing)
+    save_two_maps_and_clear_tag(...);
+}
+```
+
+**Ejemplo de salida**:
+```
+=== Log Tag 12345678 (6 eventos de error) ===
+[B] RX_PREAMBLE_DETECTION_TIMEOUT, lecturas=0, tiempo=102ms
+[B] RX_FRAME_TIMEOUT, lecturas=0, tiempo=100ms
+[B] RX_PREAMBLE_DETECTION_TIMEOUT, lecturas=0, tiempo=103ms
+[B] NO_RXCG_DETECTED, lecturas=0, tiempo=100ms
+[B] RX_PREAMBLE_DETECTION_TIMEOUT, lecturas=0, tiempo=101ms
+[B] RX_FRAME_TIMEOUT, lecturas=0, tiempo=100ms
+=== Fin Log ===
 ```
 
 **Impacto esperado**: 20% mejora directa, pero **esencial para validar otras correcciones**
 
 **Archivos a modificar**:
-- `sniffer/Core/Src/sniffer_tag.cpp` (múltiples ubicaciones)
-- `sniffer/Core/Src/main.cpp` (agregar logs en transiciones)
+- `sniffer/Core/Inc/sniffer_tag.hpp` (estructuras y declaraciones)
+- `sniffer/Core/Src/sniffer_tag.cpp` (funciones log_event_add, log_buffer_init, log_buffer_print)
+- `sniffer/Core/Src/main.cpp` (buffer global, 3 llamadas a log_buffer_print)
 
 **Ventajas**:
+✅ **Overhead CERO** en operación normal (sin errores)
+✅ **No afecta timing UWB** (<0.1µs cuando hay error)
 ✅ Identifica exactamente qué tipo de timeout ocurre
 ✅ Permite ver diferencias entre antenas A y B
-✅ Facilita debugging de otras correcciones
+✅ Logs limpios enfocados en problemas reales
+✅ ~75% menos RAM que registrar todo
+✅ ~50% menos tiempo UART al final
+✅ Útil incluso en producción (no genera spam)
 
 **Desventajas**:
-⚠️ Overhead de UART (puede enlentecer sistema)
-⚠️ Requiere buffer de debug adecuado
+⚠️ Requiere ~300 bytes RAM para buffer (típico 5-10 errores)
+⚠️ Solo muestra errores, no secuencia completa (pero eso es la ventaja)
 
 **Test requerido**: TEST-05 (ejecutar con cada otro test)
 
@@ -463,11 +507,14 @@ if (tag_status == TAG_RX_CRC_VALID) {
 ---
 
 ### Fase 2: Optimizaciones (Semana 2)
-1. **Día 6-7**: Implementar Solución 5A (logging completo)
-2. **Día 8-9**: Implementar Solución 3A o 3B (query_timeout)
+1. **Día 6-7**: Implementar Solución 5A (logging diferido - solo errores)
+   - Agregar estructuras LogEvent_t y LogBuffer_t en sniffer_tag.hpp
+   - Implementar funciones log_event_add(), log_buffer_init(), log_buffer_print()
+   - Integrar en main.cpp (solo en bloques else de error)
+2. **Día 8-9**: Implementar Solución 3A o 3B (query_timeout adaptativo)
 3. **Día 10**: Test completo Fase 2 (TEST-03 + TEST-05)
 
-**Objetivo Fase 2**: Lograr detección estable a 30m con datos de diagnóstico
+**Objetivo Fase 2**: Lograr detección estable a 30m con datos de diagnóstico (sin afectar timing)
 
 ---
 
@@ -727,12 +774,12 @@ RSSI inteligente  | ___        | ___        | ___        | ___        | ___ms
 
 ---
 
-### TEST-05: Logging Completo (ejecutar con TODOS los tests)
+### TEST-05: Logging Diferido (ejecutar con TODOS los tests)
 
-**Objetivo**: Validar que logs proveen información útil para debugging
+**Objetivo**: Validar que logs proveen información útil para debugging sin afectar timing UWB
 
 **Requisitos**:
-- Sniffer con Solución 5A implementada
+- Sniffer con Solución 5A implementada (logging diferido)
 - Cable USB conectado a UART
 - Software de captura serial (PuTTY, CoolTerm, etc)
 
@@ -740,14 +787,38 @@ RSSI inteligente  | ___        | ___        | ___        | ___        | ___ms
 1. Ejecutar cualquier otro test (TEST-01, TEST-02, etc)
 2. Capturar logs completos durante todo el test
 3. Al finalizar, analizar logs para:
-   - Contar tipos de timeout por antena
+   - Verificar que a 15m (sin errores) el log está vacío o casi vacío
+   - Contar tipos de timeout por antena a >20m
    - Identificar patrones (ej: antena B siempre falla primero)
-   - Verificar que logs incluyen: tag_id, antena, tipo error, tiempo
+   - Verificar que logs incluyen: tag_id, antena [A] o [B], tipo error, tiempo
 
 **Criterios de éxito**:
-- ✅ Logs permiten reconstruir secuencia de eventos
-- ✅ Logs muestran diferencia entre antenas A y B
+- ✅ Logs NO aparecen durante queries (solo al final de cada ciclo)
+- ✅ A 15m: log vacío o muy pocos eventos → confirma que solo registra errores
+- ✅ A 25m: log muestra diferencia clara entre antenas A y B
 - ✅ Logs identifican cuello de botella (preamble vs frame timeout)
+- ✅ Formato claro: `[A] RX_PREAMBLE_DETECTION_TIMEOUT, lecturas=3, tiempo=102ms`
+
+**Ejemplo de análisis esperado**:
+```
+TEST-05 a 25m - 30 ciclos:
+- Antena A: 5 eventos de error (17% tasa error)
+  - 3 × RX_PREAMBLE_DETECTION_TIMEOUT
+  - 2 × RX_FRAME_TIMEOUT
+- Antena B: 18 eventos de error (60% tasa error)
+  - 12 × RX_PREAMBLE_DETECTION_TIMEOUT
+  - 5 × RX_FRAME_TIMEOUT
+  - 1 × NO_RXCG_DETECTED
+
+Conclusión: Antena B tiene 3.5× más errores que A
+Tipo dominante: PREAMBLE_TIMEOUT (señal débil)
+```
+
+**Validación adicional - Overhead**:
+- Comparar tiempo total de 30 ciclos con/sin logging habilitado
+- **Diferencia esperada**: <1% (porque solo registra en RAM, no UART durante queries)
+
+**Documentación**: Llenar plantilla TEST-05-RESULTADOS.csv
 
 **Ejemplo log esperado**:
 ```
@@ -898,6 +969,11 @@ Solo MULTIPLE | ___            | ___                    | 0 (esperado)
 ---
 
 **Documento creado**: 2025-10-22  
-**Versión**: 1.0  
+**Versión**: 1.1 (Actualizado con logging diferido optimizado)  
+**Última actualización**: 2025-10-22 (Solución 5A mejorada - solo registra errores)  
 **Autor**: Análisis basado en documentación técnica completa  
+**Cambios recientes**:
+- ✅ Solución 5A actualizada: Logging diferido que NO afecta timing UWB
+- ✅ Overhead CERO en operación normal, <0.1µs cuando hay error
+- ✅ Ver detalles completos en `SOLUCION_LOGGING_DIFERIDO.md`  
 **Próxima revisión**: Después de completar Fase 1
