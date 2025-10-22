@@ -411,37 +411,6 @@ flowchart TD
             </div>
         </section>
 
-        <section id="problems">
-            <h2>6. Diagrama de Problemas Críticos</h2>
-            
-            <div class="diagram-container">
-                <div class="mermaid">
-flowchart TD
-    Start([query_timeout expiró]) --> Check{¿Validar datos?}
-    
-    Check -->|Código ACTUAL| SaveAnyway[Guarda sin validar]
-    Check -->|Código PROPUESTO| Validate{¿counter_A > 0<br/>Y counter_B > 0?}
-    
-    SaveAnyway --> Problem[⚠️ PROBLEMA:<br/>Puede guardar con<br/>solo 1 antena]
-    Problem --> NoTriangulation[❌ Triangulación<br/>inválida]
-    
-    Validate -->|Sí| SaveValid[✅ Guarda tag válido]
-    Validate -->|No| Discard[❌ Descarta tag]
-    
-    SaveValid --> CleanUp[Limpia buffers]
-    Discard --> CleanUp
-    
-    CleanUp --> Discovery([Vuelve a TAG_DISCOVERY])
-    NoTriangulation --> Discovery
-    
-    style Problem fill:#FFB6C1
-    style NoTriangulation fill:#FF6B6B
-    style SaveValid fill:#90EE90
-    style Discard fill:#FFD700
-                </div>
-            </div>
-        </section>
-
         <section id="notes">
             <div class="notes">
                 <h3>Notas Importantes:</h3>
@@ -450,17 +419,11 @@ flowchart TD
                     
                     <li><strong>Offsets diferentes:</strong> Discovery usa offsets 5/9, queries usan 1/5 por estructura de frame distinta.</li>
                     
-                    <li><span class="warning">Problema de guardado:</span> El código actual guarda tags incluso si solo una antena tiene lecturas, invalidando la triangulación.</li>
+                    <li><strong>Problema de guardado:</strong> El código actual guarda tags incluso si solo una antena tiene lecturas, invalidando la triangulación.</li>
                     
                     <li><strong>Alternancia inteligente:</strong> <code>switch_hw_timestamp_query()</code> balancea lecturas entre antenas para asegurar datos de ambas.</li>
                     
-                    <li><strong>Sleep diferenciado:</strong> Tag tiene 3 tipos de sleep:
-                        <ul>
-                            <li><strong>500 ms</strong>: Cuando falla el ranging (SLEEP_NOT_RECIVED)</li>
-                            <li><strong>1000 ms</strong>: Estado por defecto cuando no recibe señales</li>
-                            <li><strong>15000 ms</strong>: Cuando completa el ranging exitosamente (SLEEP_RECIVED)</li>
-                        </ul>
-                    </li>
+                    <li><strong>Sleep diferenciado:</strong> Tag duerme 500 ms si falla, 15000 ms si tiene éxito.</li>
                     
                     <li><span class="warning">TAG_ONE_DETECTION:</span> Modo especial que omite queries adicionales, perdiendo capacidad de triangulación.</li>
                 </ol>
@@ -522,7 +485,7 @@ flowchart TD
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
-        })} - Corregido con estado DEFAULT SLEEP`;
+        })} - Actualizado desde archivo Markdown`;
         document.querySelector('.container').appendChild(footer);
     </script>
 </body>
