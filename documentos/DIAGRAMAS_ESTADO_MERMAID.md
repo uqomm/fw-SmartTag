@@ -59,7 +59,7 @@ flowchart TD
 flowchart TD
     Start([Power On]) --> WaitFirst[WAIT_FIRST_DETECTION<br/>Escucha Discovery]
     
-    WaitFirst -->|Sin señal| WaitFirst
+    WaitFirst -->|Sin señal<br/>Estado default| SleepDefault[DEFAULT SLEEP<br/>Sleep 1000 ms]
     WaitFirst -->|RX: Discovery Poll| RespondDiscovery[TX: Discovery Response<br/>ID + Timestamps + Batería]
     
     RespondDiscovery --> StartTimer[Inicia query_timeout<br/>1000 ms]
@@ -69,10 +69,11 @@ flowchart TD
     RespondQuery --> WaitQuery
     
     WaitQuery -->|RX: Set Sleep Mode<br/>+ Ambas dist > 0| SleepSuccess[SLEEP_RECIVED<br/>Sleep 15 segundos]
-    WaitQuery -->|Timeout 1000ms<br/>Sin datos completos| SleepFail[SLEEP<br/>Sleep 500 ms]
+    WaitQuery -->|Timeout 1000ms<br/>Sin datos completos| SleepFail[SLEEP_NOT_RECIVED<br/>Sleep 500 ms]
     
     SleepSuccess -->|Wake Up| WaitFirst
     SleepFail -->|Wake Up| WaitFirst
+    SleepDefault -->|Wake Up| WaitFirst
     
     WaitFirst -.->|Comando especial| ShipMode[SHIP_MODE<br/>Apagado profundo]
     ShipMode --> End([Off])
@@ -81,6 +82,7 @@ flowchart TD
     style WaitQuery fill:#90EE90
     style SleepSuccess fill:#98FB98
     style SleepFail fill:#FFE4B5
+    style SleepDefault fill:#F0E68C
     style ShipMode fill:#D3D3D3
 ```
 
@@ -89,8 +91,9 @@ flowchart TD
 1. **WAIT_FIRST_DETECTION**: Espera ser descubierto por sniffer
 2. **WAIT_TIMESTAMP_QUERY**: Responde a queries de ranging
 3. **SLEEP_RECIVED**: Sleep largo (15s) tras éxito con ambas distancias
-4. **SLEEP**: Sleep corto (500ms) si falló o timeout
-5. **SHIP_MODE**: Apagado profundo (opcional)
+4. **SLEEP_NOT_RECIVED**: Sleep corto (500ms) si falló o timeout
+5. **DEFAULT SLEEP**: Sleep intermedio (1000ms) cuando no recibe ninguna señal
+6. **SHIP_MODE**: Apagado profundo (opcional)
 
 ---
 
@@ -219,33 +222,6 @@ flowchart TD
     style SwitchToA fill:#87CEEB
     style KeepA fill:#FFE4B5
     style KeepB fill:#FFE4B5
-```
-
-## 6. Diagrama de Problemas Críticos
-
-```mermaid
-flowchart TD
-    Start([query_timeout expiró]) --> Check{¿Validar datos?}
-    
-    Check -->|Código ACTUAL| SaveAnyway[Guarda sin validar]
-    Check -->|Código PROPUESTO| Validate{¿counter_A > 0<br/>Y counter_B > 0?}
-    
-    SaveAnyway --> Problem[⚠️ PROBLEMA:<br/>Puede guardar con<br/>solo 1 antena]
-    Problem --> NoTriangulation[❌ Triangulación<br/>inválida]
-    
-    Validate -->|Sí| SaveValid[✅ Guarda tag válido]
-    Validate -->|No| Discard[❌ Descarta tag]
-    
-    SaveValid --> CleanUp[Limpia buffers]
-    Discard --> CleanUp
-    
-    CleanUp --> Discovery([Vuelve a TAG_DISCOVERY])
-    NoTriangulation --> Discovery
-    
-    style Problem fill:#FFB6C1
-    style NoTriangulation fill:#FF6B6B
-    style SaveValid fill:#90EE90
-    style Discard fill:#FFD700
 ```
 
 ---
