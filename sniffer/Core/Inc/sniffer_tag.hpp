@@ -127,6 +127,23 @@ typedef enum {
 
 #define TIMESTAMP_QUERY_TIMEOUT_MS 2000 // Timeout for TIMESTAMP_QUERY state in milliseconds
 
+// ========== Sistema de Logging Diferido (Solo Errores) ==========
+#define MAX_LOG_EVENTS 50  // Máximo 50 eventos de error por tag
+
+typedef struct {
+    uint8_t antenna;           // 0=A, 1=B
+    uint8_t result;            // TAG_STATUS_t (TAG_RX_FRAME_TIMEOUT, etc)
+    uint8_t reading_counter;   // Contador de lecturas en esa antena
+    uint32_t elapsed_ms;       // Tiempo que tomó el intento
+} LogEvent_t;
+
+typedef struct {
+    LogEvent_t events[MAX_LOG_EVENTS];
+    uint8_t count;             // Número de eventos almacenados
+    uint32_t tag_id;           // ID del tag actual
+} LogBuffer_t;
+// ================================================================
+
 void init_uwb_device(Uwb_HW_t * hwb_hw,SPI_HandleTypeDef *hspi, GPIO_TypeDef *nssPort,
 		uint16_t nssPin, GPIO_TypeDef *nrstPort, uint16_t nrstPin);
 void reset_actual_hw();
@@ -210,7 +227,12 @@ int serialize_header(uint8_t count, uint8_t *buffer, uint8_t limit,
 
 void debug_distance_new(TAG_t tag, TAG_STATUS_t status, DistanceHandler d_a, DistanceHandler d_b);
 
-
+// ========== Funciones de Logging Diferido ==========
+void log_event_add(LogBuffer_t *buffer, uint8_t antenna, uint8_t result, 
+                   uint8_t reading_counter, uint32_t elapsed_ms);
+void log_buffer_init(LogBuffer_t *buffer, uint32_t tag_id);
+void log_buffer_print(LogBuffer_t *buffer);
+// ==================================================
 
 TAG_STATUS_t handle_received_command(TAG_t *tag,
 		const uint8_t *rx_buffer);

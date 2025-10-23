@@ -6,6 +6,7 @@
  */
 
 #include "sniffer_tag.hpp"
+#include <string.h>  // Para strlen() en log_buffer_print()
 
 static const char *TAG_MESSAGES[] = { "NO_RESPONSE", "NO_RXCG_DETECTED",
 		"RX_FRAME_TIMEOUT", "RX_PREAMBLE_DETECTION_TIMEOUT", "RX_CRC_VALID",
@@ -590,6 +591,92 @@ void uart_transmit_int_to_text(int distanceValue) {
 	/* Free the dynamically allocated memory */
 	free(dist_str);
 }
+
+// ========== Implementación de Logging Diferido (Solo Errores) ==========
+
+/**
+ * @brief Agrega un evento al buffer de logging (operación rápida <1µs)
+ * @param buffer Puntero al buffer de logging
+ * @param antenna ID de antena (0=A, 1=B)
+ * @param result Estado de recepción (TAG_STATUS_t)
+ * @param reading_counter Contador de lecturas exitosas en esa antena
+ * @param elapsed_ms Tiempo transcurrido en el intento
+ */
+void log_event_add(LogBuffer_t *buffer, uint8_t antenna, uint8_t result, 
+                   uint8_t reading_counter, uint32_t elapsed_ms) {
+    // No hacer nada si buffer lleno
+    if (buffer->count >= MAX_LOG_EVENTS) {
+        return;
+    }
+    
+    // Agregar evento (operación muy rápida, solo asignaciones en RAM)
+    LogEvent_t *event = &buffer->events[buffer->count];
+    event->antenna = antenna;
+    event->result = result;
+    event->reading_counter = reading_counter;
+    event->elapsed_ms = elapsed_ms;
+    
+    buffer->count++;
+}
+
+/**
+ * @brief Inicializa el buffer de logging para un nuevo tag
+ * @param buffer Puntero al buffer de logging
+ * @param tag_id ID del tag a registrar
+ */
+void log_buffer_init(LogBuffer_t *buffer, uint32_t tag_id) {
+    buffer->count = 0;
+    buffer->tag_id = tag_id;
+    // No es necesario limpiar array, solo resetear contador
+}
+
+/**
+ * @brief Imprime el contenido del buffer de logging vía UART (al final, sin afectar timing)
+ * @param buffer Puntero al buffer de logging
+ */
+void log_buffer_print(LogBuffer_t *buffer) {
+    if (buffer->count == 0) {
+        // Opcional: descomentar para confirmar que no hubo errores
+        // char header[80];
+        // snprintf(header, sizeof(header), "=== Log Tag %08X (0 eventos de error) ===\r\n", 
+        //          (unsigned int)buffer->tag_id);
+        // HAL_UART_Transmit(&huart1, (uint8_t*)header, strlen(header), HAL_MAX_DELAY);
+        return;
+    }
+    
+    char log_line[120];
+    
+    // Header
+    snprintf(log_line, sizeof(log_line), 
+             "\r\n=== Log Tag %08X (%d eventos de error) ===\r\n", 
+             (unsigned int)buffer->tag_id, buffer->count);
+    HAL_UART_Transmit(&huart1, (uint8_t*)log_line, strlen(log_line), HAL_MAX_DELAY);
+    
+    // Cada evento
+    for (uint8_t i = 0; i < buffer->count; i++) {
+        LogEvent_t *event = &buffer->events[i];
+        const char* antenna_name = (event->antenna == 0) ? "A" : "B";
+        
+        // Verificar que result esté en rango válido
+        uint8_t result_idx = event->result;
+        if (result_idx >= TAG_UNKNOWN) {
+            result_idx = TAG_UNKNOWN;
+        }
+        const char* result_name = TAG_MESSAGES[result_idx];
+        
+        snprintf(log_line, sizeof(log_line),
+                "[%s] %s, lecturas=%d, tiempo=%lums\r\n",
+                antenna_name, result_name, event->reading_counter, event->elapsed_ms);
+        
+        HAL_UART_Transmit(&huart1, (uint8_t*)log_line, strlen(log_line), HAL_MAX_DELAY);
+    }
+    
+    // Footer
+    snprintf(log_line, sizeof(log_line), "=== Fin Log ===\r\n\r\n");
+    HAL_UART_Transmit(&huart1, (uint8_t*)log_line, strlen(log_line), HAL_MAX_DELAY);
+}
+
+// ======================================================================
 
 void debug_distance_new(TAG_t tag, TAG_STATUS_t status, DistanceHandler d_a,
 		DistanceHandler d_b) {

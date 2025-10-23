@@ -86,6 +86,9 @@ uint8_t RxData[20];
 uint8_t temp[2];
 int indx = 0;
 
+// Buffer global de eventos de logging diferido
+static LogBuffer_t log_buffer = {0};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -427,6 +430,9 @@ int main(void)
 						tag.id = *(const uint32_t *)(rx_buffer + 1);
 //						debug_distance_new(tag, tag_status, distance_a, distance_b);
 
+						// Inicializar buffer de logging para este tag
+						log_buffer_init(&log_buffer, tag.id);
+
 						const int poll_rx_offset = 5;
 						const int resp_tx_offset = 9;
 
@@ -484,7 +490,9 @@ int main(void)
 
 			uint8_t rx_buffer[FRAME_LEN_MAX_EX] = {0}; // verificar el size del buffer de recepcion.
 
+			uint32_t query_start = HAL_GetTick();
 			tag_status = tag_receive_cmd(&tag, rx_buffer, distance_a, distance_b);
+			uint32_t query_elapsed = HAL_GetTick() - query_start;
 
 			if (tag_status == TAG_RX_CRC_VALID)
 			{
@@ -519,6 +527,10 @@ int main(void)
 				if ((tag_status == TAG_END_READINGS))
 				{					//					uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list,&list_od);
 					debug_distance_new(tag, tag_status, distance_a, distance_b);
+					
+					// Imprimir log de errores al finalizar
+					log_buffer_print(&log_buffer);
+					
 					save_two_maps_and_clear_tag(distance_a, distance_b, tag_map_od, tag, lora_send_ticks, tag_map);
 					tag_status = TAG_DISCOVERY;
 				}
@@ -530,18 +542,31 @@ int main(void)
 				{
 					//					uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list, &list_od);
 					debug_distance_new(tag, tag_status, distance_a, distance_b);
+					
+					// Imprimir log de errores cuando comando no reconocido
+					log_buffer_print(&log_buffer);
+					
 					save_two_maps_and_clear_tag(distance_a, distance_b, tag_map_od, tag, lora_send_ticks, tag_map);
 					tag_status = TAG_DISCOVERY;
 				}
 			}
 			else
 			{
+				// Registrar evento SOLO cuando hay error (overhead <0.1µs)
+				uint8_t antenna_id = (hw == &uwb_hw_a) ? 0 : 1;
+				log_event_add(&log_buffer, antenna_id, tag_status, 
+							  distance_ptr->get_counter(), query_elapsed);
+				
 				distance_ptr->error_crc_increment();
 				tag_status = TAG_SEND_TIMESTAMP_QUERY;
 			}
 			if (HAL_GetTick() - query_ticks > query_timeout)
 			{
 				debug_distance_new(tag, tag_status, distance_a, distance_b);
+				
+				// Imprimir log de errores cuando expira timeout
+				log_buffer_print(&log_buffer);
+				
 				save_two_maps_and_clear_tag(distance_a, distance_b, tag_map_od, tag, lora_send_ticks, tag_map);
 				tag_status = TAG_DISCOVERY;
 			}
