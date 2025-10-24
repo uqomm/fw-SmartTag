@@ -729,7 +729,7 @@ typedef struct {
 #define RESP_RX_TIMEOUT_UUS_6M8 300
 #define RESP_RX_TIMEOUT_UUS_850K    2000
 /* Preamble timeout, in multiple of PAC size. See NOTE 7 below. */
-#define PRE_TIMEOUT_6M8 5
+#define PRE_TIMEOUT_6M8 8  // Aumentado de 5 a 8 (+60%) - Solución 1A para mejorar detección >20m
 #define PRE_TIMEOUT_850K 0
 
 // OTP addresses definitions

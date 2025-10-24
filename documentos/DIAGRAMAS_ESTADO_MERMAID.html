@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagramas de Estado: Sniffer y Tag (Persona)</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        
+        h2 {
+            color: #34495e;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+        }
+        
+        h3 {
+            color: #7f8c8d;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        
+        .diagram-container {
+            background-color: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        
+        .mermaid {
+            text-align: center;
+        }
+        
+        .explanation {
+            background-color: #ecf0f1;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .explanation ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .explanation li {
+            margin: 5px 0;
+        }
+        
+        .notes {
+            background-color: #fff9c4;
+            border: 1px solid #f39c12;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .notes h3 {
+            color: #d68910;
+            margin-top: 0;
+        }
+        
+        .warning {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .toc {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .toc ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .toc li {
+            margin: 8px 0;
+        }
+        
+        .toc a {
+            color: #3498db;
+            text-decoration: none;
+            padding: 5px;
+            display: block;
+            border-radius: 3px;
+            transition: background-color 0.3s;
+        }
+        
+        .toc a:hover {
+            background-color: #e3f2fd;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            .diagram-container {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Diagramas de Estado: Sniffer y Tag (Persona)</h1>
+        
+        <div class="toc">
+            <h3>Índice de Contenidos</h3>
+            <ul>
+                <li><a href="#sniffer-state">1. Máquina de Estados del Sniffer</a></li>
+                <li><a href="#tag-state">2. Máquina de Estados del Tag/Persona</a></li>
+                <li><a href="#comparison">3. Comparación: Sniffer vs Tag</a></li>
+                <li><a href="#sequence">4. Diagrama de Secuencia Completo</a></li>
+                <li><a href="#antenna-switch">5. Diagrama de Decisión: Alternancia de Antenas</a></li>
+                <li><a href="#notes">Notas Importantes</a></li>
+            </ul>
+        </div>
+
+        <section id="sniffer-state">
+            <h2>1. Máquina de Estados del Sniffer (Simplificada)</h2>
+            
+            <div class="diagram-container">
+                <div class="mermaid">
+flowchart TD
+    Start([Inicio]) --> Discovery[DISCOVERY<br/>Buscar Tag]
+    
+    Discovery -->|TX: Discovery Poll<br/>Antena A o B| WaitDiscovery{Espera<br/>Respuesta}
+    
+    WaitDiscovery -->|Timeout/Error| Discovery
+    WaitDiscovery -->|RX OK<br/>Mode: ONE| OneDetection[ONE_DETECTION<br/>Un solo tag]
+    WaitDiscovery -->|RX OK<br/>Mode: MULTIPLE| StartQueries[SEND_TIMESTAMP_QUERY<br/>Inicia Ranging]
+    
+    OneDetection -->|Envía Sleep<br/>Sin queries extras| SaveOne[Guarda Tag<br/>⚠️ Sin triangulación]
+    SaveOne --> Discovery
+    
+    StartQueries -->|Inicia timer<br/>query_timeout=1000ms| QueryLoop{Loop Queries}
+    
+    QueryLoop -->|Alterna Antena<br/>A ↔ B| SendQuery[TX: Timestamp Query<br/>con distancias actuales]
+    SendQuery --> WaitQuery{Espera<br/>Respuesta}
+    
+    WaitQuery -->|RX OK| SaveReading[Guarda lectura<br/>en antena activa]
+    WaitQuery -->|Error CRC| IncError[Incrementa<br/>error_crc]
+    
+    SaveReading -->|readings < total| QueryLoop
+    SaveReading -->|readings >= total| EndReadings[END_READINGS<br/>Completo]
+    
+    IncError --> CheckTimeout{Timeout?}
+    CheckTimeout -->|No| QueryLoop
+    CheckTimeout -->|Sí 1000ms| ForceSave[Guarda datos<br/>⚠️ Incompletos]
+    
+    EndReadings -->|TX: Set Sleep Mode| SaveFinal[Guarda Tag Final<br/>Limpia buffers]
+    ForceSave --> SaveFinal
+    SaveFinal --> Discovery
+    
+    style Discovery fill:#87CEEB
+    style OneDetection fill:#FFE4B5
+    style StartQueries fill:#90EE90
+    style EndReadings fill:#98FB98
+    style SaveFinal fill:#98FB98
+    style ForceSave fill:#FFB6C1
+    style SaveOne fill:#FFB6C1
+                </div>
+            </div>
+            
+            <div class="explanation">
+                <h3>Explicación del Flujo:</h3>
+                <ol>
+                    <li><strong>DISCOVERY</strong>: Busca tags cercanos, alterna antena cada vez</li>
+                    <li><strong>ONE_DETECTION</strong>: Modo especial para 1 tag (sin triangulación)</li>
+                    <li><strong>SEND_TIMESTAMP_QUERY</strong>: Hace ranging alternando antenas A/B</li>
+                    <li><strong>END_READINGS</strong>: Finaliza cuando completa lecturas o expira timeout</li>
+                    <li><span class="warning">⚠️ Problema</span>: Guarda incluso con datos incompletos</li>
+                </ol>
+            </div>
+        </section>
+
+        <section id="tag-state">
+            <h2>2. Máquina de Estados del Tag/Persona (Simplificada)</h2>
+            
+            <div class="diagram-container">
+                <div class="mermaid">
+flowchart TD
+    Start([Power On]) --> WaitFirst[WAIT_FIRST_DETECTION<br/>Escucha Discovery]
+    
+    WaitFirst -->|Sin señal<br/>Estado default| SleepDefault[DEFAULT SLEEP<br/>Sleep 1000 ms]
+    WaitFirst -->|RX: Discovery Poll| RespondDiscovery[TX: Discovery Response<br/>ID + Timestamps + Batería]
+    
+    RespondDiscovery --> StartTimer[Inicia query_timeout<br/>1000 ms]
+    StartTimer --> WaitQuery[WAIT_TIMESTAMP_QUERY<br/>Escucha Queries]
+    
+    WaitQuery -->|RX: Timestamp Query| RespondQuery[TX: Timestamp Response<br/>Timestamps]
+    RespondQuery --> WaitQuery
+    
+    WaitQuery -->|RX: Set Sleep Mode<br/>+ Ambas dist > 0| SleepSuccess[SLEEP_RECIVED<br/>Sleep 15 segundos]
+    WaitQuery -->|Timeout 1000ms<br/>Sin datos completos| SleepFail[SLEEP_NOT_RECIVED<br/>Sleep 500 ms]
+    
+    SleepSuccess -->|Wake Up| WaitFirst
+    SleepFail -->|Wake Up| WaitFirst
+    SleepDefault -->|Wake Up| WaitFirst
+    
+    WaitFirst -.->|Comando especial| ShipMode[SHIP_MODE<br/>Apagado profundo]
+    ShipMode --> End([Off])
+    
+    style WaitFirst fill:#87CEEB
+    style WaitQuery fill:#90EE90
+    style SleepSuccess fill:#98FB98
+    style SleepFail fill:#FFE4B5
+    style SleepDefault fill:#F0E68C
+    style ShipMode fill:#D3D3D3
+                </div>
+            </div>
+            
+            <div class="explanation">
+                <h3>Explicación del Flujo:</h3>
+                <ol>
+                    <li><strong>WAIT_FIRST_DETECTION</strong>: Espera ser descubierto por sniffer</li>
+                    <li><strong>WAIT_TIMESTAMP_QUERY</strong>: Responde a queries de ranging</li>
+                    <li><strong>SLEEP_RECIVED</strong>: Sleep largo (15s) tras éxito con ambas distancias</li>
+                    <li><strong>SLEEP_NOT_RECIVED</strong>: Sleep corto (500ms) si falló o timeout</li>
+                    <li><strong>DEFAULT SLEEP</strong>: Sleep intermedio (1000ms) cuando no recibe ninguna señal</li>
+                    <li><strong>SHIP_MODE</strong>: Apagado profundo (opcional)</li>
+                </ol>
+            </div>
+        </section>
+
+        <section id="comparison">
+            <h2>3. Comparación: Sniffer vs Tag</h2>
+            
+            <div class="diagram-container">
+                <div class="mermaid">
+flowchart LR
+    subgraph Sniffer["🔍 SNIFFER (Activo)"]
+        S1[DISCOVERY<br/>Busca]
+        S2[QUERY<br/>Alterna A/B]
+        S3[END<br/>Guarda]
+    end
+    
+    subgraph Tag["📱 TAG (Reactivo)"]
+        T1[WAIT_FIRST<br/>Escucha]
+        T2[WAIT_QUERY<br/>Responde]
+        T3[SLEEP<br/>Duerme]
+    end
+    
+    S1 -.->|Discovery Poll| T1
+    T1 -.->|Response| S1
+    S2 -.->|Timestamp Query| T2
+    T2 -.->|Response| S2
+    S3 -.->|Sleep Command| T2
+    T2 -.->|ACK| S3
+    T3 -.->|Wake up| T1
+    
+    S1 --> S2 --> S3 --> S1
+    T1 --> T2 --> T3 --> T1
+    
+    style Sniffer fill:#E6F3FF
+    style Tag fill:#FFE6F0
+                </div>
+            </div>
+        </section>
+
+        <section id="sequence">
+            <h2>4. Diagrama de Secuencia Completo</h2>
+            
+            <div class="diagram-container">
+                <div class="mermaid">
+sequenceDiagram
+    participant S as Sniffer<br/>(TAG_DISCOVERY)
+    participant SA as Sniffer Antena A
+    participant SB as Sniffer Antena B
+    participant T as Tag<br/>(WAIT_FIRST_DETECTION)
+    
+    Note over S: Antena A activa
+    S->>SA: TX Discovery Poll
+    SA->>T: [TAG_ID_QUERY][state][sleep][dev]
+    
+    T->>SA: RX Discovery Response
+    SA->>S: [cmd][id][ts_rx(offset5)][ts_tx(offset9)][batt]
+    
+    Note over S: Estado → TAG_SEND_TIMESTAMP_QUERY
+    Note over S: Calcula distancia_A (primera lectura)
+    Note over S: Switch a Antena B
+    Note over T: Estado → WAIT_TIMESTAMPT_QUERY
+    
+    loop Queries hasta completar lecturas (query_timeout = 1000 ms)
+        alt Antena B necesita lecturas
+            Note over S: Antena B activa
+            S->>SB: TX Timestamp Query
+            SB->>T: [TAG_TIMESTAMP_QUERY][id][dA][dB]
+            T->>SB: RX Timestamp Response
+            SB->>S: [cmd][ts_rx(offset1)][ts_tx(offset5)]
+            Note over S: distance_B.save()
+        else Antena A necesita lecturas
+            Note over S: Switch a Antena A
+            S->>SA: TX Timestamp Query
+            SA->>T: [TAG_TIMESTAMP_QUERY][id][dA][dB]
+            T->>SA: RX Timestamp Response
+            SA->>S: [cmd][ts_rx(offset1)][ts_tx(offset5)]
+            Note over S: distance_A.save()
+        end
+        
+        alt Lecturas completas
+            Note over S: readings >= total
+            Note over S: Estado → TAG_END_READINGS
+        else Timeout
+            Note over S: query_timeout expiró
+            Note over S: Guarda datos (⚠️ pueden estar incompletos)
+        else Error CRC
+            Note over S: distance_ptr->error_crc_increment()
+            Note over S: Reintenta
+        end
+    end
+    
+    S->>T: TX Set Sleep Mode
+    T->>S: RX Final Response + ACK
+    
+    Note over S: Estado → TAG_DISCOVERY
+    Note over S: save_two_maps_and_clear_tag()
+    Note over S: Busca próximo tag
+    
+    alt Tag con lecturas exitosas
+        Note over T: distance_a > 0 && distance_b > 0
+        Note over T: Estado → TAG_SLEEP_RECIVED
+        Note over T: Sleep 15000 ms
+    else Tag sin lecturas completas
+        Note over T: Estado → TAG_SLEEP
+        Note over T: Sleep 500 ms
+    end
+                </div>
+            </div>
+        </section>
+
+        <section id="antenna-switch">
+            <h2>5. Diagrama de Decisión: Alternancia de Antenas</h2>
+            
+            <div class="diagram-container">
+                <div class="mermaid">
+flowchart TD
+    Start([switch_hw_timestamp_query]) --> CheckAntenna{Antena actual?}
+    
+    CheckAntenna -->|Antena A| CheckB[¿dist_B.counter < total/2?]
+    CheckAntenna -->|Antena B| CheckA[¿dist_A.counter < total/2?]
+    
+    CheckB -->|Sí| SwitchToB[Cambiar a Antena B]
+    CheckB -->|No| CheckA2[¿dist_A.counter < total/2?]
+    
+    CheckA -->|Sí| SwitchToA[Cambiar a Antena A]
+    CheckA -->|No| KeepB[Mantener Antena B]
+    
+    CheckA2 -->|Sí| SwitchToA
+    CheckA2 -->|No| KeepA[Mantener Antena A]
+    
+    SwitchToB --> End([Continúa query])
+    SwitchToA --> End
+    KeepA --> End
+    KeepB --> End
+    
+    style SwitchToB fill:#90EE90
+    style SwitchToA fill:#87CEEB
+    style KeepA fill:#FFE4B5
+    style KeepB fill:#FFE4B5
+                </div>
+            </div>
+        </section>
+
+        <section id="notes">
+            <div class="notes">
+                <h3>Notas Importantes:</h3>
+                <ol>
+                    <li><strong>query_timeout crítico:</strong> Ambos equipos (sniffer y tag) tienen 1000 ms para completar el ranging.</li>
+                    
+                    <li><strong>Offsets diferentes:</strong> Discovery usa offsets 5/9, queries usan 1/5 por estructura de frame distinta.</li>
+                    
+                    <li><strong>Problema de guardado:</strong> El código actual guarda tags incluso si solo una antena tiene lecturas, invalidando la triangulación.</li>
+                    
+                    <li><strong>Alternancia inteligente:</strong> <code>switch_hw_timestamp_query()</code> balancea lecturas entre antenas para asegurar datos de ambas.</li>
+                    
+                    <li><strong>Sleep diferenciado:</strong> Tag duerme 500 ms si falla, 15000 ms si tiene éxito.</li>
+                    
+                    <li><span class="warning">TAG_ONE_DETECTION:</span> Modo especial que omite queries adicionales, perdiendo capacidad de triangulación.</li>
+                </ol>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Inicializar Mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                fontSize: '14px'
+            },
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            sequence: {
+                diagramMarginX: 50,
+                diagramMarginY: 10,
+                actorMargin: 50,
+                width: 150,
+                height: 65,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageMargin: 35,
+                mirrorActors: true,
+                bottomMarginAdj: 1,
+                useMaxWidth: true,
+                rightAngles: false,
+                showSequenceNumbers: false
+            }
+        });
+
+        // Función para hacer scroll suave a las secciones
+        document.querySelectorAll('.toc a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Añadir fecha y hora de generación
+        const footer = document.createElement('div');
+        footer.style.cssText = 'text-align: center; margin-top: 40px; padding: 20px; border-top: 1px solid #ddd; color: #666; font-size: 0.9em;';
+        footer.innerHTML = `Generado el: ${new Date().toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })} - Actualizado desde archivo Markdown`;
+        document.querySelector('.container').appendChild(footer);
+    </script>
+</body>
+</html>
