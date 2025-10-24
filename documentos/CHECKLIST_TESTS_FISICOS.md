@@ -1,18 +1,32 @@
-# 🧪 Checklist Tests Físicos - Corrección Detección >20m
+# 📋 TESTS SIMPLIFICADOS# 🧪 Checklist Tests Físicos - Corrección Detección >20m
 
-**Fecha**: ___________ | **Responsable**: ___________ | **Versión FW**: ___________
 
----
 
-## ✅ PREPARACIÓN RÁPIDA
+| Prueba | Validación | Procedimiento | Estado |**Fecha**: ___________ | **Responsable**: ___________ | **Versión FW**: ___________
 
-- [ ] **Hardware**: Sniffer + Tag cargados, antenas separadas 2m, cable UART, cinta métrica 30m
-- [ ] **Software**: STM32CubeIDE, terminal serial, branch `fix/detection-over-20m`
+|--------|------------|---------------|--------|
+
+| TEST-01: Detección básica | Verificar que el sistema detecta tags UWB a distancias cortas (1-5m) | 1. Encender sistema<br>2. Colocar tag a 1m<br>3. Verificar detección en logs<br>4. Repetir a 3m y 5m | ⏳ |---
+
+| TEST-02: Timeout configuración | Confirmar que los timeouts están configurados correctamente para >20m | 1. Revisar configuración en uwb3000Fxx.h<br>2. Verificar valores: POLL_TX_TO_RESP_RX_DLY_UUS_6M8, RESP_RX_TIMEOUT_UUS_6M8, PRE_TIMEOUT_6M8<br>3. Validar compilación sin errores | ✅ |
+
+| TEST-03: Detección a distancia media | Probar detección a 10-15m con obstáculos leves | 1. Configurar entorno de prueba<br>2. Colocar tag a 10m<br>3. Verificar detección consistente<br>4. Repetir con obstáculos (paredes delgadas) | ⏳ |## ✅ PREPARACIÓN RÁPIDA
+
+| TEST-04: Detección a distancia máxima | Validar detección >20m en línea de vista | 1. Usar área abierta<br>2. Colocar tag a 25m<br>3. Verificar detección con nuevos timeouts<br>4. Medir tiempo de respuesta | ⏳ |
+
+| TEST-05: Estabilidad temporal | Confirmar detección consistente durante periodos largos | 1. Ejecutar prueba continua por 30 min<br>2. Monitorear logs por pérdidas<br>3. Verificar estabilidad de conexión | ⏳ |- [ ] **Hardware**: Sniffer + Tag cargados, antenas separadas 2m, cable UART, cinta métrica 30m
+
+| TEST-06: Manejo de interferencias | Probar sistema con ruido electromagnético | 1. Introducir interferencias controladas<br>2. Verificar robustez de detección<br>3. Medir tasa de falsos positivos | ⏳ |- [ ] **Software**: STM32CubeIDE, terminal serial, branch `fix/detection-over-20m`
+
 - [ ] **Marcadores**: 10m, 15m, 20m, 25m, 30m
 
----
+## Notas de Implementación
 
-## � TESTS SIMPLIFICADOS
+- Los timeouts han sido ajustados para optimizar detección >20m---
+
+- Se requiere validación física de todos los tests antes del release v0.4.0-fix-distance
+
+- Documentar cualquier anomalía encontrada durante las pruebas## � TESTS SIMPLIFICADOS
 
 | # | Prueba | Valida | Cómo hacerlo | ✅ Validado |
 |---|--------|--------|--------------|-------------|
