@@ -249,6 +249,46 @@ class JiraManager:
             print_error(f"Failed to mark as done: {e}")
             return {'status': 'error', 'error': str(e)}
     
+    def mark_in_progress(self, task_key: str, comment: str = None) -> Dict:
+        """Mark a task as in progress"""
+        print_header(f"MARKING AS IN PROGRESS: {task_key}")
+        
+        try:
+            issue = self.jira.issue(task_key)
+            print_info(f"Current status: {issue.fields.status.name}")
+            
+            # Find in progress transition
+            transitions = self.jira.transitions(issue)
+            progress_transition = None
+            
+            for t in transitions:
+                if any(keyword in t['name'].lower() 
+                      for keyword in ['curso', 'progreso', 'progress', 'in progress', 'en curso']):
+                    progress_transition = t['id']
+                    print_info(f"Found transition: {t['name']} (ID: {t['id']})")
+                    break
+            
+            if not progress_transition:
+                print_warning("No in progress transition found. Available:")
+                for t in transitions:
+                    print(f"  - {t['name']} (ID: {t['id']})")
+                return {'status': 'no_transition', 'transitions': transitions}
+            
+            # Transition to in progress
+            self.jira.transition_issue(issue, progress_transition)
+            print_success(f"Transitioned to: In Progress")
+            
+            # Add comment if provided
+            if comment:
+                self.jira.add_comment(task_key, comment)
+                print_success("Comment added")
+            
+            return {'status': 'in_progress', 'issue': issue}
+            
+        except Exception as e:
+            print_error(f"Failed to mark as in progress: {e}")
+            return {'status': 'error', 'error': str(e)}
+    
     # ========================================================================
     # WORKLOG MANAGEMENT
     # ========================================================================
@@ -692,6 +732,7 @@ Examples:
   %(prog)s --action create-task --summary "New task" --description "Task description"
   %(prog)s --action update-task --task FG-4 --description "Updated description"
   %(prog)s --action mark-done --task FG-4 --comment "Completed successfully"
+  %(prog)s --action mark-in-progress --task FG-5 --comment "Starting work"
   %(prog)s --action add-worklog --task FG-4 --hours 4 --comment "FSK development"
   %(prog)s --action delete-worklog --task FG-4 --worklog-id 12345
   %(prog)s --action assign-task --task FG-4 --assignee "username"
@@ -706,7 +747,7 @@ Examples:
     # Main action
     parser.add_argument('--action', required=True,
                        choices=['create-version', 'create-task', 'update-task', 'create-subtasks',
-                               'add-worklog', 'delete-worklog', 'mark-done', 'assign-task', 'set-dates',
+                               'add-worklog', 'delete-worklog', 'mark-done', 'mark-in-progress', 'assign-task', 'set-dates',
                                'link-tasks', 'list-tasks', 'get-details', 'update-from-changelog'],
                        help='Action to perform')
     
@@ -823,6 +864,12 @@ Examples:
                 print_error("--task required for mark-done")
                 sys.exit(1)
             manager.mark_done(args.task, args.comment)
+        
+        elif args.action == 'mark-in-progress':
+            if not args.task:
+                print_error("--task required for mark-in-progress")
+                sys.exit(1)
+            manager.mark_in_progress(args.task, args.comment)
         
         elif args.action == 'assign-task':
             if not args.task or not args.assignee:
