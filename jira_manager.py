@@ -31,6 +31,7 @@ Examples:
 import os
 import sys
 import argparse
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -527,33 +528,105 @@ class JiraManager:
         print_header("UPDATING FROM CHANGELOG")
         
         try:
-            # Read changelog
-            changelog = Path(changelog_path)
-            if not changelog.exists():
-                print_error(f"Changelog not found: {changelog_path}")
-                return {'status': 'error', 'error': 'Changelog not found'}
+            # Handle multiple changelogs for sniffer-tag project
+            changelog_paths = [
+                "sniffer/CHANGELOG.md",
+                "Persona/CHANGELOG.md"
+            ]
             
-            content = changelog.read_text(encoding='utf-8')
+            all_updates = []
             
-            # Parse versions (simple parsing - can be enhanced)
-            print_info("Parsing CHANGELOG...")
+            for path in changelog_paths:
+                changelog = Path(path)
+                if not changelog.exists():
+                    print_info(f"Changelog not found: {path}")
+                    continue
+                
+                print_info(f"Processing {path}...")
+                content = changelog.read_text(encoding='utf-8')
+                
+                # Parse changelog and create/update tasks
+                updates = self._process_changelog_content(content, path)
+                all_updates.extend(updates)
             
-            # Example: Find released versions and mark associated tasks as done
-            # This is a simplified version - enhance based on your CHANGELOG format
+            if not all_updates:
+                print_info("No updates found in changelogs")
+                return {'status': 'no_updates'}
             
-            if 'v2.5.0' in content and '2025-10-08' in content:
-                print_info("Found v2.5.0 release")
-                self.mark_done('FG-4', '✅ Released based on CHANGELOG.md')
-            
-            if 'v2.4.0' in content and '2025-07-07' in content:
-                print_info("Found v2.4.0 release")
-                self.mark_done('FG-3', '✅ Released based on CHANGELOG.md')
-            
-            return {'status': 'updated'}
+            print_success(f"Processed {len(all_updates)} changelog entries")
+            return {'status': 'updated', 'updates': all_updates}
             
         except Exception as e:
             print_error(f"Failed to update from changelog: {e}")
             return {'status': 'error', 'error': str(e)}
+    
+    def _process_changelog_content(self, content: str, source_path: str) -> List[Dict]:
+        """Process changelog content and create/update JIRA tasks"""
+        updates = []
+        
+        # Split by version sections
+        import re
+        version_pattern = r'## \[([^\]]+)\]'
+        versions = re.findall(version_pattern, content)
+        
+        for version in versions:
+            if version.lower() in ['unreleased']:
+                print_info(f"Processing unreleased changes from {source_path}")
+                # Create tasks for unreleased changes
+                unreleased_tasks = self._extract_unreleased_tasks(content, source_path)
+                updates.extend(unreleased_tasks)
+            else:
+                print_info(f"Processing version {version} from {source_path}")
+                # Mark tasks as done for released versions
+                version_tasks = self._extract_version_tasks(content, version, source_path)
+                updates.extend(version_tasks)
+        
+        return updates
+    
+    def _extract_unreleased_tasks(self, content: str, source_path: str) -> List[Dict]:
+        """Extract tasks from unreleased section"""
+        tasks = []
+        
+        # Find unreleased section
+        unreleased_match = re.search(r'## \[Unreleased\](.*?)(?=## \[|$)', content, re.DOTALL)
+        if not unreleased_match:
+            return tasks
+        
+        unreleased_content = unreleased_match.group(1)
+        
+        # Extract changes by type
+        change_types = ['Added', 'Changed', 'Fixed', 'Removed']
+        
+        for change_type in change_types:
+            pattern = rf'### {change_type}(.*?)(?=###|$)'
+            match = re.search(pattern, unreleased_content, re.DOTALL | re.IGNORECASE)
+            if match:
+                changes = match.group(1).strip()
+                # Create task for this change type
+                summary = f"[{change_type}] {source_path.replace('CHANGELOG.md', '').strip('/')}"
+                description = f"{change_type} changes from {source_path}:\n{changes}"
+                
+                task_result = self.create_task(
+                    summary=summary,
+                    description=description,
+                    issue_type='Task',
+                    labels=['changelog', 'unreleased', source_path.split('/')[0]]
+                )
+                tasks.append(task_result)
+        
+        return tasks
+    
+    def _extract_version_tasks(self, content: str, version: str, source_path: str) -> List[Dict]:
+        """Extract and mark done tasks for released versions"""
+        tasks = []
+        
+        # For now, just log the version - can be enhanced to mark specific tasks as done
+        print_info(f"Found released version {version} in {source_path}")
+        
+        # Could add logic here to mark related tasks as done
+        # For example, search for task keys in commit messages and mark them done
+        
+        return tasks
     
     def update_task(self, task_key: str, summary: str = None, description: str = None,
                    assignee: str = None, labels: List[str] = None) -> Dict:
