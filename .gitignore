@@ -46,3 +46,4 @@ Thumbs.db
 # Build directories
 **/Debug/
 **/Release/
+/.metadata/
