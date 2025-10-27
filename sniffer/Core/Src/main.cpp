@@ -908,6 +908,14 @@ int main(void)
 						rxlora.set_default_parameters();
 						break;
 					}
+					case ONE_DETECTION:{
+						interfaz_state = MASTER_ONE_DETECTION;
+						break;
+					}
+					case MULTIPLE_DETECTION: {
+						interfaz_state = MASTER_MULTIPLE_DETECTION;
+						break;
+					}
 					default:
 						break;
 					}
