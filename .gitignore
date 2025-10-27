@@ -40,6 +40,9 @@ Thumbs.db
 *.log
 *.swp
 
+# Environment files with sensitive data
+.env
+
 # Build directories
 **/Debug/
 **/Release/

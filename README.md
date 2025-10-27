@@ -95,38 +95,3 @@ For contributions, please:
 5. Create a Pull Request
 
 ## Contact
-
-## Sniffer: Flujo de Detección y Envío LoRa
-
-Diagrama simplificado del ciclo de operación del sniffer (orientación izquierda a derecha). Muestra cómo se detectan tags por UWB y cuándo se envían por LoRa, incluyendo el caso sin detecciones (keep-alive vacío).
-
-```mermaid
-flowchart LR
-  A[Inicio] --> B[Poll UWB]
-  B --> C{Respuesta <100ms?}
-  C -->|Si| D[Extrae ID + Distancia]
-  C -->|No| E[Sin TAG]
-  D --> F{Tags acumulados?}
-  F -->|Si| G{>=5s envío}
-  F -->|No| H[Loop]
-  G -->|Si| I[LoRa TAGs]
-  G -->|No| H
-  E --> J{>=10s sin detección}
-  J -->|Si| K[LoRa vacío]
-  J -->|No| H
-  I --> L[Reset timer]
-  K --> L
-  L --> H
-  H --> B
-```
-
-Resumen tiempos:
-- UWB wait_rx_data: <100 ms
-- Intervalo envío con tags: ~5 s
-- Intervalo sin tags (keep-alive): ~10 s
-
-Reglas envío LoRa:
-1. Tags presentes y venció intervalo corto → frame con tags.
-2. Sin tags y venció intervalo largo → frame vacío.
-
-Mejoras sugeridas: centralizar constantes, contador de ciclos sin detección, opción CRC.

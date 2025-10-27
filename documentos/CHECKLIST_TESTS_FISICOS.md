@@ -1,203 +1,106 @@
-# Checklist de Tests Físicos - Corrección Detección >20m
+# 📋 TESTS SIMPLIFICADOS# 🧪 Checklist Tests Físicos - Corrección Detección >20m
 
-**Fecha**: ___________ | **Responsable**: ___________ | **Versión FW**: ___________
 
----
 
-## ✅ PREPARACIÓN
+| Prueba | Validación | Procedimiento | Estado |**Fecha**: ___________ | **Responsable**: ___________ | **Versión FW**: ___________
 
-### Hardware Básico
-- [ ] Sniffer con batería cargada + antenas A y B (separación 2m)
-- [ ] Tag (Persona) con batería cargada
-- [ ] Cable UART para logs
-- [ ] Cinta métrica ≥30m
-- [ ] Marcadores de distancia a: 10m, 15m, 20m, 25m, 30m
+|--------|------------|---------------|--------|
 
-### Software Básico
-- [ ] STM32CubeIDE funcionando
-- [ ] Software serial (PuTTY/CoolTerm) para logs
-- [ ] Git branch `fix/detection-over-20m` creado
-- [ ] Commit baseline hecho
+| TEST-01: Detección básica | Verificar que el sistema detecta tags UWB a distancias cortas (1-5m) | 1. Encender sistema<br>2. Colocar tag a 1m<br>3. Verificar detección en logs<br>4. Repetir a 3m y 5m | ⏳ |---
 
----
+| TEST-02: Timeout configuración | Confirmar que los timeouts están configurados correctamente para >20m | 1. Revisar configuración en uwb3000Fxx.h<br>2. Verificar valores: POLL_TX_TO_RESP_RX_DLY_UUS_6M8, RESP_RX_TIMEOUT_UUS_6M8, PRE_TIMEOUT_6M8<br>3. Validar compilación sin errores | ✅ |
 
----
+| TEST-03: Detección a distancia media | Probar detección a 10-15m con obstáculos leves | 1. Configurar entorno de prueba<br>2. Colocar tag a 10m<br>3. Verificar detección consistente<br>4. Repetir con obstáculos (paredes delgadas) | ⏳ |## ✅ PREPARACIÓN RÁPIDA
 
-## 🔴 TEST-01: TIMEOUTS AUMENTADOS (Solución 1A)
+| TEST-04: Detección a distancia máxima | Validar detección >20m en línea de vista | 1. Usar área abierta<br>2. Colocar tag a 25m<br>3. Verificar detección con nuevos timeouts<br>4. Medir tiempo de respuesta | ⏳ |
 
-### Implementación
-- [ ] Modificar `sniffer/Core/Inc/uwb3000Fxx.h` → 1000, 500, 8
-- [ ] Modificar `Persona/Core/Inc/uwb3000Fxx.h` → 1000, 500, 8 (valores idénticos)
-- [ ] Compilar ambos sin warnings
-- [ ] Flashear Sniffer y Persona
-- [ ] Verificar sincronización con test rápido a 10m
+| TEST-05: Estabilidad temporal | Confirmar detección consistente durante periodos largos | 1. Ejecutar prueba continua por 30 min<br>2. Monitorear logs por pérdidas<br>3. Verificar estabilidad de conexión | ⏳ |- [ ] **Hardware**: Sniffer + Tag cargados, antenas separadas 2m, cable UART, cinta métrica 30m
 
-### Test de Distancias (3 min por distancia)
+| TEST-06: Manejo de interferencias | Probar sistema con ruido electromagnético | 1. Introducir interferencias controladas<br>2. Verificar robustez de detección<br>3. Medir tasa de falsos positivos | ⏳ |- [ ] **Software**: STM32CubeIDE, terminal serial, branch `fix/detection-over-20m`
 
-| Distancia | Éxito A | Éxito B | Criterio | ✅ PASS/FAIL |
-|-----------|---------|---------|----------|-------------|
-| 10m  | ___/___  | ___/___  | 100% ambas | [ ] PASS [ ] FAIL |
-| 15m  | ___/___  | ___/___  | 100% ambas | [ ] PASS [ ] FAIL |
-| 20m  | ___/___  | ___/___  | ≥90% ambas | [ ] PASS [ ] FAIL |
-| **25m** | ___/___  | ___/___  | **≥70% ambas** | [ ] PASS [ ] FAIL |
-| 27m  | ___/___  | ___/___  | ≥60% ambas | [ ] PASS [ ] FAIL |
-| 30m  | ___/___  | ___/___  | ≥50% ambas | [ ] PASS [ ] FAIL |
+- [ ] **Marcadores**: 10m, 15m, 20m, 25m, 30m
 
-**Resultado**: [ ] EXITOSO (≥70% a 25m) [ ] PARCIAL [ ] FALLIDO → Si FAIL ir a TEST-01B
+## Notas de Implementación
 
-**Logs guardados**: test-01-session-X.log
+- Los timeouts han sido ajustados para optimizar detección >20m---
+
+- Se requiere validación física de todos los tests antes del release v0.4.0-fix-distance
+
+- Documentar cualquier anomalía encontrada durante las pruebas## � TESTS SIMPLIFICADOS
+
+| # | Prueba | Valida | Cómo hacerlo | ✅ Validado |
+|---|--------|--------|--------------|-------------|
+| **TEST-01** | **Timeouts DW3000 aumentados** | Detección funciona >20m | 1. Modificar `uwb3000Fxx.h` → 1000, 500, 8 (ambos equipos)<br>2. Compilar y flashear<br>3. Test 10-30m: ≥70% éxito a 25m | [ ] SÍ [ ] NO |
+| **TEST-02** | **Validación de guardado** | No guarda datos incompletos | 1. Agregar validación en `main.cpp` líneas 542-546<br>2. Flashear sniffer<br>3. Test 3 escenarios: 15m, 28m, obstrucción | [ ] SÍ [ ] NO |
+| **TEST-03** | **Query timeout aumentado** | Más tiempo para queries lentas | 1. Cambiar `query_timeout` 1000→2000 en `main.cpp`<br>2. Flashear sniffer<br>3. Comparar 25m: mejora ≥20% | [ ] SÍ [ ] NO |
+| **TEST-05** | **Sistema de logging** | Diagnóstico de fallos | 1. Agregar `log_rx_result()` en `sniffer_tag.cpp`<br>2. Flashear sniffer<br>3. Capturar logs UART durante tests | [ ] SÍ [ ] NO |
+| **TEST-06** | **Modo MULTIPLE obligatorio** | Siempre ambas antenas | 1. Eliminar `TAG_ONE_DETECTION` en `main.cpp`<br>2. Flashear sniffer<br>3. Test 15m: 100% ambas antenas | [ ] SÍ [ ] NO |
+| **TEST-01B** | **Timeouts agresivos** | Último recurso si TEST-01 falla | 1. Modificar → 1400, 700, 12 (ambos)<br>2. Repetir TEST-01<br>3. ≥70% a 25m | [ ] SÍ [ ] NO |
 
 ---
 
-## 🔴 TEST-02: VALIDACIÓN DE GUARDADO (Solución 2A)
+## 📊 RESULTADO FINAL
 
-### Implementación
-- [ ] Agregar validación en `sniffer/Core/Src/main.cpp` líneas 542-546
-- [ ] Compilar y flashear solo Sniffer
+### ✅ **Éxito Global**
+- [ ] **OBJETIVO ALCANZADO**: Detección estable ≥70% a 25m
+- [ ] **PARCIAL**: Funciona pero <70%
+- [ ] **FALLIDO**: Sin mejora significativa
 
-### Escenarios
-
-**Escenario 1 (15m, 20 ciclos)**: Distancia óptima
-- [ ] Tags guardados: ___/20
-- [ ] Tags con ambas antenas: ___/20 (debe ser 100%)
-- [ ] ✅ [ ] PASS [ ] FAIL
-
-**Escenario 2 (28m, 30 ciclos)**: Distancia límite
-- [ ] Tags guardados: ___/30
-- [ ] Tags descartados: ___/30
-- [ ] Tags guardados con solo 1 antena: ___ (debe ser 0)
-- [ ] ✅ [ ] PASS [ ] FAIL
-
-**Escenario 3 (20m, 10 ciclos)**: Obstrucción antena B
-- [ ] Bloquear antena B con metal
-- [ ] Tags descartados: ___/10 (debe ser 10)
-- [ ] Logs muestran "A=X, B=0": [ ] SÍ
-- [ ] ✅ [ ] PASS [ ] FAIL
-
-**Resultado**: [ ] Todos PASS [ ] Alguno FAIL
-
----
-
-## 🟠 TEST-03: QUERY_TIMEOUT AUMENTADO (Solución 3B - Simple)
-
-### Implementación
-- [ ] Cambiar `query_timeout` de 1000 a 2000 en `main.cpp` línea 347
-- [ ] Compilar y flashear Sniffer
-
-### Test Comparativo (25m, 20 ciclos cada uno)
-
-**Baseline (timeout 1000ms)**:
-- [ ] Ciclos completos: ___/20
-- [ ] % Éxito: ___%
-
-**Mejorado (timeout 2000ms)**:
-- [ ] Ciclos completos: ___/20
-- [ ] % Éxito: ___%
-
-**Resultado**: [ ] Mejora ≥20% [ ] Sin mejora significativa
-
----
-
-## 🟡 TEST-05: LOGGING (con cualquier test)
-
-### Implementación
-- [ ] Agregar `log_rx_result()` en `sniffer_tag.cpp`
-- [ ] Compilar y flashear Sniffer
-- [ ] Capturar logs UART durante tests
-
-### Verificación
-- [ ] Logs muestran: tag_id, antena (A/B), tipo error, tiempo
-- [ ] Se identifica cuál antena falla más
-- [ ] Se identifica tipo timeout más frecuente
-
-**Ejemplo esperado**:
-```
-[A] Tag 12345678: RX OK, lecturas=1, tiempo=45ms
-[B] Tag 12345678: PREAMBULO TIMEOUT
+### 🔧 **Configuración Final**
+```c
+// Valores finales implementados
+POLL_TX_TO_RESP_RX_DLY_UUS_6M8 = _____  // Ambos equipos
+RESP_RX_TIMEOUT_UUS_6M8 = _____         // Ambos equipos
+PRE_TIMEOUT_6M8 = _____                 // Ambos equipos
+query_timeout = _____ ms               // Sniffer
 ```
 
-**Resultado**: [ ] Logs útiles [ ] Logs incompletos
+### 📝 **Resumen de Cambios**
+- [ ] TEST-01 implementado
+- [ ] TEST-02 implementado
+- [ ] TEST-03 implementado
+- [ ] TEST-05 implementado
+- [ ] TEST-06 implementado
+- [ ] TEST-01B (solo si necesario)
 
 ---
 
-## 🟡 TEST-06: ELIMINAR MODO ONE_DETECTION (Opcional)
+## 📋 CHECKLIST DE EJECUCIÓN
 
-### Implementación
-- [ ] Comentar/eliminar `TAG_ONE_DETECTION` en `main.cpp`
-- [ ] Compilar y flashear Sniffer
+### Antes de Tests
+- [ ] Preparación hardware/software completa
+- [ ] Commit baseline realizado
+- [ ] Logs UART configurados
 
-### Test (15m, 20 ciclos)
-- [ ] Tags guardados con ambas antenas: ___/20 (debe ser 100%)
-- [ ] ✅ [ ] PASS [ ] FAIL
+### Durante Tests
+- [ ] 3 minutos por distancia en TEST-01
+- [ ] 20-30 ciclos por escenario
+- [ ] Logs guardados por sesión
+- [ ] Fotos/videos de setup
 
----
-
-## 🔴 TEST-01B: TIMEOUTS AGRESIVOS (Solo si TEST-01 FAIL)
-
-### Implementación
-- [ ] Modificar ambos equipos → 1400, 700, 12
-- [ ] Flashear ambos
-
-### Test
-- [ ] Repetir TEST-01 completo
-- [ ] 25m: ___% éxito (debe ser ≥70%)
-- [ ] ✅ [ ] PASS [ ] FAIL
-
----
-
-## 📊 RESUMEN FINAL
-
-### Tests Completados
-- [ ] TEST-01: Timeouts aumentados
-- [ ] TEST-02: Validación guardado
-- [ ] TEST-03: query_timeout
-- [ ] TEST-05: Logging
-- [ ] TEST-06: Modo MULTIPLE (opcional)
-- [ ] TEST-01B: Timeouts agresivos (si aplica)
-
-### Resultado Global
-- [ ] ✅ Objetivo alcanzado: Detección estable a **25m con ≥70% éxito**
-- [ ] ⚠️ Parcial: Funciona pero <70%
-- [ ] ❌ Fallido: No mejora
-
-### Soluciones en Producción
-- [ ] Solución 1A (timeouts +50%) o 1B (+100%)
-- [ ] Solución 2A (validación obligatoria)
-- [ ] Solución 3B (query_timeout=2000)
-- [ ] Solución 5A (logging)
-- [ ] Solución 6A (solo MULTIPLE)
-
-### Valores Finales en Código
-```
-POLL_TX_TO_RESP_RX_DLY_UUS_6M8 = _____ (ambos equipos)
-RESP_RX_TIMEOUT_UUS_6M8 = _____ (ambos equipos)
-PRE_TIMEOUT_6M8 = _____ (ambos equipos)
-query_timeout = _____ ms (sniffer)
-```
-
-### Commit y Release
-- [ ] Commit final realizado
-- [ ] Tag `v0.4.0-fix-distance` creado
-- [ ] Merge a `dev`
+### Después de Tests
+- [ ] Commit final con cambios
+- [ ] Tag `v0.4.0-fix-distance`
 - [ ] CHANGELOG.md actualizado
+- [ ] Merge a `dev`
 
 ---
 
-## 📝 NOTAS
+## 📝 NOTAS RÁPIDAS
 
 **Problemas encontrados**:
 ```
-________________________________________________________________________
+
 ```
 
 **Lecciones aprendidas**:
 ```
-________________________________________________________________________
+
 ```
 
-**Próximos pasos**:
+**Recomendaciones**:
 ```
-________________________________________________________________________
+
 ```
 
 ---

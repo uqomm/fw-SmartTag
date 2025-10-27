@@ -726,7 +726,7 @@ typedef struct {
 #define POLL_TX_TO_RESP_RX_DLY_UUS_850K 60
 
 /* Receive response timeout. See NOTE 5 below. */
-#define RESP_RX_TIMEOUT_UUS_6M8 300
+#define RESP_RX_TIMEOUT_UUS_6M8 600  // Aumentado de 300 a 600 (+100%) - Solución 1B para detección >20m
 #define RESP_RX_TIMEOUT_UUS_850K    2000
 /* Preamble timeout, in multiple of PAC size. See NOTE 7 below. */
 #define PRE_TIMEOUT_6M8 12  // Aumentado de 8 a 12 (+50% adicional, +140% desde baseline 5) - Solución 1B para mejorar tasa de éxito a >50%
