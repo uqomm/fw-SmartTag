@@ -1,0 +1,2160 @@
+/* USER CODE BEGIN Header */
+/**
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2024 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
+/* USER CODE END Header */
+/* Includes ------------------------------------------------------------------*/
+
+#include "main.h"
+
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
+#include <sniffer_tag.hpp>
+#include "Gpio.hpp"
+#include "Memory.hpp"
+#include <Lora.hpp>
+#include "GpioHandler.hpp"
+#include "UartHandler.hpp"
+/* USER CODE END Includes */
+
+/* Private typedef -----------------------------------------------------------*/
+/* USER CODE BEGIN PTD */
+
+/* USER CODE END PTD */
+
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+
+/* USER CODE END PD */
+
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
+
+/* USER CODE END PM */
+
+/* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c3;
+SPI_HandleTypeDef hspi1;
+SPI_HandleTypeDef hspi2;
+SPI_HandleTypeDef hspi3;
+UART_HandleTypeDef huart1;
+
+/* USER CODE BEGIN PV */
+uint8_t lora_rcv_bytes = 0;
+uint8_t Data_reciv_test[256] = {0};
+double *distance_ptr;
+TAG_t *tag;
+int size = 0;
+uint8_t running_device = DEV_UWB3000F27;
+Uwb_HW_t uwb_hw_a;
+Uwb_HW_t uwb_hw_b;
+Uwb_HW_t *hw;
+dwt_local_data_t *pdw3000local;
+uint8_t crcTable[256];
+uint8_t recvChar[255] = {0};
+TAG_t *tag_ptr;
+DistanceHandler distance_a = DistanceHandler(DISTANCE_READINGS);
+DistanceHandler distance_b = DistanceHandler(DISTANCE_READINGS);
+uint32_t tiempo_max = 5;
+GpioHandler gpio_handler = GpioHandler();
+
+uint8_t lora_rcv_buffer[256] = {0};
+
+std::vector<uint8_t> message_composed;
+std::vector<uint8_t> tx_vect;
+
+
+
+uint8_t bytes_reciv;
+uint8_t data_reciv[255] = { 0 };
+UartHandler uart_cfg = UartHandler(&huart1);
+uint8_t FinalData[20];
+uint8_t RxData[20];
+uint8_t temp[2];
+int indx = 0;
+
+// Buffer global de eventos de logging diferido
+static LogBuffer_t log_buffer = {0};
+
+// Simple Logger System
+typedef struct {
+    uint32_t timestamp;
+    char message[64];
+} LogEntry_t;
+
+// Enhanced Logger System for print_qty_tags replacement
+typedef struct {
+    uint32_t timestamp;
+    char message[80];
+} EnhancedLogEntry_t;
+
+#define MAX_LOG_ENTRIES 50
+static LogEntry_t log_entries[MAX_LOG_ENTRIES];
+static uint8_t log_index = 0;
+static uint8_t log_count = 0;
+static uint8_t real_time_logging = 1; // Flag to control real-time output
+
+// Enhanced logging for print_qty_tags replacement
+#define MAX_ENHANCED_LOG_ENTRIES 30
+static EnhancedLogEntry_t enhanced_log_entries[MAX_ENHANCED_LOG_ENTRIES];
+static uint8_t enhanced_log_index = 0;
+static uint8_t enhanced_log_count = 0;
+static uint8_t enhanced_real_time_logging = 1; // Always enabled for tag quantity logs
+
+// Log detail level control
+typedef enum {
+    LOG_LEVEL_MINIMAL = 0,    // Only essential info
+    LOG_LEVEL_SUMMARY = 1,    // Clean summaries
+    LOG_LEVEL_DETAILED = 2    // Full debug info
+} LogLevel_t;
+
+static LogLevel_t current_log_level = LOG_LEVEL_SUMMARY;
+
+// Simple string copy function
+void simple_strcpy(char* dest, const char* src, size_t max_len) {
+    size_t i = 0;
+    while (i < max_len - 1 && src[i] != '\0') {
+        dest[i] = src[i];
+        i++;
+    }
+    dest[i] = '\0';
+}
+
+// Convert milliseconds to hours:minutes:seconds format
+void format_timestamp(uint32_t ms, char* output) {
+    uint32_t seconds = ms / 1000;
+    uint32_t minutes = seconds / 60;
+    uint32_t hours = minutes / 60;
+    
+    seconds = seconds % 60;
+    minutes = minutes % 60;
+    hours = hours % 24; // Reset after 24 hours
+    
+    // Format as HH:MM:SS
+    output[0] = '0' + (hours / 10);
+    output[1] = '0' + (hours % 10);
+    output[2] = ':';
+    output[3] = '0' + (minutes / 10);
+    output[4] = '0' + (minutes % 10);
+    output[5] = ':';
+    output[6] = '0' + (seconds / 10);
+    output[7] = '0' + (seconds % 10);
+    output[8] = '\0';
+}
+
+void simple_log(const char* message) {
+    if (log_count < MAX_LOG_ENTRIES) {
+        log_count++;
+    }
+    
+    log_entries[log_index].timestamp = HAL_GetTick();
+    simple_strcpy(log_entries[log_index].message, message, sizeof(log_entries[log_index].message));
+    
+    log_index = (log_index + 1) % MAX_LOG_ENTRIES;
+    
+    // Only send to UART if real-time logging is enabled and it's not a "####" message
+    if (real_time_logging && message[0] != '#') {
+        char log_line[96];
+        uint32_t timestamp = HAL_GetTick();
+        
+        // Format timestamp as HH:MM:SS
+        char time_str[10];
+        format_timestamp(timestamp, time_str);
+        
+        // Build log line: [HH:MM:SS] message
+        uint8_t pos = 0;
+        log_line[pos++] = '[';
+        
+        // Copy timestamp (HH:MM:SS format)
+        for (uint8_t k = 0; k < 8; k++) {
+            log_line[pos++] = time_str[k];
+        }
+        
+        // Add "] "
+        log_line[pos++] = ']';
+        log_line[pos++] = ' ';
+        
+        // Copy message
+        for (uint8_t k = 0; message[k] != '\0' && k < 64; k++) {
+            log_line[pos++] = message[k];
+        }
+        
+        // Add line ending
+        log_line[pos++] = '\r';
+        log_line[pos++] = '\n';
+        log_line[pos] = '\0';
+        
+        // Send via UART immediately
+        HAL_UART_Transmit(&huart1, (uint8_t*)log_line, pos, 100);
+    }
+}
+
+void print_log_entries() {
+    uint8_t start_index = (log_count < MAX_LOG_ENTRIES) ? 0 : log_index;
+    uint8_t entries_to_print = (log_count < MAX_LOG_ENTRIES) ? log_count : MAX_LOG_ENTRIES;
+    
+    // Print header
+    char header[] = "=== LOGGER ENTRIES ===\r\n";
+    HAL_UART_Transmit(&huart1, (uint8_t*)header, sizeof(header)-1, 1000);
+    
+    // Print each log entry via UART
+    for (uint8_t i = 0; i < entries_to_print; i++) {
+        uint8_t current_index = (start_index + i) % MAX_LOG_ENTRIES;
+        
+        // Format: [HH:MM:SS] message
+        char log_line[128];
+        uint32_t timestamp = log_entries[current_index].timestamp;
+        
+        // Format timestamp as HH:MM:SS
+        char time_str[10];
+        format_timestamp(timestamp, time_str);
+        
+        // Build log line
+        uint8_t pos = 0;
+        log_line[pos++] = '[';
+        
+        // Copy timestamp (HH:MM:SS format)
+        for (uint8_t k = 0; k < 8; k++) {
+            log_line[pos++] = time_str[k];
+        }
+        
+        // Add "] "
+        log_line[pos++] = ']';
+        log_line[pos++] = ' ';
+        
+        // Copy message
+        for (uint8_t k = 0; k < 64 && log_entries[current_index].message[k] != '\0'; k++) {
+            log_line[pos++] = log_entries[current_index].message[k];
+        }
+        
+        // Add line ending
+        log_line[pos++] = '\r';
+        log_line[pos++] = '\n';
+        log_line[pos] = '\0';
+        
+        // Send via UART
+        HAL_UART_Transmit(&huart1, (uint8_t*)log_line, pos, 1000);
+    }
+    
+    // Print footer
+    char footer[] = "=== END LOGGER ===\r\n";
+    HAL_UART_Transmit(&huart1, (uint8_t*)footer, sizeof(footer)-1, 1000);
+}
+
+void log_system_status() {
+    static uint32_t last_no_tag_log = 0;
+    static uint32_t no_tag_count = 0;
+    const uint32_t NO_TAG_LOG_INTERVAL = 30000; // 30 seconds instead of 5
+    
+    if (HAL_GetTick() - last_no_tag_log > NO_TAG_LOG_INTERVAL) {
+        no_tag_count++;
+        
+        // Enhanced message with scan count
+        char status_msg[80];
+        uint8_t pos = 0;
+        
+        char no_tag_msg[] = "No tags detected (scan ";
+        for (uint8_t i = 0; no_tag_msg[i] != '\0'; i++) {
+            status_msg[pos++] = no_tag_msg[i];
+        }
+        
+        // Add scan number
+        if (no_tag_count >= 100) {
+            status_msg[pos++] = '0' + ((no_tag_count / 100) % 10);
+        }
+        if (no_tag_count >= 10) {
+            status_msg[pos++] = '0' + ((no_tag_count / 10) % 10);
+        }
+        status_msg[pos++] = '0' + (no_tag_count % 10);
+        
+        char end_msg[] = ")";
+        for (uint8_t i = 0; end_msg[i] != '\0'; i++) {
+            status_msg[pos++] = end_msg[i];
+        }
+        
+        status_msg[pos] = '\0';
+        
+        simple_log(status_msg);
+        
+        last_no_tag_log = HAL_GetTick();
+        
+        // NO MORE automatic log dumps - removed the print_log_entries() call
+        // The logs are still stored in memory for manual review if needed
+    }
+}
+
+// Function to control logging behavior
+void set_real_time_logging(uint8_t enable) {
+    real_time_logging = enable;
+}
+
+// Function to log important events (always shown in real-time)
+void log_important(const char* message) {
+    uint8_t old_setting = real_time_logging;
+    real_time_logging = 1; // Force real-time for important messages
+    simple_log(message);
+    real_time_logging = old_setting; // Restore previous setting
+}
+
+// Function to print a summary with statistics (call manually when needed)
+void print_system_summary() {
+    char summary[] = "\r\n=== SYSTEM SUMMARY ===\r\n";
+    HAL_UART_Transmit(&huart1, (uint8_t*)summary, sizeof(summary)-1, 1000);
+    
+    // Show uptime
+    uint32_t uptime_ms = HAL_GetTick();
+    char time_str[10];
+    format_timestamp(uptime_ms, time_str);
+    
+    char uptime_msg[32] = "System uptime: ";
+    uint8_t pos = 15; // Length of "System uptime: "
+    for (uint8_t i = 0; i < 8; i++) {
+        uptime_msg[pos++] = time_str[i];
+    }
+    uptime_msg[pos++] = '\r';
+    uptime_msg[pos++] = '\n';
+    uptime_msg[pos] = '\0';
+    HAL_UART_Transmit(&huart1, (uint8_t*)uptime_msg, pos, 1000);
+    
+    // Show log count
+    char log_count_msg[32] = "Total logs stored: ";
+    pos = 19; // Length of "Total logs stored: "
+    uint8_t count = (log_count < MAX_LOG_ENTRIES) ? log_count : MAX_LOG_ENTRIES;
+    if (count >= 10) {
+        log_count_msg[pos++] = '0' + (count / 10);
+    }
+    log_count_msg[pos++] = '0' + (count % 10);
+    log_count_msg[pos++] = '/';
+    log_count_msg[pos++] = '5';
+    log_count_msg[pos++] = '0';
+    log_count_msg[pos++] = '\r';
+    log_count_msg[pos++] = '\n';
+    log_count_msg[pos] = '\0';
+    HAL_UART_Transmit(&huart1, (uint8_t*)log_count_msg, pos, 1000);
+    
+    char end_summary[] = "======================\r\n\r\n";
+    HAL_UART_Transmit(&huart1, (uint8_t*)end_summary, sizeof(end_summary)-1, 1000);
+}
+
+// ===== ENHANCED LOGGING SYSTEM FOR print_qty_tags REPLACEMENT =====
+
+// Simple string copy function for enhanced logging
+void enhanced_strcpy(char* dest, const char* src, size_t max_len) {
+    size_t i = 0;
+    while (i < max_len - 1 && src[i] != '\0') {
+        dest[i] = src[i];
+        i++;
+    }
+    dest[i] = '\0';
+}
+
+// Enhanced logging function specifically for tag quantity messages
+void enhanced_log_with_timestamp(const char* message) {
+    if (enhanced_log_count < MAX_ENHANCED_LOG_ENTRIES) {
+        enhanced_log_count++;
+    }
+    
+    enhanced_log_entries[enhanced_log_index].timestamp = HAL_GetTick();
+    enhanced_strcpy(enhanced_log_entries[enhanced_log_index].message, message, sizeof(enhanced_log_entries[enhanced_log_index].message));
+    
+    enhanced_log_index = (enhanced_log_index + 1) % MAX_ENHANCED_LOG_ENTRIES;
+    
+    // Always send to UART immediately for tag quantity logs
+    if (enhanced_real_time_logging) {
+        char log_line[112]; // Larger buffer for enhanced messages
+        uint32_t timestamp = HAL_GetTick();
+        
+        // Format timestamp as HH:MM:SS
+        char time_str[10];
+        format_timestamp(timestamp, time_str);
+        
+        // Build log line: [HH:MM:SS] message
+        uint8_t pos = 0;
+        log_line[pos++] = '[';
+        
+        // Copy timestamp (HH:MM:SS format)
+        for (uint8_t k = 0; k < 8; k++) {
+            log_line[pos++] = time_str[k];
+        }
+        
+        // Add "] "
+        log_line[pos++] = ']';
+        log_line[pos++] = ' ';
+        
+        // Copy message
+        for (uint8_t k = 0; message[k] != '\0' && k < 80; k++) {
+            log_line[pos++] = message[k];
+        }
+        
+        // Add line ending
+        log_line[pos++] = '\r';
+        log_line[pos++] = '\n';
+        log_line[pos] = '\0';
+        
+        // Send via UART immediately
+        HAL_UART_Transmit(&huart1, (uint8_t*)log_line, pos, 100);
+    }
+}
+
+// Function to log tag quantity with timestamp (replaces print_qty_tags functionality)
+void log_qty_tags_with_timestamp(uint32_t tag_count) {
+    char qty_msg[80];
+    uint8_t pos = 0;
+    
+    // Build message: "Tags detected: X"
+    char prefix_msg[] = "Tags detected: ";
+    for (uint8_t i = 0; prefix_msg[i] != '\0'; i++) {
+        qty_msg[pos++] = prefix_msg[i];
+    }
+    
+    // Add count as string
+    if (tag_count == 0) {
+        qty_msg[pos++] = '0';
+    } else {
+        // Simple number to string conversion
+        uint32_t temp = tag_count;
+        uint8_t digits = 0;
+        uint32_t temp_copy = temp;
+        
+        // Count digits
+        do {
+            digits++;
+            temp_copy /= 10;
+        } while (temp_copy > 0);
+        
+        // Convert to string
+        for (uint8_t i = digits; i > 0; i--) {
+            qty_msg[pos + i - 1] = '0' + (temp % 10);
+            temp /= 10;
+        }
+        pos += digits;
+    }
+    
+    qty_msg[pos] = '\0';
+    
+    // Log the message with timestamp
+    enhanced_log_with_timestamp(qty_msg);
+}
+
+// Function to print enhanced log entries (manual call)
+void print_enhanced_log_entries() {
+    uint8_t start_index = (enhanced_log_count < MAX_ENHANCED_LOG_ENTRIES) ? 0 : enhanced_log_index;
+    uint8_t entries_to_print = (enhanced_log_count < MAX_ENHANCED_LOG_ENTRIES) ? enhanced_log_count : MAX_ENHANCED_LOG_ENTRIES;
+    
+    // Print header
+    char header[] = "=== TAG QUANTITY LOGS ===\r\n";
+    HAL_UART_Transmit(&huart1, (uint8_t*)header, sizeof(header)-1, 1000);
+    
+    // Print each enhanced log entry via UART
+    for (uint8_t i = 0; i < entries_to_print; i++) {
+        uint8_t current_index = (start_index + i) % MAX_ENHANCED_LOG_ENTRIES;
+        
+        // Format: [HH:MM:SS] message
+        char log_line[128];
+        uint32_t timestamp = enhanced_log_entries[current_index].timestamp;
+        
+        // Format timestamp as HH:MM:SS
+        char time_str[10];
+        format_timestamp(timestamp, time_str);
+        
+        // Build log line
+        uint8_t pos = 0;
+        log_line[pos++] = '[';
+        
+        // Copy timestamp (HH:MM:SS format)
+        for (uint8_t k = 0; k < 8; k++) {
+            log_line[pos++] = time_str[k];
+        }
+        
+        // Add "] "
+        log_line[pos++] = ']';
+        log_line[pos++] = ' ';
+        
+        // Copy message
+        for (uint8_t k = 0; k < 80 && enhanced_log_entries[current_index].message[k] != '\0'; k++) {
+            log_line[pos++] = enhanced_log_entries[current_index].message[k];
+        }
+        
+        // Add line ending
+        log_line[pos++] = '\r';
+        log_line[pos++] = '\n';
+        log_line[pos] = '\0';
+        
+        // Send via UART
+        HAL_UART_Transmit(&huart1, (uint8_t*)log_line, pos, 1000);
+    }
+    
+    // Print footer
+    char footer[] = "=== END TAG QUANTITY LOGS ===\r\n";
+    HAL_UART_Transmit(&huart1, (uint8_t*)footer, sizeof(footer)-1, 1000);
+}
+
+// Control function for enhanced logging
+void set_enhanced_real_time_logging(uint8_t enable) {
+    enhanced_real_time_logging = enable;
+}
+
+// Enhanced debug function with timestamp formatting (replaces debug_distance_new)
+void log_tag_debug_with_timestamp(TAG_t tag, TAG_STATUS_t tag_status, DistanceHandler& distance_a, DistanceHandler& distance_b) {
+    char debug_msg[200]; // Larger buffer for complete debug info
+    uint8_t pos = 0;
+    
+    // Build comprehensive debug message
+    char status_msg[] = "{message: ";
+    for (uint8_t i = 0; status_msg[i] != '\0'; i++) {
+        debug_msg[pos++] = status_msg[i];
+    }
+    
+    // Add status
+    if (tag_status == TAG_END_READINGS) {
+        char end_msg[] = "END_READINGS";
+        for (uint8_t i = 0; end_msg[i] != '\0'; i++) {
+            debug_msg[pos++] = end_msg[i];
+        }
+    } else {
+        char other_msg[] = "OTHER_STATUS";
+        for (uint8_t i = 0; other_msg[i] != '\0'; i++) {
+            debug_msg[pos++] = other_msg[i];
+        }
+    }
+    
+    // Add ID
+    char id_prefix[] = "},{ID: 0x";
+    for (uint8_t i = 0; id_prefix[i] != '\0'; i++) {
+        debug_msg[pos++] = id_prefix[i];
+    }
+    
+    // Convert ID to hex string
+    uint32_t id = tag.id;
+    for (int8_t i = 7; i >= 0; i--) {
+        uint8_t nibble = (id >> (i * 4)) & 0xF;
+        if (nibble < 10) {
+            debug_msg[pos++] = '0' + nibble;
+        } else {
+            debug_msg[pos++] = 'A' + (nibble - 10);
+        }
+    }
+    
+    // Add readings
+    char readings_prefix[] = "},{readings: ";
+    for (uint8_t i = 0; readings_prefix[i] != '\0'; i++) {
+        debug_msg[pos++] = readings_prefix[i];
+    }
+    
+    // Convert readings to string
+    uint8_t readings = tag.readings;
+    if (readings >= 10) {
+        debug_msg[pos++] = '0' + (readings / 10);
+    }
+    debug_msg[pos++] = '0' + (readings % 10);
+    
+    // Add error_track_a
+    char error_track_a_prefix[] = "},{error_track_a:";
+    for (uint8_t i = 0; error_track_a_prefix[i] != '\0'; i++) {
+        debug_msg[pos++] = error_track_a_prefix[i];
+    }
+    uint16_t err_a = distance_a.get_error_track();
+    if (err_a >= 100) {
+        debug_msg[pos++] = '0' + (err_a / 100);
+        err_a %= 100;
+    }
+    if (err_a >= 10) {
+        debug_msg[pos++] = '0' + (err_a / 10);
+    }
+    debug_msg[pos++] = '0' + (err_a % 10);
+    
+    // Add error_track_b
+    char error_track_b_prefix[] = "},{error_track_b:";
+    for (uint8_t i = 0; error_track_b_prefix[i] != '\0'; i++) {
+        debug_msg[pos++] = error_track_b_prefix[i];
+    }
+    uint16_t err_b = distance_b.get_error_track();
+    if (err_b >= 100) {
+        debug_msg[pos++] = '0' + (err_b / 100);
+        err_b %= 100;
+    }
+    if (err_b >= 10) {
+        debug_msg[pos++] = '0' + (err_b / 10);
+    }
+    debug_msg[pos++] = '0' + (err_b % 10);
+    
+    // Add Counter_a
+    char counter_a_prefix[] = "},{Counter_a: ";
+    for (uint8_t i = 0; counter_a_prefix[i] != '\0'; i++) {
+        debug_msg[pos++] = counter_a_prefix[i];
+    }
+    uint16_t cnt_a = distance_a.get_counter();
+    if (cnt_a >= 10) {
+        debug_msg[pos++] = '0' + (cnt_a / 10);
+    }
+    debug_msg[pos++] = '0' + (cnt_a % 10);
+    
+    // Add Counter_b
+    char counter_b_prefix[] = "},{Counter_b: ";
+    for (uint8_t i = 0; counter_b_prefix[i] != '\0'; i++) {
+        debug_msg[pos++] = counter_b_prefix[i];
+    }
+    uint16_t cnt_b = distance_b.get_counter();
+    if (cnt_b >= 10) {
+        debug_msg[pos++] = '0' + (cnt_b / 10);
+    }
+    debug_msg[pos++] = '0' + (cnt_b % 10);
+    
+    // Add distance info
+    char dist_prefix[] = "},{distance_a: ";
+    for (uint8_t i = 0; dist_prefix[i] != '\0'; i++) {
+        debug_msg[pos++] = dist_prefix[i];
+    }
+    
+    // Get actual distance from distance_a if available
+    if (distance_a.get_counter() > 0) {
+        // Simple distance display using last calculated distance
+        double dist = distance_a.get_last_distance();
+        // Convert double to simple string representation
+        uint32_t dist_int = (uint32_t)(dist * 100); // Convert to cm and make integer
+        if (dist_int > 9999) {
+            char over_msg[] = ">99.99";
+            for (uint8_t i = 0; over_msg[i] != '\0'; i++) {
+                debug_msg[pos++] = over_msg[i];
+            }
+        } else {
+            // Format as XX.XX
+            debug_msg[pos++] = '0' + ((dist_int / 1000) % 10);
+            debug_msg[pos++] = '0' + ((dist_int / 100) % 10);
+            debug_msg[pos++] = '.';
+            debug_msg[pos++] = '0' + ((dist_int / 10) % 10);
+            debug_msg[pos++] = '0' + (dist_int % 10);
+        }
+    } else {
+        char no_dist[] = "N/A";
+        for (uint8_t i = 0; no_dist[i] != '\0'; i++) {
+            debug_msg[pos++] = no_dist[i];
+        }
+    }
+    
+    char dist_b_prefix[] = "},{distance_b: ";
+    for (uint8_t i = 0; dist_b_prefix[i] != '\0'; i++) {
+        debug_msg[pos++] = dist_b_prefix[i];
+    }
+    
+    // Get actual distance from distance_b if available
+    if (distance_b.get_counter() > 0) {
+        double dist = distance_b.get_last_distance();
+        uint32_t dist_int = (uint32_t)(dist * 100);
+        if (dist_int > 9999) {
+            char over_msg[] = ">99.99";
+            for (uint8_t i = 0; over_msg[i] != '\0'; i++) {
+                debug_msg[pos++] = over_msg[i];
+            }
+        } else {
+            debug_msg[pos++] = '0' + ((dist_int / 1000) % 10);
+            debug_msg[pos++] = '0' + ((dist_int / 100) % 10);
+            debug_msg[pos++] = '.';
+            debug_msg[pos++] = '0' + ((dist_int / 10) % 10);
+            debug_msg[pos++] = '0' + (dist_int % 10);
+        }
+    } else {
+        char no_dist[] = "N/A";
+        for (uint8_t i = 0; no_dist[i] != '\0'; i++) {
+            debug_msg[pos++] = no_dist[i];
+        }
+    }
+    
+    // Add error_crc_a
+    char error_crc_a_prefix[] = "},{error_crc_a:";
+    for (uint8_t i = 0; error_crc_a_prefix[i] != '\0'; i++) {
+        debug_msg[pos++] = error_crc_a_prefix[i];
+    }
+    uint16_t crc_a = distance_a.get_error_crc_times();
+    if (crc_a >= 100) {
+        debug_msg[pos++] = '0' + (crc_a / 100);
+        crc_a %= 100;
+    }
+    if (crc_a >= 10) {
+        debug_msg[pos++] = '0' + (crc_a / 10);
+    }
+    debug_msg[pos++] = '0' + (crc_a % 10);
+    
+    // Add error_crc_b
+    char error_crc_b_prefix[] = "},{error_crc_b:";
+    for (uint8_t i = 0; error_crc_b_prefix[i] != '\0'; i++) {
+        debug_msg[pos++] = error_crc_b_prefix[i];
+    }
+    uint16_t crc_b = distance_b.get_error_crc_times();
+    if (crc_b >= 100) {
+        debug_msg[pos++] = '0' + (crc_b / 100);
+        crc_b %= 100;
+    }
+    if (crc_b >= 10) {
+        debug_msg[pos++] = '0' + (crc_b / 10);
+    }
+    debug_msg[pos++] = '0' + (crc_b % 10);
+    
+    // Add battery voltage
+    char battery_prefix[] = "},{battery_voltage_INT: ";
+    for (uint8_t i = 0; battery_prefix[i] != '\0'; i++) {
+        debug_msg[pos++] = battery_prefix[i];
+    }
+    
+    uint8_t battery = tag.Real_Batt_Voltage;
+    if (battery >= 100) {
+        debug_msg[pos++] = '0' + (battery / 100);
+        battery %= 100;
+    }
+    if (battery >= 10 || tag.Real_Batt_Voltage >= 100) {
+        debug_msg[pos++] = '0' + (battery / 10);
+    }
+    debug_msg[pos++] = '0' + (battery % 10);
+    
+    debug_msg[pos++] = '}';
+    debug_msg[pos] = '\0';
+    
+    // Use enhanced logging with timestamp
+    enhanced_log_with_timestamp(debug_msg);
+}
+
+// Simplified tag info logging function for cleaner output
+void log_tag_summary_with_timestamp(TAG_t tag, DistanceHandler& distance_a, DistanceHandler& distance_b) {
+    char summary_msg[120];
+    uint8_t pos = 0;
+    
+    // Build message: "TAG [ID] - Readings: X, Dist A: XX.XX, Dist B: XX.XX, Bat: XX"
+    char prefix[] = "TAG [0x";
+    for (uint8_t i = 0; prefix[i] != '\0'; i++) {
+        summary_msg[pos++] = prefix[i];
+    }
+    
+    // Add last 4 digits of ID
+    uint32_t id = tag.id;
+    for (int8_t i = 3; i >= 0; i--) {
+        uint8_t nibble = (id >> (i * 4)) & 0xF;
+        if (nibble < 10) {
+            summary_msg[pos++] = '0' + nibble;
+        } else {
+            summary_msg[pos++] = 'A' + (nibble - 10);
+        }
+    }
+    
+    char middle[] = "] - R:";
+    for (uint8_t i = 0; middle[i] != '\0'; i++) {
+        summary_msg[pos++] = middle[i];
+    }
+    
+    // Add readings
+    uint8_t readings = tag.readings;
+    summary_msg[pos++] = '0' + readings;
+    
+    char dist_a_prefix[] = ", DistA:";
+    for (uint8_t i = 0; dist_a_prefix[i] != '\0'; i++) {
+        summary_msg[pos++] = dist_a_prefix[i];
+    }
+    
+    // Add distance A
+    if (distance_a.get_counter() > 0) {
+        double dist = distance_a.get_last_distance();
+        uint32_t dist_int = (uint32_t)(dist * 100);
+        if (dist_int > 9999) {
+            char over[] = ">99.99";
+            for (uint8_t i = 0; over[i] != '\0'; i++) {
+                summary_msg[pos++] = over[i];
+            }
+        } else {
+            summary_msg[pos++] = '0' + ((dist_int / 1000) % 10);
+            summary_msg[pos++] = '0' + ((dist_int / 100) % 10);
+            summary_msg[pos++] = '.';
+            summary_msg[pos++] = '0' + ((dist_int / 10) % 10);
+            summary_msg[pos++] = '0' + (dist_int % 10);
+        }
+    } else {
+        char na[] = "N/A";
+        for (uint8_t i = 0; na[i] != '\0'; i++) {
+            summary_msg[pos++] = na[i];
+        }
+    }
+    
+    char dist_b_prefix[] = ", DistB:";
+    for (uint8_t i = 0; dist_b_prefix[i] != '\0'; i++) {
+        summary_msg[pos++] = dist_b_prefix[i];
+    }
+    
+    // Add distance B
+    if (distance_b.get_counter() > 0) {
+        double dist = distance_b.get_last_distance();
+        uint32_t dist_int = (uint32_t)(dist * 100);
+        if (dist_int > 9999) {
+            char over[] = ">99.99";
+            for (uint8_t i = 0; over[i] != '\0'; i++) {
+                summary_msg[pos++] = over[i];
+            }
+        } else {
+            summary_msg[pos++] = '0' + ((dist_int / 1000) % 10);
+            summary_msg[pos++] = '0' + ((dist_int / 100) % 10);
+            summary_msg[pos++] = '.';
+            summary_msg[pos++] = '0' + ((dist_int / 10) % 10);
+            summary_msg[pos++] = '0' + (dist_int % 10);
+        }
+    } else {
+        char na[] = "N/A";
+        for (uint8_t i = 0; na[i] != '\0'; i++) {
+            summary_msg[pos++] = na[i];
+        }
+    }
+    
+    char bat_prefix[] = ", Bat:";
+    for (uint8_t i = 0; bat_prefix[i] != '\0'; i++) {
+        summary_msg[pos++] = bat_prefix[i];
+    }
+    
+    // Add battery voltage
+    uint8_t battery = tag.Real_Batt_Voltage;
+    if (battery >= 100) {
+        summary_msg[pos++] = '0' + (battery / 100);
+        battery %= 100;
+    }
+    if (battery >= 10 || tag.Real_Batt_Voltage >= 100) {
+        summary_msg[pos++] = '0' + (battery / 10);
+    }
+    summary_msg[pos++] = '0' + (battery % 10);
+    
+    summary_msg[pos] = '\0';
+    
+    // Use enhanced logging with timestamp
+    enhanced_log_with_timestamp(summary_msg);
+}
+
+// Function to set logging detail level
+void set_log_detail_level(LogLevel_t level) {
+    current_log_level = level;
+    
+    char level_msg[60];
+    uint8_t pos = 0;
+    
+    char prefix[] = "Log level changed to: ";
+    for (uint8_t i = 0; prefix[i] != '\0'; i++) {
+        level_msg[pos++] = prefix[i];
+    }
+    
+    if (level == LOG_LEVEL_MINIMAL) {
+        char minimal[] = "MINIMAL";
+        for (uint8_t i = 0; minimal[i] != '\0'; i++) {
+            level_msg[pos++] = minimal[i];
+        }
+    } else if (level == LOG_LEVEL_SUMMARY) {
+        char summary[] = "SUMMARY";
+        for (uint8_t i = 0; summary[i] != '\0'; i++) {
+            level_msg[pos++] = summary[i];
+        }
+    } else {
+        char detailed[] = "DETAILED";
+        for (uint8_t i = 0; detailed[i] != '\0'; i++) {
+            level_msg[pos++] = detailed[i];
+        }
+    }
+    
+    level_msg[pos] = '\0';
+    simple_log(level_msg);
+}
+
+// Smart logging function that chooses appropriate detail based on level
+void smart_log_tag_info(TAG_t tag, TAG_STATUS_t tag_status, DistanceHandler& distance_a, DistanceHandler& distance_b) {
+    if (current_log_level == LOG_LEVEL_MINIMAL) {
+        // Only log tag count, no individual tag details
+        return;
+    } else if (current_log_level == LOG_LEVEL_SUMMARY) {
+        // Use clean summary format
+        log_tag_summary_with_timestamp(tag, distance_a, distance_b);
+    } else {
+        // Use detailed debug format
+        log_tag_debug_with_timestamp(tag, tag_status, distance_a, distance_b);
+    }
+}
+
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
+void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+static void MX_USART1_UART_Init(void);
+static void MX_I2C3_Init(void);
+static void MX_SPI1_Init(void);
+static void MX_SPI2_Init(void);
+static void MX_SPI3_Init(void);
+
+void sendMessageWithRetry(const Gpio &lora_rx_led,
+						  const Gpio &lora_tx_led,
+						  Lora &txlora,
+						  std::vector<uint8_t> &message_composed)
+{
+	do
+	{
+		gpio_handler.off(lora_rx_led);
+		bool DATA_SIZE = txlora.channel_detection();
+		gpio_handler.on(lora_rx_led);
+		if (DATA_SIZE == 0)
+		{
+			gpio_handler.off(lora_tx_led);
+			if (txlora.transmit(message_composed.data(),
+								message_composed.size(), LINKMODE::UPLINK) == HAL_OK)
+			{
+			}
+			gpio_handler.on(lora_tx_led);
+			break;
+		}
+		else
+		{
+			uint32_t delay_ms = (rand() % tiempo_max) + 230;
+			HAL_Delay(delay_ms);
+		}
+	} while (true);
+}
+
+size_t calculate_serialize_size(uint32_t sniffer_id,
+								int tag_map_size,
+								uint8_t serialized_tag_size,
+								uint8_t max_tag_number){
+	size_t tags_size;
+
+	if (tag_map_size >= max_tag_number)
+		tags_size = sizeof(sniffer_id) + sizeof(uint8_t) * 2
+				+ (max_tag_number * serialized_tag_size);
+	else
+		tags_size = sizeof(sniffer_id) + sizeof(uint8_t) * 2
+				+ (tag_map_size * serialized_tag_size);
+	return tags_size;
+}
+
+
+void sendLoRaMessage(std::map<uint32_t, TAG_t> &tag_map,
+					 uint8_t max_tag_number,
+					 uint8_t command_id,
+					 uint8_t serialized_tag_size,
+					 uint32_t lora_send_ticks,
+					 uint32_t lora_send_timeout,
+					 uint32_t sniffer_id,
+					 const Gpio &lora_rx_led,
+					 const Gpio &lora_tx_led,
+					 Lora &txlora,
+					 Sniffer_State interfaz_state)
+{
+
+	CommandMessage cmd_lora_send(static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER), 0x00);
+	// Commented out debug prints to avoid UART spam
+	// print_qty_tags(tag_map.size());
+	// print_serialized_cplusplus(&tag_map, max_tag_number, tag_map.size(),
+	//						   sniffer_id, interfaz_state, serialized_tag_size);
+	
+	// Enhanced logging with timestamp for tag quantity
+	log_qty_tags_with_timestamp(tag_map.size());
+
+	// Prepare serialization
+	size_t tags_size = calculate_serialize_size(sniffer_id,
+												tag_map.size(),
+												serialized_tag_size,
+												max_tag_number);
+	uint8_t serialized_tags[tags_size] = {0};
+	uint8_t total_tags = tag_map.size();
+
+	while (tag_map.size() > 0)
+	{
+		serialize_limit_cplusplus(&tag_map, serialized_tags, max_tag_number,
+								  total_tags, sniffer_id, interfaz_state);
+		erase_limit_map(&tag_map, max_tag_number);
+
+
+		for (size_t i = 0; i < tags_size; i++)
+			tx_vect.push_back(serialized_tags[i]);
+
+
+		 cmd_lora_send.setCommandId(command_id);
+		 cmd_lora_send.composeMessage(&tx_vect);
+		tx_vect.clear();
+		message_composed = cmd_lora_send.get_composed_message();
+		sendMessageWithRetry(lora_rx_led, lora_tx_led, txlora,
+							 message_composed);
+	}
+	message_composed.clear();
+	cmd_lora_send.reset();
+
+	lora_send_ticks = HAL_GetTick();
+}
+
+bool is_ready_to_send(uint32_t lora_send_ticks, uint32_t lora_send_timeout,
+                      int size, Sniffer_State interfaz_state, Sniffer_State expected_state) {
+    return (HAL_GetTick() - lora_send_ticks > lora_send_timeout) &&
+           (size > 0) &&
+           (interfaz_state == expected_state);
+}
+
+void send_lora_message_if_ready(uint32_t *lora_send_ticks, uint32_t lora_send_timeout, std::map<uint32_t, TAG_t> &tag_map,
+                             Sniffer_State interfaz_state, Sniffer_State expected_state, int max_tags, 
+                             uint8_t command_id, int tag_size, uint32_t sniffer_id, 
+							 const Gpio& lora_rx_led, const Gpio& lora_tx_led,
+							 Lora& txlora) { // Assuming these are the correct types for your arguments
+
+    if (is_ready_to_send(*lora_send_ticks, lora_send_timeout, tag_map.size(), interfaz_state, expected_state)) {
+        sendLoRaMessage(tag_map, max_tags, command_id, tag_size, *lora_send_ticks, lora_send_timeout,
+                        sniffer_id, lora_rx_led, lora_tx_led, txlora, interfaz_state);
+        tag_map.clear(); // Clear the tag map *after* sending.
+        *lora_send_ticks = HAL_GetTick();
+
+    }
+}
+
+void send_lora_message_if_not_ready(uint32_t *lora_send_ticks, uint32_t lora_send_timeout, uint32_t sniffer_id,
+							 const Gpio& lora_rx_led, const Gpio& lora_tx_led,
+							 Lora& txlora) { // Assuming these are the correct types for your arguments
+
+	if (HAL_GetTick() - *lora_send_ticks > lora_send_timeout){
+		CommandMessage cmd_lora_send(static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER),
+					0x00);
+			// Commented out debug print to avoid UART spam
+			// print_qty_tags(0);
+			
+			// Enhanced logging with timestamp for no tags detected
+			log_qty_tags_with_timestamp(0);
+
+			uint8_t tags_size = sizeof(sniffer_id) + sizeof(uint8_t) * 2;
+			uint8_t serialized_tags[tags_size] = {0};
+			serialize_header(0, serialized_tags, 0, 0, sniffer_id);
+
+			for (size_t i = 0; i < tags_size; i++)
+				tx_vect.push_back(serialized_tags[i]);
+
+			cmd_lora_send.setCommandId(ONE_DETECTION);
+			cmd_lora_send.composeMessage(&tx_vect);
+			tx_vect.clear();
+			message_composed = cmd_lora_send.get_composed_message();
+			sendMessageWithRetry(lora_rx_led, lora_tx_led, txlora, message_composed);
+
+			message_composed.clear();
+			cmd_lora_send.reset();
+
+			*lora_send_ticks = HAL_GetTick();
+	}
+}
+
+
+uint8_t save_map_and_clear_tag(TAG_t *tag, DistanceHandler *distance_a, DistanceHandler *distance_b, std::map<uint32_t, TAG_t> *tag_map_od)
+{ // list como puntero
+	uint8_t _found = 0;
+	_found = insert_tag_cplusplus(tag_map_od, tag);
+	reset_TAG_values(tag);
+	distance_a->clear();
+	distance_b->clear();
+	return _found;
+}
+
+void save_two_maps_and_clear_tag(DistanceHandler &distance_a, DistanceHandler &distance_b, std::map<uint32_t, TAG_t> &tag_map_od, TAG_t &tag, uint32_t &lora_send_ticks, std::map<uint32_t, TAG_t> &tag_map)
+{
+	uint8_t _found_new = 0;
+
+	_found_new = save_at_least_one_distance(&tag, &distance_a, &distance_b, &tag_map);
+	if (_found_new == 0)
+		lora_send_ticks = HAL_GetTick();
+
+	_found_new = save_map_and_clear_tag(&tag, &distance_a, &distance_b, &tag_map_od);
+	if (_found_new == 0)
+		lora_send_ticks = HAL_GetTick();
+}
+
+/* USER CODE BEGIN PFP */
+
+/* USER CODE END PFP */
+
+/* Private user code ---------------------------------------------------------*/
+/* USER CODE BEGIN 0 */
+
+/* USER CODE END 0 */
+
+/**
+ * @brief  The application entry point.
+ * @retval int
+ */
+int main(void)
+{
+
+	/* USER CODE BEGIN 1 */
+
+	/* USER CODE END 1 */
+
+	/* MCU Configuration--------------------------------------------------------*/
+
+	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
+
+	/* USER CODE BEGIN Init */
+
+	/* USER CODE END Init */
+
+	/* Configure the system clock */
+	SystemClock_Config();
+
+	/* USER CODE BEGIN SysInit */
+
+	/* USER CODE END SysInit */
+
+	/* Initialize all configured peripherals */
+	MX_GPIO_Init();
+	MX_USART1_UART_Init();
+	MX_I2C3_Init();
+	MX_SPI1_Init();
+	MX_SPI2_Init();
+	MX_SPI3_Init();
+	/* USER CODE BEGIN 2 */
+	pdw3000local = new dwt_local_data_t;
+
+	HAL_GPIO_WritePin(DW3000_B_WKUP_GPIO_Port, DW3000_B_WKUP_Pin,
+					  GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(DW3000_A_WKUP_GPIO_Port, DW3000_A_WKUP_Pin,
+					  GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(DW3000_A_CS_GPIO_Port, DW3000_A_CS_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(DW3000_B_CS_GPIO_Port, DW3000_B_CS_Pin, GPIO_PIN_RESET);
+
+	init_uwb_device(&uwb_hw_a, &hspi3, DW3000_A_CS_GPIO_Port,
+					DW3000_A_CS_Pin,
+					DW3000_A_RST_GPIO_Port, DW3000_A_RST_Pin);
+
+	init_uwb_device(&uwb_hw_b, &hspi3, DW3000_B_CS_GPIO_Port, DW3000_B_CS_Pin,
+					DW3000_B_RST_GPIO_Port, DW3000_B_RST_Pin);
+
+	TAG_t tag;
+	reset_TAG_values(&tag);
+	tag_ptr = &tag;
+	tag.sleep_time_recived = 15; //time in seconds
+	tag.sleep_time_not_recived = 5;  //(time in seconds)*10
+	tag.ship_mode = SHIP_MODE_OFF;
+	bool switch_ship_mode = 0;
+
+	uint32_t sniffer_id = _dwt_otpread(PARTID_ADDRESS);
+
+	Sniffer_State interfaz_state = MASTER_ONE_DETECTION; // MASTER_MULTIPLE_DETECTION      MASTER_ONE_DETECTION									  // tiempo de sleep
+	interfaz_state = MASTER_MULTIPLE_DETECTION; // Force multiple detection mode for testing
+	TAG_STATUS_t tag_status = TAG_DISCOVERY;
+	uint32_t lora_send_timeout = 5000;
+	uint32_t lora_send_timeout_for_not_detection = 10000;
+	uint32_t lora_send_ticks = HAL_GetTick();
+	uint32_t query_timeout = 1000;
+	uint32_t query_ticks;
+	uint8_t type = 0;
+
+	DistanceHandler *distance_ptr;
+
+	Memory eeprom = Memory(&hi2c3);
+
+
+	Gpio rx_lora_nss = Gpio(LORA_RX_NSS_GPIO_Port, LORA_RX_NSS_Pin);
+	Gpio rx_lora_rst = Gpio(LORA_RX_NRST_GPIO_Port, LORA_RX_NRST_Pin);
+	Gpio tx_lora_nss = Gpio(LORA_TX_NSS_GPIO_Port, LORA_TX_NSS_Pin);
+	Gpio tx_lora_rst = Gpio(LORA_TX_NRST_GPIO_Port, LORA_TX_NRST_Pin);
+	Lora rxlora = Lora(rx_lora_nss, rx_lora_rst, &hspi2, &eeprom, type);
+	Lora txlora = Lora(tx_lora_nss, tx_lora_rst, &hspi1, &eeprom);
+//	rxlora.set_lora_settings(LoraBandWidth::BW_500KHZ, CodingRate::CR_4_6,
+//							 SpreadFactor::SF_7, DOWNLINK_FREQ, UPLINK_FREQ);
+//	txlora.set_lora_settings(LoraBandWidth::BW_500KHZ, CodingRate::CR_4_6,
+//							 SpreadFactor::SF_7, DOWNLINK_FREQ, UPLINK_FREQ);
+
+	txlora.check_already_store_data();
+	rxlora.check_already_store_data();
+
+	rxlora.set_rx_continuous_mode(LINKMODE::DOWNLINK);
+
+	Gpio lora_rx_led = Gpio(LORA_RX_LED_GPIO_Port, LORA_RX_LED_Pin);
+	Gpio lora_tx_led = Gpio(LORA_TX_LED_GPIO_Port, LORA_TX_LED_Pin);
+	Gpio switch_ship_mode_state = Gpio(SWITCH_SHIP_MODE_GPIO_Port,SWITCH_SHIP_MODE_Pin);
+
+	// uint8_t recive_test[255] = {0}; // Commented out to avoid unused variable warning
+
+	std::map<uint32_t, TAG_t> tag_map;
+	std::map<uint32_t, TAG_t> tag_map_od;
+
+	uart_cfg.enable_receive_interrupt();
+
+
+	CommandMessage command = CommandMessage(
+				static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER), 0x00);
+
+	message_composed.reserve(255);
+	tx_vect.reserve(255);
+
+	// Initialize logger system and log initial status
+	log_important("======================");
+	log_important("=== SYSTEM STARTUP ===");
+	HAL_Delay(10); // Small delay for better timestamp separation
+	log_important("System initialized");
+	HAL_Delay(10);
+	log_important("Sniffer starting...");
+	HAL_Delay(10);
+	if (interfaz_state == MASTER_MULTIPLE_DETECTION) {
+		log_important("Mode: MULTIPLE_DETECTION");
+	} else {
+		log_important("Mode: ONE_DETECTION");
+	}
+	HAL_Delay(10);
+	log_important("Starting tag discovery...");
+	HAL_Delay(10);
+	log_important("======================");
+	
+	// Initialize enhanced logging system for tag quantities
+	HAL_Delay(50); // Small delay to separate from startup logs
+	enhanced_log_with_timestamp("Enhanced tag quantity logging initialized");
+	HAL_Delay(10);
+	enhanced_log_with_timestamp("System ready for tag detection");
+	HAL_Delay(10);
+	
+	// Set initial logging level (can be changed via commands)
+	set_log_detail_level(LOG_LEVEL_SUMMARY);
+
+	/* USER CODE END 2 */
+
+	/* Infinite loop */
+	/* USER CODE BEGIN WHILE */
+	while (1)
+	{
+
+		//---------------- Busqueda y guardado de tags ----------------
+
+		if (tag_status == TAG_DISCOVERY)
+		{
+
+			switch_hw(&tag, distance_ptr, hw, &distance_a, &distance_b);
+			uint8_t tx_buffer[TX_DISCOVERY_SIZE] = {0};
+			uint8_t rx_buffer[FRAME_LEN_MAX_EX] = {0};
+			uint32_t rx_buffer_size = 0;
+			tag.command = TAG_ID_QUERY;
+
+			tx_buffer[0] = tag.command;
+			tx_buffer[1] = interfaz_state;
+			tx_buffer[2] = tag.sleep_time_recived;
+			tx_buffer[3] = DEV_UWB3000F27;
+
+
+			tag_status = setup_and_transmit(&tag, tx_buffer,
+											TX_DISCOVERY_SIZE, rx_buffer, &rx_buffer_size);
+
+			if (tag_status == TAG_RX_CRC_VALID)
+			{
+				if (rx_buffer[3] == DEV_UWB3000F27)
+				{
+					tag_status = TAG_DISCOVERY;
+				}
+				else
+				{
+					if (tag.command == rx_buffer[0])
+					{
+						tag.id = *(const uint32_t *)(rx_buffer + 1);
+//						debug_distance_new(tag, tag_status, distance_a, distance_b);
+
+						// Inicializar buffer de logging para este tag
+						log_buffer_init(&log_buffer, tag.id);
+
+						const int poll_rx_offset = 5;
+						const int resp_tx_offset = 9;
+
+						// Get timestamps embedded in response message
+						uint32_t poll_rx_timestamp = *(uint32_t *)(rx_buffer + poll_rx_offset);
+						uint32_t resp_tx_timestamp = *(uint32_t *)(rx_buffer + resp_tx_offset);
+
+						// Compute time of flight and distance, using clock offset ratio to correct for differing local and remote clock rates
+						uint64_t rtd_init = get_rx_timestamp_u64() - get_tx_timestamp_u64();
+						uint64_t rtd_resp = resp_tx_timestamp - poll_rx_timestamp;
+
+						// Read carrier integrator value and calculate clock offset ratio
+						float clockOffsetRatio = dwt_readclockoffset() / (float)(1 << 26);
+
+						distance_ptr->save(rtd_init, rtd_resp,
+										   clockOffsetRatio);
+
+						tag.readings++;
+
+						tag.Battery_Voltage = *(const uint16_t *)(rx_buffer + BATTERY_VOLTAGE_RAW_OFFSET);
+
+						if (interfaz_state == MASTER_ONE_DETECTION)
+						{
+							tag_status = TAG_ONE_DETECTION;
+						}
+						else
+							tag_status = TAG_SEND_TIMESTAMP_QUERY;
+					}
+					else
+						tag_status = TAG_RX_NO_COMMAND;
+				}
+			}
+
+			if ((tag_status != TAG_SEND_TIMESTAMP_QUERY) && (tag_status != TAG_ONE_DETECTION))
+				tag_status = TAG_DISCOVERY;
+			else
+				query_ticks = HAL_GetTick();
+			converse_Tag_Battery_Voltage(&tag);
+		}
+		else if (tag_status == TAG_SEND_TIMESTAMP_QUERY)
+		{
+
+			if (tag.readings < distance_ptr->get_total_readings_for_two_transcievers() - 1)
+			{
+				switch_hw_timestamp_query(&tag, distance_ptr, hw, &distance_a,
+										  &distance_b);
+				tag.command = TAG_TIMESTAMP_QUERY;
+			}
+			else
+			{
+				tag.command = TAG_SET_SLEEP_MODE;
+				switch_hw_timestamp_query(&tag, distance_ptr, hw, &distance_a,
+										  &distance_b);
+			}
+
+			uint8_t rx_buffer[FRAME_LEN_MAX_EX] = {0}; // verificar el size del buffer de recepcion.
+
+			uint32_t query_start = HAL_GetTick();
+			tag_status = tag_receive_cmd(&tag, rx_buffer, distance_a, distance_b);
+			uint32_t query_elapsed = HAL_GetTick() - query_start;
+
+			if (tag_status == TAG_RX_CRC_VALID)
+			{
+				tag.command = rx_buffer[0];
+
+				const int poll_rx_offset = 1;
+				const int resp_tx_offset = 1 + 4;
+
+				// Get timestamps embedded in response message
+				uint32_t poll_rx_timestamp = *(uint32_t *)(rx_buffer + poll_rx_offset);
+				uint32_t resp_tx_timestamp = *(uint32_t *)(rx_buffer + resp_tx_offset);
+				uint64_t rtd_init = get_rx_timestamp_u64() - get_tx_timestamp_u64();
+				uint64_t rtd_resp = resp_tx_timestamp - poll_rx_timestamp;
+
+				// Read carrier integrator value and calculate clock offset ratio
+				float clockOffsetRatio = dwt_readclockoffset() / (float)(1 << 26);
+
+				switch (tag.command)
+				{
+				case TAG_TIMESTAMP_QUERY:
+					distance_ptr->save(rtd_init, rtd_resp, clockOffsetRatio);
+					tag_status = TAG_SEND_TIMESTAMP_QUERY;
+					break;
+				case TAG_SET_SLEEP_MODE:
+					distance_ptr->save(rtd_init, rtd_resp, clockOffsetRatio);
+					tag_status = TAG_END_READINGS;
+					break;
+				default:
+					tag_status = TAG_RX_NO_COMMAND;
+					break;
+				}
+				if ((tag_status == TAG_END_READINGS))
+				{					//					uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list,&list_od);
+					// debug_distance_new(tag, tag_status, distance_a, distance_b);
+					
+					// Smart logging based on configured detail level
+					smart_log_tag_info(tag, tag_status, distance_a, distance_b);
+					
+					// Imprimir log de errores al finalizar
+					log_buffer_print(&log_buffer);
+					
+					save_two_maps_and_clear_tag(distance_a, distance_b, tag_map_od, tag, lora_send_ticks, tag_map);
+					tag_status = TAG_DISCOVERY;
+				}
+				else if (tag_status == TAG_SEND_TIMESTAMP_QUERY)
+				{
+					tag.readings++;
+				}
+				else
+				{
+					//					uint8_t found = saveTagIfNeeded(&tag, &distance_a, &distance_b, &list, &list_od);
+					// debug_distance_new(tag, tag_status, distance_a, distance_b);
+					
+					// Smart logging for error cases
+					smart_log_tag_info(tag, tag_status, distance_a, distance_b);
+					
+					// Imprimir log de errores cuando comando no reconocido
+					log_buffer_print(&log_buffer);
+					
+					save_two_maps_and_clear_tag(distance_a, distance_b, tag_map_od, tag, lora_send_ticks, tag_map);
+					tag_status = TAG_DISCOVERY;
+				}
+			}
+			else
+			{
+				// Registrar evento SOLO cuando hay error (overhead <0.1µs)
+				uint8_t antenna_id = (hw == &uwb_hw_a) ? 0 : 1;
+				log_event_add(&log_buffer, antenna_id, tag_status, 
+							  distance_ptr->get_counter(), query_elapsed);
+				
+				distance_ptr->error_crc_increment();
+				tag_status = TAG_SEND_TIMESTAMP_QUERY;
+			}
+			if (HAL_GetTick() - query_ticks > query_timeout)
+			{
+				// debug_distance_new(tag, tag_status, distance_a, distance_b);
+				
+				// Smart logging for timeout cases
+				smart_log_tag_info(tag, tag_status, distance_a, distance_b);
+				
+				// Imprimir log de errores cuando expira timeout
+				log_buffer_print(&log_buffer);
+				
+				save_two_maps_and_clear_tag(distance_a, distance_b, tag_map_od, tag, lora_send_ticks, tag_map);
+				tag_status = TAG_DISCOVERY;
+			}
+		}
+		else if (tag_status == TAG_ONE_DETECTION)
+		{
+			tag.command = TAG_SET_SLEEP_MODE;
+			HAL_Delay(1);
+			tag_status = tag_response(&tag);
+//			debug_distance_new(tag, tag_status, distance_a, distance_b);
+			uint8_t _found_new = save_map_and_clear_tag(&tag, &distance_a, &distance_b, &tag_map_od);
+			if (_found_new == 0)
+				lora_send_ticks = HAL_GetTick();
+
+			tag_status = TAG_DISCOVERY;
+		}
+
+		//---------------- ENVIO DE FRAME CON DATA DE TAGS----------------
+
+		uint8_t MAX_TAG_NUMBER_MULTIPLE_DETECTTION = 26;
+		uint8_t MAX_TAG_NUMBER_ONE_DETECTTION = 48;
+
+		if (tag_status == TAG_DISCOVERY)
+		{
+
+			// Log system status periodically when no tags are detected
+			log_system_status();
+
+			if ((tag_map.size() == 0) && (tag_map_od.size() == 0)) {
+
+				send_lora_message_if_not_ready(&lora_send_ticks,
+						lora_send_timeout_for_not_detection, sniffer_id,
+						lora_rx_led, lora_tx_led, txlora);
+
+			} if (interfaz_state == MASTER_MULTIPLE_DETECTION){
+
+				send_lora_message_if_ready(&lora_send_ticks, lora_send_timeout,
+						tag_map, interfaz_state, MASTER_MULTIPLE_DETECTION,
+						MAX_TAG_NUMBER_MULTIPLE_DETECTTION, MULTIPLE_DETECTION,
+						SERIALIZED_TAG_SIZE, sniffer_id, lora_rx_led,
+						lora_tx_led, txlora);
+
+			} else if (interfaz_state == MASTER_ONE_DETECTION) {
+
+				send_lora_message_if_ready(&lora_send_ticks, lora_send_timeout,
+						tag_map_od, interfaz_state, MASTER_ONE_DETECTION,
+						MAX_TAG_NUMBER_ONE_DETECTTION, ONE_DETECTION,
+						SERIALIZED_TAG_SIZE_ONE_DETECTION, sniffer_id,
+						lora_rx_led, lora_tx_led, txlora);
+			}
+
+
+
+			//---------------- Recepción por lora  ----------------
+			lora_rcv_bytes = rxlora.read_data_after_lora_rx_done(lora_rcv_buffer);
+			if ((lora_rcv_bytes > 0) && (lora_rcv_bytes <= 256))
+			{
+				gpio_handler.on(lora_rx_led);
+				CommandMessage cmd = CommandMessage(
+					static_cast<uint8_t>(MODULE_FUNCTION::SNIFFER), 0x00);
+				STATUS status_data = cmd.validate_crc_ptrotocol(lora_rcv_buffer, lora_rcv_bytes);
+				if (status_data == STATUS::RDSS_DATA_OK)
+				{
+					cmd.save_frame(lora_rcv_buffer, lora_rcv_bytes); // llegan 197 bytes
+					std::vector<uint8_t> recived_data_lora = cmd.get_composed_message();
+					uint32_t recived_id_from_lora;
+					if (recived_data_lora.size() >= 4)
+					{
+						std::memcpy(&recived_id_from_lora, &recived_data_lora[0], sizeof(uint32_t));
+						if (recived_id_from_lora == sniffer_id)
+						{
+							switch (cmd.getCommandId()){
+							case CHANGE_SLEEP_TIME_RECIVED:{
+								uint8_t _sleep_time_recived = recived_data_lora[4];
+								if ((_sleep_time_recived <= 25)  && (_sleep_time_recived >= 5))
+									tag.sleep_time_recived = _sleep_time_recived;
+								break;
+							}
+							case CHANGE_SLEEP_NOT_RECIVED:{
+								uint8_t _sleep_time_not_recived = recived_data_lora[4];
+								if ((_sleep_time_not_recived < 10) && (_sleep_time_not_recived >= 5))
+									tag.sleep_time_not_recived = recived_data_lora[4];
+								break;
+							}
+							case ONE_DETECTION:{
+								interfaz_state = MASTER_ONE_DETECTION;
+								break;
+							}
+							case MULTIPLE_DETECTION:{
+								interfaz_state = MASTER_MULTIPLE_DETECTION;
+								break;
+							}
+							case CHANGE_TAG_READINGS:{
+								uint8_t _total_readings = recived_data_lora[5];
+								if (_total_readings % 2 == 0) {
+									distance_a.change_total_readings(_total_readings);
+									distance_b.change_total_readings(_total_readings);
+								}
+								break;
+							}
+							}
+						}
+					}
+					recived_data_lora.clear();
+				}
+				cmd.reset();
+				memset(lora_rcv_buffer, 0, sizeof(lora_rcv_buffer));
+				gpio_handler.off(lora_rx_led);
+			}
+
+			//Activacion SHIP_MODE
+			switch_ship_mode = gpio_handler.state(switch_ship_mode_state);
+			if (switch_ship_mode == 0)
+				tag.ship_mode = SHIP_MODE_OFF;
+			else
+				tag.ship_mode = SHIP_MODE_ON;
+
+			//Configuracion Lora por UART
+
+
+			if (bytes_reciv > 0) {
+
+				STATUS status_data = command.validate(data_reciv, bytes_reciv);
+				if (status_data == STATUS::CONFIG_FRAME) {
+
+					switch (command.getCommandId()) {
+
+					case QUERY_RX_FREQ: {
+						// convertir float a arreglog the bytes (en este caso son 4 bytes)
+						uint8_t freq_array[4];
+						txlora.read_settings();
+						uint32_t rx_freq = txlora.get_rx_frequency();
+						float freqOut;
+						freqOut = rx_freq / 1000000.0f;
+						memcpy(freq_array, &freqOut, sizeof(freqOut));
+						// crear commandMessage con trama y datos (en este caso con 4 bytes)
+						command.set_message(freq_array, sizeof(freq_array));
+						std::vector<uint8_t> message_composed =
+								command.get_composed_message();
+						command.composeMessage(&message_composed);
+						message_composed = command.get_composed_message();
+						uart_cfg.transmitMessage(message_composed.data(),
+								message_composed.size());
+						command.reset(1);
+						message_composed.clear();
+						break;
+					}
+					case QUERY_TX_FREQ: {
+						uint8_t freq_array[4];
+						rxlora.read_settings();
+						uint32_t tx_freq = rxlora.get_tx_frequency();
+						float freqOut;
+						freqOut = tx_freq / 1000000.0f;
+						memcpy(freq_array, &freqOut, sizeof(freqOut));
+						command.set_message(freq_array, sizeof(freq_array));
+						std::vector<uint8_t> message_composed =
+								command.get_composed_message();
+						command.composeMessage(&message_composed);
+						message_composed = command.get_composed_message();
+						uart_cfg.transmitMessage(message_composed.data(),
+								message_composed.size());
+						command.reset(1);
+						message_composed.clear();
+						break;
+					}
+					case QUERY_SPREAD_FACTOR: {
+						uint8_t spread_array[1];
+						txlora.read_settings();
+						uint8_t spread_factor = txlora.get_spread_factor();
+						spread_factor = spread_factor - SPREAD_FACTOR_OFFSET;
+						memcpy(spread_array, &spread_factor,
+								sizeof(spread_factor));
+						command.set_message(spread_array, sizeof(spread_array));
+						std::vector<uint8_t> message_composed =
+								command.get_composed_message();
+						command.composeMessage(&message_composed);
+						message_composed = command.get_composed_message();
+						uart_cfg.transmitMessage(message_composed.data(),
+								message_composed.size());
+						command.reset(1);
+						message_composed.clear();
+						break;
+					}
+					case QUERY_CODING_RATE: {
+						uint8_t coding_array[1];
+						txlora.read_settings();
+						uint8_t coding_rate = txlora.get_coding_rate();
+						memcpy(coding_array, &coding_rate, sizeof(coding_rate));
+						command.set_message(coding_array, sizeof(coding_array));
+						std::vector<uint8_t> message_composed =
+								command.get_composed_message();
+						command.composeMessage(&message_composed);
+						message_composed = command.get_composed_message();
+						uart_cfg.transmitMessage(message_composed.data(),
+								message_composed.size());
+						command.reset(1);
+						message_composed.clear();
+						break;
+					}
+					case QUERY_BANDWIDTH: {
+						uint8_t bw_array[1];
+						txlora.read_settings();
+						uint8_t bw = txlora.get_bandwidth();
+						bw = bw + BANDWIDTH_OFFSET;
+						memcpy(bw_array, &bw, sizeof(bw));
+						command.set_message(bw_array, sizeof(bw_array));
+						std::vector<uint8_t> message_composed =
+								command.get_composed_message();
+						command.composeMessage(&message_composed);
+						message_composed = command.get_composed_message();
+						uart_cfg.transmitMessage(message_composed.data(),
+								message_composed.size());
+						command.reset(1);
+						message_composed.clear();
+						break;
+					}
+					case SET_TX_FREQ: {
+						uint32_t freq = command.getDataAsUint32();
+						int freq_int = command.freqDecode();
+						freq = (uint32_t) freq_int;
+						rxlora.set_tx_freq(freq);
+						rxlora.save_settings();
+						rxlora.configure_modem();
+						uint8_t freq_array[4];
+						rxlora.read_settings();
+						uint32_t tx_freq = rxlora.get_tx_frequency();
+						float freqOut;
+						freqOut = tx_freq / 1000000.0f;
+						memcpy(freq_array, &freqOut, sizeof(freqOut));
+						command.set_message(freq_array, sizeof(freq_array));
+						std::vector<uint8_t> message_composed =
+								command.get_composed_message();
+						command.composeMessage(&message_composed);
+						message_composed = command.get_composed_message();
+						uart_cfg.transmitMessage(message_composed.data(),
+								message_composed.size());
+						command.reset(1);
+						message_composed.clear();
+
+						break;
+					}
+					case SET_RX_FREQ: {
+						uint32_t freq = command.getDataAsUint32();
+						int freq_int = command.freqDecode();
+						freq = (uint32_t) freq_int;
+						txlora.set_rx_freq(freq);
+						txlora.save_settings();
+						txlora.configure_modem();
+						uint8_t freq_array[4];
+						txlora.read_settings();
+						uint32_t rx_freq = txlora.get_rx_frequency();
+						float freqOut;
+						freqOut = rx_freq / 1000000.0f;
+						memcpy(freq_array, &freqOut, sizeof(freqOut));
+						command.set_message(freq_array, sizeof(freq_array));
+						std::vector<uint8_t> message_composed =
+								command.get_composed_message();
+						command.composeMessage(&message_composed);
+						message_composed = command.get_composed_message();
+						uart_cfg.transmitMessage(message_composed.data(),
+								message_composed.size());
+						command.reset(1);
+						message_composed.clear();
+						break;
+					}
+					case SET_BANDWIDTH: {
+						uint8_t bd = command.getDataAsUint8();
+						bd = bd - BANDWIDTH_OFFSET;
+						txlora.set_bandwidth(bd);
+						txlora.save_settings();
+						txlora.configure_modem();
+						rxlora.set_bandwidth(bd);
+						rxlora.save_settings();
+						rxlora.configure_modem();
+						uint8_t bw_array[1];
+						txlora.read_settings();
+						uint8_t bw = txlora.get_bandwidth();
+						bw = bw + BANDWIDTH_OFFSET;
+						memcpy(bw_array, &bw, sizeof(bw));
+						command.set_message(bw_array, sizeof(bw_array));
+						std::vector<uint8_t> message_composed =
+								command.get_composed_message();
+						command.composeMessage(&message_composed);
+						message_composed = command.get_composed_message();
+						uart_cfg.transmitMessage(message_composed.data(),
+								message_composed.size());
+						command.reset(1);
+						message_composed.clear();
+						break;
+					}
+					case SET_SPREAD_FACTOR: {
+						uint8_t sf = command.getDataAsUint8();
+						sf = sf + SPREAD_FACTOR_OFFSET;
+						txlora.set_spread_factor(sf);
+						txlora.save_settings();
+						txlora.configure_modem();
+						txlora.set_spread_factor(sf);
+						rxlora.save_settings();
+						rxlora.configure_modem();
+						uint8_t spread_array[1];
+						txlora.read_settings();
+						uint8_t spread_factor = txlora.get_spread_factor();
+						spread_factor = spread_factor - SPREAD_FACTOR_OFFSET;
+						memcpy(spread_array, &spread_factor,
+								sizeof(spread_factor));
+						command.set_message(spread_array, sizeof(spread_array));
+						std::vector<uint8_t> message_composed =
+								command.get_composed_message();
+						command.composeMessage(&message_composed);
+						message_composed = command.get_composed_message();
+						uart_cfg.transmitMessage(message_composed.data(),
+								message_composed.size());
+						command.reset(1);
+						message_composed.clear();
+						break;
+					}
+					case SET_CODING_RATE: {
+						uint8_t cr = command.getDataAsUint8();
+						txlora.set_coding_rate(cr);
+						txlora.save_settings();
+						txlora.configure_modem();
+						rxlora.set_coding_rate(cr);
+						rxlora.save_settings();
+						rxlora.configure_modem();
+						uint8_t coding_array[1];
+						rxlora.read_settings();
+						uint8_t coding_rate = txlora.get_coding_rate();
+						memcpy(coding_array, &coding_rate, sizeof(coding_rate));
+						command.set_message(coding_array, sizeof(coding_array));
+						std::vector<uint8_t> message_composed =
+								command.get_composed_message();
+						command.composeMessage(&message_composed);
+						message_composed = command.get_composed_message();
+						uart_cfg.transmitMessage(message_composed.data(),
+								message_composed.size());
+						command.reset(1);
+						message_composed.clear();
+						break;
+					}
+					case SET_UART_BAUDRATE:{
+						txlora.set_default_parameters();
+						rxlora.set_default_parameters();
+						break;
+					}
+					case ONE_DETECTION:{
+						interfaz_state = MASTER_ONE_DETECTION;
+						break;
+					}
+					case MULTIPLE_DETECTION: {
+						interfaz_state = MASTER_MULTIPLE_DETECTION;
+						break;
+					}
+					default:
+						break;
+					}
+
+				}
+				memset(data_reciv, 0, bytes_reciv);
+				bytes_reciv = 0;
+			}
+
+
+
+
+
+
+
+
+		}
+		/* USER CODE END WHILE */
+
+		/* USER CODE BEGIN 3 */
+	}
+	/* USER CODE END 3 */
+}
+
+/**
+ * @brief System Clock Configuration
+ * @retval None
+ */
+void SystemClock_Config(void)
+{
+	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+
+	/** Configure the main internal regulator output voltage
+	 */
+	HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
+
+	/** Initializes the RCC Oscillators according to the specified parameters
+	 * in the RCC_OscInitTypeDef structure.
+	 */
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+	{
+		Error_Handler();
+	}
+
+	/** Initializes the CPU, AHB and APB buses clocks
+	 */
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+	{
+		Error_Handler();
+	}
+}
+
+/**
+ * @brief I2C3 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_I2C3_Init(void)
+{
+
+	/* USER CODE BEGIN I2C3_Init 0 */
+
+	/* USER CODE END I2C3_Init 0 */
+
+	/* USER CODE BEGIN I2C3_Init 1 */
+
+	/* USER CODE END I2C3_Init 1 */
+	hi2c3.Instance = I2C3;
+	hi2c3.Init.Timing = 0x00303D5B;
+	hi2c3.Init.OwnAddress1 = 0;
+	hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+	hi2c3.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+	hi2c3.Init.OwnAddress2 = 0;
+	hi2c3.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+	hi2c3.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+	hi2c3.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+	if (HAL_I2C_Init(&hi2c3) != HAL_OK)
+	{
+		Error_Handler();
+	}
+
+	/** Configure Analogue filter
+	 */
+	if (HAL_I2CEx_ConfigAnalogFilter(&hi2c3, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+	{
+		Error_Handler();
+	}
+
+	/** Configure Digital filter
+	 */
+	if (HAL_I2CEx_ConfigDigitalFilter(&hi2c3, 0) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	/* USER CODE BEGIN I2C3_Init 2 */
+
+	/* USER CODE END I2C3_Init 2 */
+}
+
+/**
+ * @brief SPI1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_SPI1_Init(void)
+{
+
+	/* USER CODE BEGIN SPI1_Init 0 */
+
+	/* USER CODE END SPI1_Init 0 */
+
+	/* USER CODE BEGIN SPI1_Init 1 */
+
+	/* USER CODE END SPI1_Init 1 */
+	/* SPI1 parameter configuration*/
+	hspi1.Instance = SPI1;
+	hspi1.Init.Mode = SPI_MODE_MASTER;
+	hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+	hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+	hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+	hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+	hspi1.Init.NSS = SPI_NSS_SOFT;
+	hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+	hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+	hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+	hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+	hspi1.Init.CRCPolynomial = 7;
+	hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+	hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+	if (HAL_SPI_Init(&hspi1) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	/* USER CODE BEGIN SPI1_Init 2 */
+
+	/* USER CODE END SPI1_Init 2 */
+}
+
+/**
+ * @brief SPI2 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_SPI2_Init(void)
+{
+
+	/* USER CODE BEGIN SPI2_Init 0 */
+
+	/* USER CODE END SPI2_Init 0 */
+
+	/* USER CODE BEGIN SPI2_Init 1 */
+
+	/* USER CODE END SPI2_Init 1 */
+	/* SPI2 parameter configuration*/
+	hspi2.Instance = SPI2;
+	hspi2.Init.Mode = SPI_MODE_MASTER;
+	hspi2.Init.Direction = SPI_DIRECTION_2LINES;
+	hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
+	hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
+	hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
+	hspi2.Init.NSS = SPI_NSS_SOFT;
+	hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+	hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
+	hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
+	hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+	hspi2.Init.CRCPolynomial = 7;
+	hspi2.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+	hspi2.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+	if (HAL_SPI_Init(&hspi2) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	/* USER CODE BEGIN SPI2_Init 2 */
+
+	/* USER CODE END SPI2_Init 2 */
+}
+
+/**
+ * @brief SPI3 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_SPI3_Init(void)
+{
+
+	/* USER CODE BEGIN SPI3_Init 0 */
+
+	/* USER CODE END SPI3_Init 0 */
+
+	/* USER CODE BEGIN SPI3_Init 1 */
+
+	/* USER CODE END SPI3_Init 1 */
+	/* SPI3 parameter configuration*/
+	hspi3.Instance = SPI3;
+	hspi3.Init.Mode = SPI_MODE_MASTER;
+	hspi3.Init.Direction = SPI_DIRECTION_2LINES;
+	hspi3.Init.DataSize = SPI_DATASIZE_8BIT;
+	hspi3.Init.CLKPolarity = SPI_POLARITY_LOW;
+	hspi3.Init.CLKPhase = SPI_PHASE_1EDGE;
+	hspi3.Init.NSS = SPI_NSS_SOFT;
+	hspi3.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;
+	hspi3.Init.FirstBit = SPI_FIRSTBIT_MSB;
+	hspi3.Init.TIMode = SPI_TIMODE_DISABLE;
+	hspi3.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+	hspi3.Init.CRCPolynomial = 7;
+	hspi3.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+	hspi3.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
+	if (HAL_SPI_Init(&hspi3) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	/* USER CODE BEGIN SPI3_Init 2 */
+
+	/* USER CODE END SPI3_Init 2 */
+}
+static void MX_USART1_UART_Init(void)
+{
+
+	/* USER CODE BEGIN USART1_Init 0 */
+
+	/* USER CODE END USART1_Init 0 */
+
+	/* USER CODE BEGIN USART1_Init 1 */
+
+	/* USER CODE END USART1_Init 1 */
+	huart1.Instance = USART1;
+	huart1.Init.BaudRate = 115200;
+	huart1.Init.WordLength = UART_WORDLENGTH_8B;
+	huart1.Init.StopBits = UART_STOPBITS_1;
+	huart1.Init.Parity = UART_PARITY_NONE;
+	huart1.Init.Mode = UART_MODE_TX_RX;
+	huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+	huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+	huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+	huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+	if (HAL_UART_Init(&huart1) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	/* USER CODE BEGIN USART1_Init 2 */
+
+	/* USER CODE END USART1_Init 2 */
+}
+
+/**
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_GPIO_Init(void)
+{
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	/* USER CODE BEGIN MX_GPIO_Init_1 */
+	/* USER CODE END MX_GPIO_Init_1 */
+
+	/* GPIO Ports Clock Enable */
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+	__HAL_RCC_GPIOD_CLK_ENABLE();
+
+	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(GPIOA,
+			DW3000_A_RST_Pin | KA_Pin | DW3000_A_CS_Pin | DW3000_A_WKUP_Pin
+					| DW3000_B_WKUP_Pin | DW3000_B_RST_Pin | DW3000_B_CS_Pin
+					| LORA_RX_LED_Pin | LORA_TX_NSS_Pin, GPIO_PIN_RESET);
+
+	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(GPIOB,
+	LORA_TX_DIO0_Pin | LORA_TX_LED_Pin | LORA_TX_NRST_Pin | LORA_RX_NSS_Pin,
+			GPIO_PIN_RESET);
+
+	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(LORA_RX_NRST_GPIO_Port, LORA_RX_NRST_Pin, GPIO_PIN_RESET);
+
+	/*Configure GPIO pins : DW3000_A_RST_Pin KA_Pin DW3000_A_CS_Pin DW3000_A_WKUP_Pin
+	 DW3000_B_WKUP_Pin DW3000_B_RST_Pin DW3000_B_CS_Pin LORA_RX_LED_Pin
+	 LORA_TX_NSS_Pin */
+	GPIO_InitStruct.Pin = DW3000_A_RST_Pin | KA_Pin | DW3000_A_CS_Pin
+			| DW3000_A_WKUP_Pin | DW3000_B_WKUP_Pin | DW3000_B_RST_Pin
+			| DW3000_B_CS_Pin | LORA_RX_LED_Pin | LORA_TX_NSS_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	/*Configure GPIO pins : DW3000_A_IRQ_Pin DW3000_B_IRQ_Pin */
+	GPIO_InitStruct.Pin = DW3000_A_IRQ_Pin | DW3000_B_IRQ_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	/*Configure GPIO pin : SWITCH_SHIP_MODE_Pin */
+	GPIO_InitStruct.Pin = SWITCH_SHIP_MODE_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	HAL_GPIO_Init(SWITCH_SHIP_MODE_GPIO_Port, &GPIO_InitStruct);
+
+	/*Configure GPIO pins : LORA_TX_DIO0_Pin LORA_TX_LED_Pin LORA_TX_NRST_Pin LORA_RX_NSS_Pin */
+	GPIO_InitStruct.Pin = LORA_TX_DIO0_Pin | LORA_TX_LED_Pin | LORA_TX_NRST_Pin | LORA_RX_NSS_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+	/*Configure GPIO pin : LORA_RX_DIO0_IRQ_Pin */
+	GPIO_InitStruct.Pin = LORA_RX_DIO0_IRQ_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(LORA_RX_DIO0_IRQ_GPIO_Port, &GPIO_InitStruct);
+
+	/*Configure GPIO pin : LORA_RX_NRST_Pin */
+	GPIO_InitStruct.Pin = LORA_RX_NRST_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(LORA_RX_NRST_GPIO_Port, &GPIO_InitStruct);
+
+	/* USER CODE BEGIN MX_GPIO_Init_2 */
+	/* USER CODE END MX_GPIO_Init_2 */
+}
+
+/* USER CODE BEGIN 4 */
+
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	bytes_reciv = uart_cfg.read_byte(data_reciv);
+
+}
+
+
+//void USART1_IRQHandler(void) {
+//	bytes_reciv = uart_cfg.read_timeout(data_reciv, 1);
+//}
+
+/* USER CODE END 4 */
+
+/**
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
+int keepAliveStartTicks = 0;
+void Error_Handler(void)
+{
+	/* USER CODE BEGIN Error_Handler_Debug */
+	/* User can add his own implementation to report the HAL error return state */
+	__disable_irq();
+
+	while (1)
+	{
+		if (keepAliveStartTicks > 50000)
+		{
+			keepAliveStartTicks = 0;
+			HAL_GPIO_WritePin(KA_GPIO_Port, KA_Pin, GPIO_PIN_SET);
+		}
+		else if (keepAliveStartTicks > 25000)
+			HAL_GPIO_WritePin(KA_GPIO_Port, KA_Pin, GPIO_PIN_RESET);
+		keepAliveStartTicks++;
+	}
+	/* USER CODE END Error_Handler_Debug */
+}
+
+#ifdef USE_FULL_ASSERT
+/**
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
+void assert_failed(uint8_t *file, uint32_t line)
+{
+	/* USER CODE BEGIN 6 */
+	/* User can add his own implementation to report the file name and line number,
+	   ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+	/* USER CODE END 6 */
+}
+#endif /* USE_FULL_ASSERT */
