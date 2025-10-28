@@ -21,4 +21,9 @@ Luego de implementar el Logging, de probar y de analizar la comunicación entre 
 - Dado los resultados anteriores, se va a intentar mejorar la detección aumentando el valor PRE_TIMEOUT_6M8 a 12, no se lograron hacer pruebas hoy por pruebas que se están realizando en el head end.
 
 *27-10-2025
+- Todas las pruebas anteriores se estaban realizando con las antenas del AP, por orden del Daniel se cambian a antenas anteriores.
+
+- Se hicieron las mismas pruebas aumentando la cantidad de simbolos PRE_TIMEOUT_6M8 a 12, en la bajada del camión (22.3mts la antena b) se instaló un tag encima de un taburete con una batería externa, en una posición lo detecta (con 1 antena) mientras que si se gira en otra posición no lo detecta ninguna antena. Considerar que en todo caso el tag estuvo "mirando, con la luz apuntando " en dirección al sniffer.
+
+*28-10-2025
 - 
