@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 #include <uwb3000Fxx.h>
 #include "deca_regs.h"
@@ -42,7 +43,8 @@ int dwt_local_data_init(dwt_local_data_t *dwt_local_data) {
 	}
 
 	// Read DGC_CFG from OTP
-	if (dwt_otp_read(DGC_TUNE_ADDRESS) == DWT_DGC_CFG0) {
+	uint32_t dgc_tune_value = dwt_otp_read(DGC_TUNE_ADDRESS);
+	if (dgc_tune_value == DWT_DGC_CFG0) {
 		dwt_local_data->dgc_otp_set = DWT_DGC_LOAD_FROM_OTP;
 	} else {
 		dwt_local_data->dgc_otp_set = DWT_DGC_LOAD_FROM_SW;
@@ -68,6 +70,26 @@ int dwt_local_data_init(dwt_local_data_t *dwt_local_data) {
 		dwt_local_data->init_xtrim = 0x2E; //set default value
 	}
 	dwt_write8bitoffsetreg(XTAL_ID, 0, dwt_local_data->init_xtrim);
+
+	// DEBUG: Log OTP calibration values - Simplified version
+	// Format message strings individually to avoid buffer issues
+	extern UART_HandleTypeDef huart1;
+	char msg1[60];
+	char msg2[60];
+	char msg3[40];
+	
+	sprintf(msg1, "[OTP] PartID:0x%08lX LotID:0x%08lX\r\n", 
+		dwt_local_data->partID, dwt_local_data->lotID);
+	HAL_UART_Transmit(&huart1, (uint8_t*)msg1, strlen(msg1), 100);
+	
+	sprintf(msg2, "[OTP] DGC_TUNE:0x%08lX DGC_MODE:%s\r\n", 
+		dgc_tune_value,
+		(dwt_local_data->dgc_otp_set == DWT_DGC_LOAD_FROM_OTP) ? "OTP" : "SW");
+	HAL_UART_Transmit(&huart1, (uint8_t*)msg2, strlen(msg2), 100);
+	
+	sprintf(msg3, "[OTP] Bias:0x%02X Xtrim:0x%02X\r\n", 
+		dwt_local_data->bias_tune, dwt_local_data->init_xtrim);
+	HAL_UART_Transmit(&huart1, (uint8_t*)msg3, strlen(msg3), 100);
 
 	return DWT_SUCCESS;
 

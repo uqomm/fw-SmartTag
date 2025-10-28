@@ -29,6 +29,9 @@ extern UART_HandleTypeDef huart1;
 extern Uwb_HW_t uwb_hw_a;
 extern Uwb_HW_t uwb_hw_b;
 extern Uwb_HW_t *hw;
+extern dwt_local_data_t *pdw3000local_a;  // Calibración específica Canal A
+extern dwt_local_data_t *pdw3000local_b;  // Calibración específica Canal B
+extern dwt_local_data_t *pdw3000local;    // Puntero activo
 
 /* Length of the common part of the message (up to and including the function code, see NOTE 2 below). */
 #define INITIAL_COMUNICATION_DATA_SIZE 5
@@ -144,8 +147,10 @@ typedef struct {
 } LogBuffer_t;
 // ================================================================
 
-void init_uwb_device(Uwb_HW_t * hwb_hw,SPI_HandleTypeDef *hspi, GPIO_TypeDef *nssPort,
-		uint16_t nssPin, GPIO_TypeDef *nrstPort, uint16_t nrstPin);
+void init_uwb_device(Uwb_HW_t * hwb_hw, SPI_HandleTypeDef *hspi,
+		dwt_local_data_t *local_data,
+		GPIO_TypeDef *nssPort, uint16_t nssPin,
+		GPIO_TypeDef *nrstPort, uint16_t nrstPin);
 void reset_actual_hw();
 TAG_t* create_TAG();
 void reset_TAG_values(TAG_t *tag);

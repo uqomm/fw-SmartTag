@@ -32,6 +32,7 @@ static TAG_STATUS_t setup_and_transmit_for_timestamp_query(TAG_t *tag,
 		uint8_t *tx_buffer, uint8_t *rx_buffer, uint32_t *rx_buffer_size);
 
 void init_uwb_device(Uwb_HW_t *uwb_hw, SPI_HandleTypeDef *hspi,
+		dwt_local_data_t *local_data,
 		GPIO_TypeDef *nssPort, uint16_t nssPin, GPIO_TypeDef *nrstPort,
 		uint16_t nrstPin) {
 
@@ -68,7 +69,8 @@ void init_uwb_device(Uwb_HW_t *uwb_hw, SPI_HandleTypeDef *hspi,
 	HAL_GPIO_WritePin(uwb_hw->nrstPort, uwb_hw->nrstPin, GPIO_PIN_SET);
 	hw = uwb_hw;
 
-	if (tag_init(&dwt_cfg, &dwt_tx_cfg, pdw3000local, DEV_UWB3000F27, RATE_6M8)
+	// Usar la estructura de calibración específica de este chip
+	if (tag_init(&dwt_cfg, &dwt_tx_cfg, local_data, DEV_UWB3000F27, RATE_6M8)
 			== 1)
 		Error_Handler();
 }
@@ -1225,9 +1227,11 @@ void switch_hw(TAG_t *tag, DistanceHandler *&dist_ptr, Uwb_HW_t *&hw,
 		DistanceHandler *dist_a, DistanceHandler *dist_b) { // &dist_ptr y &hw son referencias
 	if (hw == &uwb_hw_a) {
 		hw = &uwb_hw_b;
+		pdw3000local = pdw3000local_b;  // Cambiar a estructura de calibración del Canal B
 		dist_ptr = dist_b; // Asigna directamente al puntero
 	} else {
 		hw = &uwb_hw_a;
+		pdw3000local = pdw3000local_a;  // Cambiar a estructura de calibración del Canal A
 		dist_ptr = dist_a; // Asigna directamente al puntero
 	}
 }
@@ -1236,9 +1240,11 @@ void switch_hw_timestamp_query(TAG_t *tag, DistanceHandler *&dist_ptr,
 		Uwb_HW_t *&hw, DistanceHandler *dist_a, DistanceHandler *dist_b) {
 	if ((hw == &uwb_hw_a) && (dist_b->get_counter() < dist_b->get_total_readings_for_two_transcievers() / 2)) {
 		hw = &uwb_hw_b;
+		pdw3000local = pdw3000local_b;  // Cambiar a estructura de calibración del Canal B
 		dist_ptr = dist_b; // Asigna directamente al puntero
 	} else if (dist_a->get_counter() < dist_a->get_total_readings_for_two_transcievers() / 2){
 		hw = &uwb_hw_a;
+		pdw3000local = pdw3000local_a;  // Cambiar a estructura de calibración del Canal A
 		dist_ptr = dist_a; // Asigna directamente al puntero
 	}
 }

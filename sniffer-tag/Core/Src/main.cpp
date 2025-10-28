@@ -62,7 +62,9 @@ uint8_t running_device = DEV_UWB3000F27;
 Uwb_HW_t uwb_hw_a;
 Uwb_HW_t uwb_hw_b;
 Uwb_HW_t *hw;
-dwt_local_data_t *pdw3000local;
+dwt_local_data_t *pdw3000local_a;  // Estructura específica para Canal A
+dwt_local_data_t *pdw3000local_b;  // Estructura específica para Canal B
+dwt_local_data_t *pdw3000local;    // Puntero activo (apunta a _a o _b)
 uint8_t crcTable[256];
 uint8_t recvChar[255] = {0};
 TAG_t *tag_ptr;
@@ -1114,7 +1116,10 @@ int main(void)
 	MX_SPI2_Init();
 	MX_SPI3_Init();
 	/* USER CODE BEGIN 2 */
-	pdw3000local = new dwt_local_data_t;
+	// Crear estructuras separadas para cada chip DW3000
+	pdw3000local_a = new dwt_local_data_t;  // Calibración OTP específica del Chip A
+	pdw3000local_b = new dwt_local_data_t;  // Calibración OTP específica del Chip B
+	pdw3000local = pdw3000local_a;          // Por defecto apunta a Canal A
 
 	HAL_GPIO_WritePin(DW3000_B_WKUP_GPIO_Port, DW3000_B_WKUP_Pin,
 					  GPIO_PIN_RESET);
@@ -1123,11 +1128,14 @@ int main(void)
 	HAL_GPIO_WritePin(DW3000_A_CS_GPIO_Port, DW3000_A_CS_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(DW3000_B_CS_GPIO_Port, DW3000_B_CS_Pin, GPIO_PIN_RESET);
 
-	init_uwb_device(&uwb_hw_a, &hspi3, DW3000_A_CS_GPIO_Port,
-					DW3000_A_CS_Pin,
+	// Inicializar Canal A con su propia estructura de calibración
+	init_uwb_device(&uwb_hw_a, &hspi3, pdw3000local_a,
+					DW3000_A_CS_GPIO_Port, DW3000_A_CS_Pin,
 					DW3000_A_RST_GPIO_Port, DW3000_A_RST_Pin);
 
-	init_uwb_device(&uwb_hw_b, &hspi3, DW3000_B_CS_GPIO_Port, DW3000_B_CS_Pin,
+	// Inicializar Canal B con su propia estructura de calibración
+	init_uwb_device(&uwb_hw_b, &hspi3, pdw3000local_b,
+					DW3000_B_CS_GPIO_Port, DW3000_B_CS_Pin,
 					DW3000_B_RST_GPIO_Port, DW3000_B_RST_Pin);
 
 	TAG_t tag;
