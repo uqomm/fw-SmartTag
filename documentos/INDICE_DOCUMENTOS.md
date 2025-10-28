@@ -10,7 +10,7 @@
 
 ### 📋 Plan de Corrección
 - **[`PLAN_CORRECCION_DISTANCIA.md`](PLAN_CORRECCION_DISTANCIA.md)** - Plan completo para solucionar detección >20m
-- **[`CHECKLIST_TESTS_FISICOS.md`](CHECKLIST_TESTS_FISICOS.md)** - Checklist detallado para pruebas físicas
+- **[`CHECKLIST_TESTS_FISICOS.md`](CHECKLIST_TESTS_FISICOS.md)** - ⭐ **HOJA DE RUTA SIMPLIFICADA**: 5 enfoques prioritarios + tests validación
 
 ### 📖 Protocolos y Esquemas
 - **[`PROTOCOLO_UWB_COMPLETO.md`](PROTOCOLO_UWB_COMPLETO.md)** - Protocolo completo Sniffer ↔ Tag
@@ -21,6 +21,7 @@
 ## 🔍 **ANÁLISIS TÉCNICOS**
 
 ### ⏱️ Timeouts y Temporización
+- **[`PARAMETROS_UWB_COMPLETOS.md`](PARAMETROS_UWB_COMPLETOS.md)** - ⭐ **REFERENCIA COMPLETA** de todos los parámetros UWB (6.8M + 850K)
 - **[`ANALISIS_INTEGRADO_TIMEOUTS_Y_LOGICA.md`](ANALISIS_INTEGRADO_TIMEOUTS_Y_LOGICA.md)** - Análisis integrado de timeouts
 - **[`ANALISIS_IMPACTO_TIEMPOS_UWB.md`](ANALISIS_IMPACTO_TIEMPOS_UWB.md)** - Impacto de tiempos en rendimiento
 - **[`ANALISIS_RX_TIMEOUT_MS.md`](ANALISIS_RX_TIMEOUT_MS.md)** - Análisis específico de RX_TIMEOUT
@@ -62,10 +63,11 @@
 4. [`CHECKLIST_TESTS_FISICOS.md`](CHECKLIST_TESTS_FISICOS.md) *(Validación)*
 
 ### ⏱️ **Sistema de Timeouts**
-1. [`RELACION_TIMEOUTS_UWB.md`](RELACION_TIMEOUTS_UWB.md) *(Relaciones)*
-2. [`ANALISIS_IMPACTO_TIEMPOS_UWB.md`](ANALISIS_IMPACTO_TIEMPOS_UWB.md) *(Impacto)*
-3. [`ANALISIS_RX_TIMEOUT_MS.md`](ANALISIS_RX_TIMEOUT_MS.md) *(RX específico)*
-4. [`ANALISIS_LOGICA_SIN_RX_TIMEOUT.md`](ANALISIS_LOGICA_SIN_RX_TIMEOUT.md) *(Lógica alternativa)*
+1. [`PARAMETROS_UWB_COMPLETOS.md`](PARAMETROS_UWB_COMPLETOS.md) ⭐ *(Referencia completa - EMPEZAR AQUÍ)*
+2. [`RELACION_TIMEOUTS_UWB.md`](RELACION_TIMEOUTS_UWB.md) *(Relaciones)*
+3. [`ANALISIS_IMPACTO_TIEMPOS_UWB.md`](ANALISIS_IMPACTO_TIEMPOS_UWB.md) *(Impacto)*
+4. [`ANALISIS_RX_TIMEOUT_MS.md`](ANALISIS_RX_TIMEOUT_MS.md) *(RX específico)*
+5. [`ANALISIS_LOGICA_SIN_RX_TIMEOUT.md`](ANALISIS_LOGICA_SIN_RX_TIMEOUT.md) *(Lógica alternativa)*
 
 ### 📊 **Validación de Datos**
 1. [`ANALISIS_DISCORDANCIA_LECTURAS_UWB.md`](ANALISIS_DISCORDANCIA_LECTURAS_UWB.md) *(Discordancias)*

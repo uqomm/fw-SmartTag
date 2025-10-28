@@ -369,12 +369,10 @@ int main(void)
 				tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
 			}
 
-			else if (tag_status != TAG_SLEEP) {
-				HAL_Delay(1);
-				tag_status = TAG_WAIT_FOR_TIMESTAMPT_QUERY;
-			}
-
-			if (HAL_GetTick() - query_ticks > query_timeout) {
+		else if (tag_status != TAG_SLEEP) {
+			// HAL_Delay(1); // ELIMINADO: Causaba pérdida de sincronización en MULTIPLE_DETECTION >20m
+			tag_status = TAG_WAIT_FOR_TIMESTAMPT_QUERY;
+		}			if (HAL_GetTick() - query_ticks > query_timeout) {
 				if ((tag->distance_a > 0) && (tag->distance_b > 0))
 					tag_status = TAG_SLEEP_RECIVED;
 				else
