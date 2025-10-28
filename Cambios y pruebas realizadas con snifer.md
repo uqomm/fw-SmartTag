@@ -26,4 +26,6 @@ Luego de implementar el Logging, de probar y de analizar la comunicación entre 
 - Se hicieron las mismas pruebas aumentando la cantidad de simbolos PRE_TIMEOUT_6M8 a 12, en la bajada del camión (22.3mts la antena b) se instaló un tag encima de un taburete con una batería externa, en una posición lo detecta (con 1 antena) mientras que si se gira en otra posición no lo detecta ninguna antena. Considerar que en todo caso el tag estuvo "mirando, con la luz apuntando " en dirección al sniffer.
 
 *28-10-2025
-- 
+- Se siguió con el analisis de los timeouts y posibles problemas con la comunicación entre el sniffer y el tag persona.
+
+- Se modificó el main.cpp del tag persona, se elimino un hal_delay(1) que se enocntraba en la comunicación  MULTIPLE_DETECTION en caso de falla, pero los resultados son similares a los anteriores. En el mismo taburete y misma posición (21.7 metros apuntando al sniffer) solo detecta la antena B.
