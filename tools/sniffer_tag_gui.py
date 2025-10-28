@@ -97,7 +97,8 @@ class SnifferTagGUI:
         self.connect_btn.grid(row=0, column=4, padx=5)
         
         # Refresh ports button
-        ttk.Button(top_frame, text="Refresh", command=self.refresh_ports).grid(row=0, column=5, padx=5)
+        refresh_btn = ttk.Button(top_frame, text="Refresh", command=self.refresh_ports)
+        refresh_btn.grid(row=0, column=5, padx=5)
         
         # Connection status
         self.status_label = ttk.Label(top_frame, text="● Disconnected", foreground="red")
@@ -394,16 +395,19 @@ class SnifferTagGUI:
         log_control_frame = ttk.Frame(right_frame)
         log_control_frame.grid(row=0, column=0, sticky=(tk.W, tk.E))
         
-        ttk.Label(log_control_frame, text="Serial Log:", font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky=tk.W)
+        log_label = ttk.Label(log_control_frame, text="Serial Log:", font=('Arial', 10, 'bold'))
+        log_label.grid(row=0, column=0, sticky=tk.W)
         
-        ttk.Button(log_control_frame, text="💾 Save Log", 
-                   command=self.save_log).grid(row=0, column=1, padx=5)
-        ttk.Button(log_control_frame, text="🗑 Clear Log", 
-                   command=self.clear_log).grid(row=0, column=2, padx=5)
+        save_btn = ttk.Button(log_control_frame, text="💾 Save Log", command=self.save_log)
+        save_btn.grid(row=0, column=1, padx=5)
+        
+        clear_btn = ttk.Button(log_control_frame, text="🗑 Clear Log", command=self.clear_log)
+        clear_btn.grid(row=0, column=2, padx=5)
         
         # Auto-scroll checkbox
-        ttk.Checkbutton(log_control_frame, text="Auto-scroll", 
-                        variable=self.auto_scroll_var).grid(row=0, column=3, padx=5)
+        auto_scroll_cb = ttk.Checkbutton(log_control_frame, text="Auto-scroll", 
+                                          variable=self.auto_scroll_var)
+        auto_scroll_cb.grid(row=0, column=3, padx=5)
         
         # Log display
         self.log_display = scrolledtext.ScrolledText(right_frame, width=70, height=45, 
@@ -955,10 +959,7 @@ Log Lines: {len(self.log_buffer)}
                 
     def save_log(self):
         """Save log to file"""
-        if not self.log_buffer:
-            messagebox.showinfo("Empty Log", "No log data to save")
-            return
-        
+        # Always allow saving, even if empty
         filename = filedialog.asksaveasfilename(
             defaultextension=".txt",
             filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
@@ -971,7 +972,11 @@ Log Lines: {len(self.log_buffer)}
                     f.write("=== SNIFFER-TAG LOG ===\n")
                     f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
                     f.write("=" * 60 + "\n\n")
-                    f.writelines(self.log_buffer)
+                    
+                    if self.log_buffer:
+                        f.writelines(self.log_buffer)
+                    else:
+                        f.write("(No log data captured yet)\n")
                     
                     # Add statistics
                     f.write("\n\n" + "=" * 60 + "\n")
