@@ -149,30 +149,84 @@ class SnifferTagGUI:
                    command=self.set_tag_readings).grid(row=2, column=2, padx=5)
         
         # UWB Timeouts Configuration
-        timeout_group = ttk.LabelFrame(left_frame, text="UWB Timeouts (μs)", padding="10")
+        timeout_group = ttk.LabelFrame(left_frame, text="⏱ UWB Timeouts & Delays", padding="10")
         timeout_group.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=5)
         
+        # RX Timeouts Section
+        ttk.Label(timeout_group, text="── RX Timeouts (μs) ──", font=('Arial', 9, 'bold')).grid(row=0, column=0, columnspan=3, pady=(0,5))
+        
+        # PRE_TIMEOUT (Preamble detection)
+        ttk.Label(timeout_group, text="Preamble Timeout:").grid(row=1, column=0, sticky=tk.W, padx=5)
+        self.pre_timeout_entry = ttk.Entry(timeout_group, width=10)
+        self.pre_timeout_entry.insert(0, "12")
+        self.pre_timeout_entry.grid(row=1, column=1, padx=5, pady=2)
+        ttk.Label(timeout_group, text="PAC (def: 12)").grid(row=1, column=2, sticky=tk.W, padx=2)
+        
         # RESP RX Timeout
-        ttk.Label(timeout_group, text="RESP RX Timeout:").grid(row=0, column=0, sticky=tk.W, padx=5)
-        self.resp_timeout_entry = ttk.Entry(timeout_group, width=10)
-        self.resp_timeout_entry.insert(0, "600")
-        self.resp_timeout_entry.grid(row=0, column=1, padx=5, pady=2)
-        ttk.Label(timeout_group, text="μs (def: 600)").grid(row=0, column=2, sticky=tk.W, padx=2)
+        ttk.Label(timeout_group, text="RESP RX Timeout:").grid(row=2, column=0, sticky=tk.W, padx=5)
+        self.resp_rx_timeout_entry = ttk.Entry(timeout_group, width=10)
+        self.resp_rx_timeout_entry.insert(0, "600")
+        self.resp_rx_timeout_entry.grid(row=2, column=1, padx=5, pady=2)
+        ttk.Label(timeout_group, text="μs (def: 600)").grid(row=2, column=2, sticky=tk.W, padx=2)
         
         # FINAL RX Timeout
-        ttk.Label(timeout_group, text="FINAL RX Timeout:").grid(row=1, column=0, sticky=tk.W, padx=5)
-        self.final_timeout_entry = ttk.Entry(timeout_group, width=10)
-        self.final_timeout_entry.insert(0, "220")
-        self.final_timeout_entry.grid(row=1, column=1, padx=5, pady=2)
-        ttk.Label(timeout_group, text="μs (def: 220)").grid(row=1, column=2, sticky=tk.W, padx=2)
+        ttk.Label(timeout_group, text="FINAL RX Timeout:").grid(row=3, column=0, sticky=tk.W, padx=5)
+        self.final_rx_timeout_entry = ttk.Entry(timeout_group, width=10)
+        self.final_rx_timeout_entry.insert(0, "220")
+        self.final_rx_timeout_entry.grid(row=3, column=1, padx=5, pady=2)
+        ttk.Label(timeout_group, text="μs (def: 220)").grid(row=3, column=2, sticky=tk.W, padx=2)
         
-        ttk.Button(timeout_group, text="Apply UWB Timeouts", 
-                   command=self.set_uwb_timeouts).grid(row=2, column=0, columnspan=3, pady=10, sticky=(tk.W, tk.E))
+        # TX to RX Delays Section
+        ttk.Label(timeout_group, text="── TX→RX Delays (μs) ──", font=('Arial', 9, 'bold')).grid(row=4, column=0, columnspan=3, pady=(10,5))
+        
+        # POLL TX to RESP RX Delay
+        ttk.Label(timeout_group, text="POLL TX→RESP RX:").grid(row=5, column=0, sticky=tk.W, padx=5)
+        self.poll_tx_resp_rx_entry = ttk.Entry(timeout_group, width=10)
+        self.poll_tx_resp_rx_entry.insert(0, "700")
+        self.poll_tx_resp_rx_entry.grid(row=5, column=1, padx=5, pady=2)
+        ttk.Label(timeout_group, text="μs (def: 700)").grid(row=5, column=2, sticky=tk.W, padx=2)
+        
+        # RESP TX to FINAL RX Delay
+        ttk.Label(timeout_group, text="RESP TX→FINAL RX:").grid(row=6, column=0, sticky=tk.W, padx=5)
+        self.resp_tx_final_rx_entry = ttk.Entry(timeout_group, width=10)
+        self.resp_tx_final_rx_entry.insert(0, "500")
+        self.resp_tx_final_rx_entry.grid(row=6, column=1, padx=5, pady=2)
+        ttk.Label(timeout_group, text="μs (def: 500)").grid(row=6, column=2, sticky=tk.W, padx=2)
+        
+        # RX to TX Delays Section
+        ttk.Label(timeout_group, text="── RX→TX Delays (μs) ──", font=('Arial', 9, 'bold')).grid(row=7, column=0, columnspan=3, pady=(10,5))
+        
+        # POLL RX to RESP TX Delay
+        ttk.Label(timeout_group, text="POLL RX→RESP TX:").grid(row=8, column=0, sticky=tk.W, padx=5)
+        self.poll_rx_resp_tx_entry = ttk.Entry(timeout_group, width=10)
+        self.poll_rx_resp_tx_entry.insert(0, "900")
+        self.poll_rx_resp_tx_entry.grid(row=8, column=1, padx=5, pady=2)
+        ttk.Label(timeout_group, text="μs (def: 900)").grid(row=8, column=2, sticky=tk.W, padx=2)
+        
+        # RESP RX to FINAL TX Delay
+        ttk.Label(timeout_group, text="RESP RX→FINAL TX:").grid(row=9, column=0, sticky=tk.W, padx=5)
+        self.resp_rx_final_tx_entry = ttk.Entry(timeout_group, width=10)
+        self.resp_rx_final_tx_entry.insert(0, "700")
+        self.resp_rx_final_tx_entry.grid(row=9, column=1, padx=5, pady=2)
+        ttk.Label(timeout_group, text="μs (def: 700)").grid(row=9, column=2, sticky=tk.W, padx=2)
+        
+        # Inter-Ranging Delay Section
+        ttk.Label(timeout_group, text="── Ranging Cycle (ms) ──", font=('Arial', 9, 'bold')).grid(row=10, column=0, columnspan=3, pady=(10,5))
+        
+        # RNG_DELAY (Inter-ranging delay)
+        ttk.Label(timeout_group, text="Inter-Ranging Delay:").grid(row=11, column=0, sticky=tk.W, padx=5)
+        self.rng_delay_entry = ttk.Entry(timeout_group, width=10)
+        self.rng_delay_entry.insert(0, "1000")
+        self.rng_delay_entry.grid(row=11, column=1, padx=5, pady=2)
+        ttk.Label(timeout_group, text="ms (def: 1000)").grid(row=11, column=2, sticky=tk.W, padx=2)
+        
+        ttk.Button(timeout_group, text="Apply All UWB Parameters", 
+                   command=self.set_uwb_timeouts).grid(row=12, column=0, columnspan=3, pady=10, sticky=(tk.W, tk.E))
         
         # Info label
-        info_label = ttk.Label(timeout_group, text="⚠ Higher timeouts improve detection\nat long distances but slow response", 
+        info_label = ttk.Label(timeout_group, text="⚠ Higher values improve long-range detection\nbut increase response time and power consumption", 
                               font=('Arial', 8), foreground='gray')
-        info_label.grid(row=3, column=0, columnspan=3, pady=5)
+        info_label.grid(row=13, column=0, columnspan=3, pady=5)
         
         # Quick Commands
         commands_group = ttk.LabelFrame(left_frame, text="Quick Commands", padding="10")
@@ -533,50 +587,93 @@ class SnifferTagGUI:
             messagebox.showerror("Error", f"Failed to set tag readings:\n{str(e)}")
     
     def set_uwb_timeouts(self):
-        """Set UWB RX timeouts"""
+        """Set all UWB RX timeouts, TX/RX delays, and ranging parameters"""
         try:
-            resp_timeout = int(self.resp_timeout_entry.get())
-            final_timeout = int(self.final_timeout_entry.get())
+            # Get all values
+            pre_timeout = int(self.pre_timeout_entry.get())
+            resp_rx_timeout = int(self.resp_rx_timeout_entry.get())
+            final_rx_timeout = int(self.final_rx_timeout_entry.get())
+            poll_tx_resp_rx = int(self.poll_tx_resp_rx_entry.get())
+            resp_tx_final_rx = int(self.resp_tx_final_rx_entry.get())
+            poll_rx_resp_tx = int(self.poll_rx_resp_tx_entry.get())
+            resp_rx_final_tx = int(self.resp_rx_final_tx_entry.get())
+            rng_delay = int(self.rng_delay_entry.get())
             
-            if resp_timeout < 100 or resp_timeout > 10000:
-                raise ValueError("RESP timeout must be 100-10000 μs")
-            if final_timeout < 100 or final_timeout > 10000:
-                raise ValueError("FINAL timeout must be 100-10000 μs")
+            # Validate ranges
+            if pre_timeout < 1 or pre_timeout > 64:
+                raise ValueError("Preamble timeout must be 1-64 PAC units")
+            if resp_rx_timeout < 100 or resp_rx_timeout > 10000:
+                raise ValueError("RESP RX timeout must be 100-10000 μs")
+            if final_rx_timeout < 100 or final_rx_timeout > 10000:
+                raise ValueError("FINAL RX timeout must be 100-10000 μs")
+            if poll_tx_resp_rx < 100 or poll_tx_resp_rx > 10000:
+                raise ValueError("POLL TX→RESP RX delay must be 100-10000 μs")
+            if resp_tx_final_rx < 100 or resp_tx_final_rx > 10000:
+                raise ValueError("RESP TX→FINAL RX delay must be 100-10000 μs")
+            if poll_rx_resp_tx < 100 or poll_rx_resp_tx > 10000:
+                raise ValueError("POLL RX→RESP TX delay must be 100-10000 μs")
+            if resp_rx_final_tx < 100 or resp_rx_final_tx > 10000:
+                raise ValueError("RESP RX→FINAL TX delay must be 100-10000 μs")
+            if rng_delay < 100 or rng_delay > 10000:
+                raise ValueError("Inter-ranging delay must be 100-10000 ms")
             
-            # Note: These commands (0x30, 0x31) are placeholders
-            # You need to implement these in the firmware CommandMessage.hpp
-            # For now, this shows the intent and logs the values
+            # Note: These commands need to be implemented in firmware
+            # Command IDs mapping (to be added in CommandMessage.hpp):
+            # 0x30: SET_PRE_TIMEOUT
+            # 0x31: SET_RESP_RX_TIMEOUT
+            # 0x32: SET_FINAL_RX_TIMEOUT
+            # 0x33: SET_POLL_TX_RESP_RX_DELAY
+            # 0x34: SET_RESP_TX_FINAL_RX_DELAY
+            # 0x35: SET_POLL_RX_RESP_TX_DELAY
+            # 0x36: SET_RESP_RX_FINAL_TX_DELAY
+            # 0x37: SET_RNG_DELAY
             
-            # Command 0x30: SET_RESP_RX_TIMEOUT (needs to be added to firmware)
-            resp_data = struct.pack('<I', resp_timeout)  # uint32_t little-endian
-            resp_frame = self.build_binary_command(0x30, resp_data, module_function=0x10)
+            commands = [
+                (0x30, pre_timeout, "Preamble Timeout (PAC units)"),
+                (0x31, resp_rx_timeout, "RESP RX Timeout"),
+                (0x32, final_rx_timeout, "FINAL RX Timeout"),
+                (0x33, poll_tx_resp_rx, "POLL TX→RESP RX Delay"),
+                (0x34, resp_tx_final_rx, "RESP TX→FINAL RX Delay"),
+                (0x35, poll_rx_resp_tx, "POLL RX→RESP TX Delay"),
+                (0x36, resp_rx_final_tx, "RESP RX→FINAL TX Delay"),
+                (0x37, rng_delay, "Inter-Ranging Delay (ms)"),
+            ]
             
-            # Command 0x31: SET_FINAL_RX_TIMEOUT (needs to be added to firmware)
-            final_data = struct.pack('<I', final_timeout)  # uint32_t little-endian
-            final_frame = self.build_binary_command(0x31, final_data, module_function=0x10)
+            self.append_log(f">>> SET UWB PARAMETERS:\n", 'INFO')
             
-            # Send commands
-            self.serial_port.write(resp_frame)
-            time.sleep(0.05)
-            self.serial_port.write(final_frame)
+            # Send all commands
+            for cmd_id, value, description in commands:
+                data = struct.pack('<I', value)  # uint32_t little-endian
+                frame = self.build_binary_command(cmd_id, data, module_function=0x10)
+                self.serial_port.write(frame)
+                unit = "PAC" if cmd_id == 0x30 else ("ms" if cmd_id == 0x37 else "μs")
+                self.append_log(f"    {description}: {value} {unit}\n", 'INFO')
+                time.sleep(0.05)  # Small delay between commands
             
-            self.append_log(f">>> SET UWB TIMEOUTS:\n", 'INFO')
-            self.append_log(f"    RESP RX: {resp_timeout} μs\n", 'INFO')
-            self.append_log(f"    FINAL RX: {final_timeout} μs\n", 'INFO')
-            self.append_log(f"⚠ Note: Firmware must support commands 0x30 and 0x31\n", 'WARN')
+            self.append_log(f"⚠ Note: Firmware must support commands 0x30-0x37\n", 'WARN')
             
-            self.update_status_bar(f"UWB timeouts configured (RESP:{resp_timeout}μs, FINAL:{final_timeout}μs)")
+            self.update_status_bar(f"UWB parameters configured (8 parameters sent)")
             
-            messagebox.showinfo("UWB Timeouts", 
-                              f"Timeout commands sent:\n\n"
-                              f"RESP RX: {resp_timeout} μs\n"
-                              f"FINAL RX: {final_timeout} μs\n\n"
-                              f"⚠ Verify firmware supports these commands")
+            messagebox.showinfo("UWB Parameters", 
+                              f"All UWB parameters sent:\n\n"
+                              f"RX Timeouts:\n"
+                              f"  • Preamble: {pre_timeout} PAC\n"
+                              f"  • RESP RX: {resp_rx_timeout} μs\n"
+                              f"  • FINAL RX: {final_rx_timeout} μs\n\n"
+                              f"TX→RX Delays:\n"
+                              f"  • POLL TX→RESP RX: {poll_tx_resp_rx} μs\n"
+                              f"  • RESP TX→FINAL RX: {resp_tx_final_rx} μs\n\n"
+                              f"RX→TX Delays:\n"
+                              f"  • POLL RX→RESP TX: {poll_rx_resp_tx} μs\n"
+                              f"  • RESP RX→FINAL TX: {resp_rx_final_tx} μs\n\n"
+                              f"Ranging Cycle:\n"
+                              f"  • Inter-Ranging Delay: {rng_delay} ms\n\n"
+                              f"⚠ Verify firmware supports commands 0x30-0x37")
             
         except ValueError as e:
             messagebox.showerror("Invalid Value", str(e))
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to set UWB timeouts:\n{str(e)}")
+            messagebox.showerror("Error", f"Failed to set UWB parameters:\n{str(e)}")
             
     def send_custom_command(self):
         """Send custom command - accepts hex command ID optionally followed by hex data"""
