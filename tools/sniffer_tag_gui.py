@@ -152,73 +152,150 @@ class SnifferTagGUI:
         timeout_group = ttk.LabelFrame(left_frame, text="⏱ UWB Timeouts & Delays", padding="10")
         timeout_group.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=5)
         
+        # Helper class for tooltips
+        class ToolTip:
+            def __init__(self, widget, text):
+                self.widget = widget
+                self.text = text
+                self.tooltip = None
+                self.widget.bind("<Enter>", self.show_tooltip)
+                self.widget.bind("<Leave>", self.hide_tooltip)
+            
+            def show_tooltip(self, event=None):
+                x, y, _, _ = self.widget.bbox("insert")
+                x += self.widget.winfo_rootx() + 25
+                y += self.widget.winfo_rooty() + 25
+                
+                self.tooltip = tk.Toplevel(self.widget)
+                self.tooltip.wm_overrideredirect(True)
+                self.tooltip.wm_geometry(f"+{x}+{y}")
+                
+                label = tk.Label(self.tooltip, text=self.text, 
+                               background="#ffffe0", relief=tk.SOLID, 
+                               borderwidth=1, font=('Arial', 9),
+                               justify=tk.LEFT, padx=5, pady=3)
+                label.pack()
+            
+            def hide_tooltip(self, event=None):
+                if self.tooltip:
+                    self.tooltip.destroy()
+                    self.tooltip = None
+        
         # RX Timeouts Section
         ttk.Label(timeout_group, text="── RX Timeouts (μs) ──", font=('Arial', 9, 'bold')).grid(row=0, column=0, columnspan=3, pady=(0,5))
         
         # PRE_TIMEOUT (Preamble detection)
-        ttk.Label(timeout_group, text="Preamble Timeout:").grid(row=1, column=0, sticky=tk.W, padx=5)
+        pre_label = ttk.Label(timeout_group, text="Preamble Timeout:")
+        pre_label.grid(row=1, column=0, sticky=tk.W, padx=5)
+        ToolTip(pre_label, "Preamble detection timeout.\nTime to detect signal start.\nHigher values improve detection\nat long range (>20m) but reduce\nefficiency. Critical for weak signals.")
+        
         self.pre_timeout_entry = ttk.Entry(timeout_group, width=10)
         self.pre_timeout_entry.insert(0, "12")
         self.pre_timeout_entry.grid(row=1, column=1, padx=5, pady=2)
-        ttk.Label(timeout_group, text="PAC (def: 12)").grid(row=1, column=2, sticky=tk.W, padx=2)
+        
+        pre_unit_label = ttk.Label(timeout_group, text="PAC (def: 12)")
+        pre_unit_label.grid(row=1, column=2, sticky=tk.W, padx=2)
+        ToolTip(pre_unit_label, "PAC = Preamble Acquisition Chunk\nRange: 1-64\nIncreased from 5→12 for\n>20m detection (0%→50% success)")
         
         # RESP RX Timeout
-        ttk.Label(timeout_group, text="RESP RX Timeout:").grid(row=2, column=0, sticky=tk.W, padx=5)
+        resp_label = ttk.Label(timeout_group, text="RESP RX Timeout:")
+        resp_label.grid(row=2, column=0, sticky=tk.W, padx=5)
+        ToolTip(resp_label, "Response reception timeout.\nMax time to wait for RESPONSE\nafter sending POLL.\nIncrease for long range or\nslow tag response.")
+        
         self.resp_rx_timeout_entry = ttk.Entry(timeout_group, width=10)
         self.resp_rx_timeout_entry.insert(0, "600")
         self.resp_rx_timeout_entry.grid(row=2, column=1, padx=5, pady=2)
-        ttk.Label(timeout_group, text="μs (def: 600)").grid(row=2, column=2, sticky=tk.W, padx=2)
+        
+        resp_unit_label = ttk.Label(timeout_group, text="μs (def: 600)")
+        resp_unit_label.grid(row=2, column=2, sticky=tk.W, padx=2)
+        ToolTip(resp_unit_label, "Microseconds\nIncreased from 300→600\nfor >20m detection")
         
         # FINAL RX Timeout
-        ttk.Label(timeout_group, text="FINAL RX Timeout:").grid(row=3, column=0, sticky=tk.W, padx=5)
+        final_label = ttk.Label(timeout_group, text="FINAL RX Timeout:")
+        final_label.grid(row=3, column=0, sticky=tk.W, padx=5)
+        ToolTip(final_label, "Final message reception timeout.\nMax time to wait for FINAL\nafter sending RESPONSE.\nCompletes DS-TWR ranging cycle.")
+        
         self.final_rx_timeout_entry = ttk.Entry(timeout_group, width=10)
         self.final_rx_timeout_entry.insert(0, "220")
         self.final_rx_timeout_entry.grid(row=3, column=1, padx=5, pady=2)
-        ttk.Label(timeout_group, text="μs (def: 220)").grid(row=3, column=2, sticky=tk.W, padx=2)
+        
+        final_unit_label = ttk.Label(timeout_group, text="μs (def: 220)")
+        final_unit_label.grid(row=3, column=2, sticky=tk.W, padx=2)
+        ToolTip(final_unit_label, "Microseconds\nTypical value for 6.8 Mbps")
         
         # TX to RX Delays Section
         ttk.Label(timeout_group, text="── TX→RX Delays (μs) ──", font=('Arial', 9, 'bold')).grid(row=4, column=0, columnspan=3, pady=(10,5))
         
         # POLL TX to RESP RX Delay
-        ttk.Label(timeout_group, text="POLL TX→RESP RX:").grid(row=5, column=0, sticky=tk.W, padx=5)
+        poll_tx_label = ttk.Label(timeout_group, text="POLL TX→RESP RX:")
+        poll_tx_label.grid(row=5, column=0, sticky=tk.W, padx=5)
+        ToolTip(poll_tx_label, "Delay from POLL transmission end\nto RESPONSE reception window open.\nAccounts for signal propagation\nand tag processing time.\nAdjust for distance.")
+        
         self.poll_tx_resp_rx_entry = ttk.Entry(timeout_group, width=10)
         self.poll_tx_resp_rx_entry.insert(0, "700")
         self.poll_tx_resp_rx_entry.grid(row=5, column=1, padx=5, pady=2)
-        ttk.Label(timeout_group, text="μs (def: 700)").grid(row=5, column=2, sticky=tk.W, padx=2)
+        
+        poll_tx_unit_label = ttk.Label(timeout_group, text="μs (def: 700)")
+        poll_tx_unit_label.grid(row=5, column=2, sticky=tk.W, padx=2)
+        ToolTip(poll_tx_unit_label, "Microseconds\nIncrease for long distances")
         
         # RESP TX to FINAL RX Delay
-        ttk.Label(timeout_group, text="RESP TX→FINAL RX:").grid(row=6, column=0, sticky=tk.W, padx=5)
+        resp_tx_label = ttk.Label(timeout_group, text="RESP TX→FINAL RX:")
+        resp_tx_label.grid(row=6, column=0, sticky=tk.W, padx=5)
+        ToolTip(resp_tx_label, "Delay from RESPONSE transmission\nto FINAL reception window open.\nSecond half of DS-TWR cycle.\nMust sync with tag timing.")
+        
         self.resp_tx_final_rx_entry = ttk.Entry(timeout_group, width=10)
         self.resp_tx_final_rx_entry.insert(0, "500")
         self.resp_tx_final_rx_entry.grid(row=6, column=1, padx=5, pady=2)
-        ttk.Label(timeout_group, text="μs (def: 500)").grid(row=6, column=2, sticky=tk.W, padx=2)
+        
+        resp_tx_unit_label = ttk.Label(timeout_group, text="μs (def: 500)")
+        resp_tx_unit_label.grid(row=6, column=2, sticky=tk.W, padx=2)
+        ToolTip(resp_tx_unit_label, "Microseconds\nCritical for accurate ToF")
         
         # RX to TX Delays Section
         ttk.Label(timeout_group, text="── RX→TX Delays (μs) ──", font=('Arial', 9, 'bold')).grid(row=7, column=0, columnspan=3, pady=(10,5))
         
         # POLL RX to RESP TX Delay
-        ttk.Label(timeout_group, text="POLL RX→RESP TX:").grid(row=8, column=0, sticky=tk.W, padx=5)
+        poll_rx_label = ttk.Label(timeout_group, text="POLL RX→RESP TX:")
+        poll_rx_label.grid(row=8, column=0, sticky=tk.W, padx=5)
+        ToolTip(poll_rx_label, "Delay from POLL reception\nto RESPONSE transmission.\nTag-side processing delay.\nDefines when tag responds.")
+        
         self.poll_rx_resp_tx_entry = ttk.Entry(timeout_group, width=10)
         self.poll_rx_resp_tx_entry.insert(0, "900")
         self.poll_rx_resp_tx_entry.grid(row=8, column=1, padx=5, pady=2)
-        ttk.Label(timeout_group, text="μs (def: 900)").grid(row=8, column=2, sticky=tk.W, padx=2)
+        
+        poll_rx_unit_label = ttk.Label(timeout_group, text="μs (def: 900)")
+        poll_rx_unit_label.grid(row=8, column=2, sticky=tk.W, padx=2)
+        ToolTip(poll_rx_unit_label, "Microseconds\nMust match sniffer expectation")
         
         # RESP RX to FINAL TX Delay
-        ttk.Label(timeout_group, text="RESP RX→FINAL TX:").grid(row=9, column=0, sticky=tk.W, padx=5)
+        resp_rx_label = ttk.Label(timeout_group, text="RESP RX→FINAL TX:")
+        resp_rx_label.grid(row=9, column=0, sticky=tk.W, padx=5)
+        ToolTip(resp_rx_label, "Delay from RESPONSE reception\nto FINAL transmission.\nCompletes ranging sequence.\nMust be coordinated with tag.")
+        
         self.resp_rx_final_tx_entry = ttk.Entry(timeout_group, width=10)
         self.resp_rx_final_tx_entry.insert(0, "700")
         self.resp_rx_final_tx_entry.grid(row=9, column=1, padx=5, pady=2)
-        ttk.Label(timeout_group, text="μs (def: 700)").grid(row=9, column=2, sticky=tk.W, padx=2)
+        
+        resp_rx_unit_label = ttk.Label(timeout_group, text="μs (def: 700)")
+        resp_rx_unit_label.grid(row=9, column=2, sticky=tk.W, padx=2)
+        ToolTip(resp_rx_unit_label, "Microseconds\nCritical for DS-TWR accuracy")
         
         # Inter-Ranging Delay Section
         ttk.Label(timeout_group, text="── Ranging Cycle (ms) ──", font=('Arial', 9, 'bold')).grid(row=10, column=0, columnspan=3, pady=(10,5))
         
         # RNG_DELAY (Inter-ranging delay)
-        ttk.Label(timeout_group, text="Inter-Ranging Delay:").grid(row=11, column=0, sticky=tk.W, padx=5)
+        rng_label = ttk.Label(timeout_group, text="Inter-Ranging Delay:")
+        rng_label.grid(row=11, column=0, sticky=tk.W, padx=5)
+        ToolTip(rng_label, "Delay between ranging cycles.\nControls measurement frequency.\nLower = faster updates, higher power.\nHigher = slower updates, lower power.\nBalance based on application needs.")
+        
         self.rng_delay_entry = ttk.Entry(timeout_group, width=10)
         self.rng_delay_entry.insert(0, "1000")
         self.rng_delay_entry.grid(row=11, column=1, padx=5, pady=2)
-        ttk.Label(timeout_group, text="ms (def: 1000)").grid(row=11, column=2, sticky=tk.W, padx=2)
+        
+        rng_unit_label = ttk.Label(timeout_group, text="ms (def: 1000)")
+        rng_unit_label.grid(row=11, column=2, sticky=tk.W, padx=2)
+        ToolTip(rng_unit_label, "Milliseconds\nRange: 100-10000\n1 Hz update rate @ 1000ms")
         
         ttk.Button(timeout_group, text="Apply All UWB Parameters", 
                    command=self.set_uwb_timeouts).grid(row=12, column=0, columnspan=3, pady=10, sticky=(tk.W, tk.E))
