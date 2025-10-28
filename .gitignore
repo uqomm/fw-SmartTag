@@ -46,3 +46,18 @@ Thumbs.db
 # Build directories
 **/Debug/
 **/Release/
+
+# Eclipse metadata (STM32CubeIDE)
+.metadata/
+RemoteSystemsTempFiles/
+
+# Python virtual environments
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
