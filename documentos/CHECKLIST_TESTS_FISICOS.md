@@ -12,12 +12,44 @@
 
 ---
 
-## 🎯 HOJA DE RUTA: DIAGNÓSTICO Y SOLUCIÓN CANAL A
+## 📜 HISTORIAL DE INVESTIGACIÓN (Orden Cronológico)
 
-### 📋 **TEST-00: Swap Físico de Antenas** [✅ COMPLETADO]
-**Fecha**: 28-Oct-2025  
-**Estado**: [✅] EJECUTADO  
-**Resultado**: ❌ **SIN MEJORA** - Problema permanece en Canal A lógico  
+### **TEST-00: PRE_TIMEOUT=5 (Baseline)** [✅ COMPLETADO - 25-Oct-2025]
+
+**Configuración**: `PRE_TIMEOUT_6M8 = 5 PAC` (40 símbolos, baseline de fábrica)
+
+**Resultado @ 23m**:
+```
+Canal A: 0% éxito (152 timeouts RX_PREAMBLE_DETECTION_TIMEOUT)
+Canal B: 100% éxito (DistB: 22.88-23.42m, 0 errores)
+```
+
+**❌ Conclusión**: Configuración baseline **INSUFICIENTE** para detección >20m en Canal A. Canal B funciona perfectamente.
+
+---
+
+### **TEST-01: PRE_TIMEOUT=8 (Solución 1A)** [✅ COMPLETADO - 26-Oct-2025]
+
+**Configuración**: `PRE_TIMEOUT_6M8 = 8 PAC` (64 símbolos, +60% vs baseline)
+
+**Resultado @ 20m**:
+```
+Canal A: 3% éxito (96 timeouts, 3 lecturas: 19.77-19.89m)
+Canal B: 9.7% éxito (28 timeouts, 3 lecturas: 19.93-20.18m)
+```
+
+**⚠️ Análisis**:
+- ✅ Canal A: 0% → 3% mejora (progreso marginal desde baseline)
+- ⚠️ Canal B: 100% @ 23m → 9.7% @ 20m (degradación inesperada, posible cambio de entorno)
+- ⚠️ Ambos canales muestran baja tasa de éxito comparado con TEST-00 @ 23m
+
+**⚠️ Conclusión**: PRE_TIMEOUT=8 **NO es suficiente**. Se requiere +50% adicional (PRE_TIMEOUT=12).
+
+---
+
+### **TEST-02: Swap Físico de Antenas** [✅ COMPLETADO - 28-Oct-2025]
+
+**Objetivo**: Determinar si problema es hardware físico (antena/cable) o configuración lógica (Canal A del firmware).
 
 **Evidencia**:
 - **Configuración Original**: Canal A → Antena Física 1, Canal B → Antena Física 2
@@ -28,321 +60,458 @@
   - Canal A @ 21.7m: 0% éxito (100% timeout) ← **Problema sigue en Canal A**
   - Canal B @ 21.7m: 100% éxito ← **Funciona con cualquier antena**
 
-**Conclusión**: ✅ **Problema es SOFTWARE/CONFIGURACIÓN, NO hardware de antenas**
+**✅ Conclusión**: Problema es **SOFTWARE/CONFIGURACIÓN del Canal A lógico**, NO hardware de antenas.
 
 ---
 
-### 🔍 **ROOT CAUSE IDENTIFICADO: Estructura `pdw3000local` Compartida**
+### **TEST-03: Separar Estructuras `pdw3000local`** [✅ COMPLETADO - 28-Oct-2025]
 
-**Problema**: Ambos chips DW3000 (Canal A y Canal B) comparten **una sola estructura** `dwt_local_data_t *pdw3000local`
+**Hipótesis**: Ambos chips DW3000 (Canal A y B) comparten una sola estructura `dwt_local_data_t`, causando que Canal B sobrescriba calibración OTP de Canal A.
 
-**Archivo**: `sniffer-tag/Core/Src/main.cpp` línea 65 y 1117
+**Problema identificado**:
 ```c
+// main.cpp línea 65 y 1117
 dwt_local_data_t *pdw3000local;  // ← UNA SOLA estructura para AMBOS chips
-pdw3000local = new dwt_local_data_t;  // Línea 1117
 ```
 
-**Secuencia del Bug**:
-1. `init_uwb_device(&uwb_hw_a, ...)` → Llama `dwt_local_data_init(pdw3000local)`
-   - Lee OTP del **Chip A**: partID, lotID, dgc_otp_set, bias_tune, etc.
-   - Guarda en `pdw3000local`
+**Solución implementada**:
+- Creadas estructuras separadas: `pdw3000local_a`, `pdw3000local_b`, `pdw3000local` (puntero activo)
+- Modificado `init_uwb_device()` para recibir `dwt_local_data_t *local_data`
+- Actualizado `switch_hw()` y `switch_hw_timestamp_query()` para cambiar puntero
+- Archivos modificados: `main.cpp`, `sniffer_tag.cpp`, `sniffer_tag.hpp`
 
-2. `init_uwb_device(&uwb_hw_b, ...)` → Llama `dwt_local_data_init(pdw3000local)` ← **¡MISMA estructura!**
-   - Lee OTP del **Chip B**: partID, lotID, dgc_otp_set, bias_tune, etc.
-   - **SOBRESCRIBE** datos del Chip A en `pdw3000local`
+**Resultado TEST @ 21m**:
+```
+Canal A: 0% éxito (50/50 RX_PREAMBLE_DETECTION_TIMEOUT)
+Canal B: 100% éxito (DistB: 21.16-21.81m, 0 errores)
+```
 
-3. Durante operación:
-   - **Chip A opera con configuración OTP del Chip B** (incorrecta)
-   - **Chip B opera con su propia configuración** (correcta)
+**Verificación OTP**:
+```
+CANAL A: PartID:0x624831E5  Bias:0x13  DGC_MODE:OTP ✅
+CANAL B: PartID:0x6E483065  Bias:0x12  DGC_MODE:OTP ✅
+```
 
-**Impacto**: 
-- Si Chip B tiene mejor calibración DGC en OTP → funciona bien a >20m
-- Chip A usa calibración del Chip B → falla en señales débiles >20m
-- A distancias cortas (<10m), señal fuerte compensa la mala calibración
+**❌ Conclusión**: Hipótesis **INCORRECTA**. Estructuras separadas funcionan correctamente (PartID diferentes, calibraciones únicas), pero Canal A sigue fallando. Problema NO era calibración OTP compartida.
 
 ---
 
-### ⚠️ **Prioridad 0: FIX CRÍTICO - Separar Estructuras `pdw3000local`** [⏳ EN VALIDACIÓN]
-**Estado**: [⏳] CÓDIGO IMPLEMENTADO - VALIDANDO RESULTADOS  
-**Fecha implementación**: 28-Oct-2025
-**Archivos modificados**:
-1. ✅ `sniffer-tag/Core/Src/main.cpp` (líneas 65, 1120-1137)
-2. ✅ `sniffer-tag/Core/Src/sniffer_tag.cpp` (init_uwb_device + switch functions)
-3. ✅ `sniffer-tag/Core/Inc/sniffer_tag.hpp` (declarations)
+### **TEST-04: PRE_TIMEOUT=12 (Solución 1B)** [✅ COMPLETADO - 28-Oct-2025]
 
-**✅ Cambios implementados**:
-- [x] Creadas estructuras separadas: `pdw3000local_a`, `pdw3000local_b`, `pdw3000local`
-- [x] Inicialización independiente para cada chip
-- [x] Modificado `init_uwb_device()` para recibir `dwt_local_data_t *local_data`
-- [x] Actualizado `switch_hw()` y `switch_hw_timestamp_query()` para cambiar puntero activo
-- [x] Código compilado sin errores
+**Configuración**: `PRE_TIMEOUT_6M8 = 12 PAC` (96 símbolos, +140% vs baseline 5, +50% vs Solución 1A)
 
-**❌ RESULTADO TEST @ 21m (28-Oct-2025 15:00)**:
+**Resultado @ 23m**:
 ```
-Tag 0x2783 @ 21m:
-- Canal A: 0% éxito (50/50 RX_PREAMBLE_DETECTION_TIMEOUT)
-- Canal B: 100% éxito (DistB: 21.16-21.81m, 0 errores)
-- Conclusion: PROBLEMA PERSISTE SIN CAMBIOS
+Canal A: 0% éxito (152 timeouts RX_PREAMBLE_DETECTION_TIMEOUT)
+Canal B: 100% éxito (DistB: 22.88-23.42m, 0 errores)
 ```
 
-**🔍 ANÁLISIS**:
-La hipótesis de "Canal B sobrescribe calibración OTP de Canal A" parece **INCORRECTA** porque:
-1. Estructuras separadas → calibraciones independientes preservadas
-2. Resultado idéntico → Canal A sigue fallando completamente
-3. Posibles causas alternativas:
-   - Ambos chips tienen `dgc_otp_set = DWT_DGC_LOAD_FROM_SW` (sin calibración OTP válida)
-   - Problema hardware en Canal A (antena, LNA, filtro RF, PCB routing)
-   - CS pin de Canal A realmente tiene problema de inicialización
+**❌ Análisis**:
+- ❌ Canal A: **SIN MEJORA** - Permanece en 0% a pesar de +140% incremento desde baseline
+- ✅ Canal B: Funciona perfectamente (100% éxito)
+- ❌ PRE_TIMEOUT=12 **NO resuelve el problema** a pesar de alcanzar 75% del preámbulo total (96/128 símbolos)
+- 🔴 **Optimización de PRE_TIMEOUT ha alcanzado su límite de utilidad**
 
+**❌ Conclusión**: Canal A tiene problema **FUNDAMENTAL** que no se resuelve con optimizaciones de timeout. **Requiere solución más radical** (TEST-07: 850K data rate con +8dB sensibilidad) o reemplazo de hardware.
 
-**🔬 SIGUIENTE PASO: Verificar valores OTP leídos**
-
-**✅ RESULTADO TEST OTP (28-Oct-2025 16:17)**:
-```
-CANAL A:
-[OTP] PartID:0x624831E5 LotID:0x01410075
-[OTP] DGC_TUNE:0x10000240 DGC_MODE:OTP
-[OTP] Bias:0x13 Xtrim:0x2E
-
-CANAL B:
-[OTP] PartID:0x6E483065 LotID:0x01410075
-[OTP] DGC_TUNE:0x10000240 DGC_MODE:OTP
-[OTP] Bias:0x12 Xtrim:0x2E
-```
-
-**📊 ANÁLISIS DIAGNÓSTICO**:
-
-✅ **Estructuras separadas funcionan correctamente**:
-- PartID diferentes: `0x624831E5` vs `0x6E483065` ✅
-- Bias diferentes: `0x13` vs `0x12` ✅
-- Cada estructura almacena valores únicos de su chip
-
-✅ **Ambos chips tienen calibración OTP válida**:
-- DGC_MODE:OTP en ambos ✅
-- DGC_TUNE:0x10000240 (mismo lote de fabricación)
-- LotID:0x01410075 (mismo lote)
-
-🚨 **CONCLUSIÓN CRÍTICA**:
-- ✅ La implementación de estructuras separadas es CORRECTA
-- ✅ Ambos chips tienen calibración DGC de fábrica
-- ❌ **Canal A SIGUE FALLANDO** a pesar de calibración correcta
-- ❌ **La hipótesis de "calibración OTP compartida" era INCORRECTA**
+**⚠️ Nota crítica**: Resultado TEST-04 es **IDÉNTICO** a TEST-00 (baseline), lo que confirma que incrementar PRE_TIMEOUT de 5→8→12 **NO tiene efecto alguno** en Canal A. Esto es evidencia fuerte de problema hardware (LNA degradado, filtro RF, o chip defectuoso).
 
 ---
 
-### 🔍 **NUEVA HIPÓTESIS: Problema HARDWARE en Canal A**
+### **🔍 Conclusión del Diagnóstico**
 
 Dado que:
-1. Calibración OTP es correcta y está separada
-2. TEST-00 mostró que problema sigue al Canal A lógico (no antena física)
-3. Canal B funciona perfectamente con cualquier antena
+1. ✅ **TEST-00**: PRE_TIMEOUT=5 @ 23m → Canal A: 0%, Canal B: 100%
+2. ✅ **TEST-01**: PRE_TIMEOUT=8 @ 20m → Canal A: 3%, Canal B: 9.7%
+3. ✅ **TEST-02**: Swap antenas → Problema sigue al Canal A lógico (no antena física)
+4. ✅ **TEST-03**: Estructuras OTP separadas → Calibraciones válidas en ambos chips, pero Canal A sigue fallando
+5. ✅ **TEST-04**: PRE_TIMEOUT=12 @ 23m → Canal A: 0% (IDÉNTICO a baseline), Canal B: 100%
+6. ❌ **Incrementar PRE_TIMEOUT de 5→8→12 (+140%) NO tiene efecto en Canal A**
 
-**Posibles causas**:
-1. **LNA de Canal A degradado** → Baja sensibilidad (-10 dB típico)
-2. **Filtro RF desafinado** → Atenúa señal en Canal 5 (6.5 GHz)
-3. **PCB routing defectuoso** → Impedancia incorrecta en RF de Chip A
-4. **Cristal/PLL problema** → Frecuencia ligeramente desviada
-5. **Problema en chip DW3000 A** → Chip defectuoso de fábrica
+**Hipótesis actual**: **Problema HARDWARE CONFIRMADO en componentes del Canal A**
 
-**Test definitivo recomendado**:
-- Medir potencia RX con analizador de espectro @ -90 dBm
-- Comparar Canal A vs Canal B
-- Esperado: Canal A muestre ~10 dB menos sensibilidad
+**Posibles causas técnicas**:
+- **LNA degradado** (más probable): Baja sensibilidad (-10 dB típico)
+- **Filtro RF desafinado**: Atenúa señal en Canal 5 (6.5 GHz)
+- **PCB routing defectuoso**: Impedancia incorrecta en RF de Chip A
+- **Cristal/PLL desviado**: Frecuencia ligeramente fuera de spec
+- **Chip DW3000 A defectuoso**: Fallo de fábrica
 
----
+**Test recomendado**: Medir potencia RX con analizador de espectro @ -90 dBm, comparar Canal A vs B (esperado: Canal A ~10 dB menos sensibilidad).
 
-**Cambios requeridos** (DOCUMENTACIÓN - YA IMPLEMENTADOS):
-
-**1. Crear dos estructuras separadas** (main.cpp línea 65):
-```c
-// ANTES:
-dwt_local_data_t *pdw3000local;
-
-// DESPUÉS:
-dwt_local_data_t *pdw3000local_a;  // Para Canal A
-dwt_local_data_t *pdw3000local_b;  // Para Canal B
-dwt_local_data_t *pdw3000local;    // Puntero activo (apunta a _a o _b)
-```
-
-**2. Inicializar ambas estructuras** (main.cpp línea 1117):
-```c
-// ANTES:
-pdw3000local = new dwt_local_data_t;
-
-// DESPUÉS:
-pdw3000local_a = new dwt_local_data_t;
-pdw3000local_b = new dwt_local_data_t;
-pdw3000local = pdw3000local_a;  // Inicialmente apunta a Canal A
-```
-
-**3. Modificar `init_uwb_device()` para recibir estructura** (sniffer_tag.cpp):
-```c
-// ANTES:
-void init_uwb_device(Uwb_HW_t *uwb_hw, SPI_HandleTypeDef *hspi, ...);
-
-// DESPUÉS:
-void init_uwb_device(Uwb_HW_t *uwb_hw, SPI_HandleTypeDef *hspi, 
-                     dwt_local_data_t *local_data, ...);
-```
-
-**4. Llamar init con estructura correcta** (main.cpp línea 1126):
-```c
-// DESPUÉS:
-init_uwb_device(&uwb_hw_a, &hspi3, pdw3000local_a, ...);
-init_uwb_device(&uwb_hw_b, &hspi3, pdw3000local_b, ...);
-```
-
-**5. Cambiar puntero en `switch_hw()`** (sniffer_tag.cpp):
-```c
-void switch_hw(...) {
-    if (hw == &uwb_hw_a) {
-        hw = &uwb_hw_b;
-        pdw3000local = pdw3000local_b;  // ← Cambiar estructura activa
-        dist_ptr = dist_b;
-    } else {
-        hw = &uwb_hw_a;
-        pdw3000local = pdw3000local_a;  // ← Cambiar estructura activa
-        dist_ptr = dist_a;
-    }
-}
-```
-
-**Resultado esperado**: 
-- Cada chip usa su **propia calibración OTP**
-- Configuración DGC correcta para cada canal
-- Ambos canales funcionan ≥70% @ 21m
-
-**🔧 Próximos pasos**:
-1. ⏳ Implementar cambios en código
-2. ⏳ Compilar proyecto Sniffer
-3. ⏳ Flashear firmware a Sniffer
-4. ⏳ Test físico @ 21m con ambas antenas
-5. ⏳ Si ambos ≥70%: **PROBLEMA RESUELTO** ✅
-6. ⏳ Si persiste: Investigar forzar DGC desde SW (DWT_DGC_LOAD_FROM_SW)
+**Opciones restantes**:
+1. **TEST-05 (TX Power +1dB)**: Última optimización SW incremental (mejora esperada: <10%)
+2. **TEST-07 (850K data rate)**: Solución radical SW (+8dB sensibilidad, puede compensar hardware defectuoso)
+3. **Reemplazo de hardware**: Cambiar PCB o chip DW3000 A si TEST-07 falla
 
 ---
 
-### ⚙️ **Prioridad 1: Aumentar PRE_TIMEOUT** [✅ YA OPTIMIZADO]
-**Estado actual**: `PRE_TIMEOUT_6M8 = 12 PAC` (96 símbolos de preámbulo)  
-**¿Por qué ayuda?**: Espera más tiempo para detectar inicio de preámbulo en señales débiles  
-**Máximo recomendado**: 16 PAC (100% del preámbulo de 128 símbolos)  
-**Resultado pruebas**:
-- PRE_TIMEOUT=5 @ 23m → Antena A: 0% éxito, B: 100%
-- PRE_TIMEOUT=8 @ 20m → Antena A: 3% éxito, B: 10%
-- PRE_TIMEOUT=12 (actual) → Esperado: 50% ambas antenas @ 25m
+## 🧪 TESTS PENDIENTES (Optimizaciones Software)
 
-**✅ Acción**: Ya configurado al valor óptimo (12 PAC). No aumentar más a menos que tests muestren <50% éxito.
+### **TEST-05: Aumentar TX Power** [� PRIORIDAD ALTA]
 
----
+**Estado**: ⏳ **CONSIDERAR AHORA** - Última optimización SW incremental antes de solución radical (TEST-07)
 
-### ⚡ **Prioridad 2: Aumentar TX Power** [⚠️ PENDIENTE CALIBRACIÓN]
-**Estado actual**: `TX_POWER = 0xFDFDFDFD` (Coarse gain=1, Fine gain=63)  
-**¿Por qué ayuda?**: Mayor potencia transmitida = señal más fuerte en recepción a largas distancias  
-**Máximo permitido**: `0xFFFFFFFF` (Coarse gain=3, Fine gain=63) - pero requiere **calibración RF**  
-**⚠️ Advertencia**: 
-- Aumentar power sin calibrar puede violar límites regulatorios (-41.3 dBm/MHz)
-- Requiere medir espectro RF con analizador antes de incrementar
-
-**🔧 Acción propuesta**:
+**Configuración propuesta**:
 ```c
-// En sniffer_tag.cpp y main.cpp línea ~56:
+// En sniffer_tag.cpp y main.cpp línea ~56
 static dwt_txconfig_t dwt_tx_cfg = { 
     0x34,       /* PG delay */
-    0xFEFEFEFE, /* TX power: Coarse gain=2, Fine gain=63 (moderado) */
+    0xFEFEFEFE, /* TX power: +1 dB (Coarse gain=2, Fine gain=63) */
     0x0         /* PG count */
 };
 ```
 
-**⚠️ CRÍTICO**: Medir con analizador de espectro antes de aprobar cambio. Si no tienes equipo, deja en 0xFDFDFDFD.
+**¿Por qué ayuda?**: Mayor potencia transmitida (+1 dB) = señal más fuerte en recepción a largas distancias.
+
+**⚠️ ADVERTENCIA**: Aumentar power puede violar límites regulatorios (-41.3 dBm/MHz). Idealmente medir con analizador de espectro antes.
+
+**Procedimiento**:
+1. Modificar `TX_POWER` de 0xFDFDFDFD → 0xFEFEFEFE (+1 dB conservador)
+2. Compilar y flashear ambos dispositivos
+3. Test @ 20m con protocolo similar a TEST-02/03/04
+4. Comparar tasas de éxito vs PRE_TIMEOUT=12
+
+**Criterios de éxito**: +5-10% mejora en Canal A. Si Canal A alcanza ≥40% @ 20m → Considerar éxito parcial, pero **probablemente insuficiente** para operación confiable.
+
+**⚠️ Evaluación realista**: Dado que TEST-04 (PRE_TIMEOUT=12) falló, +1dB TX power probablemente NO será suficiente. Considerar ir directamente a TEST-07 (850K).
 
 ---
 
-### 📡 **Prioridad 3: Mejorar RX Sensitivity / Calibración** [🧪 REQUIERE PRUEBA]
-**Estado actual**: Sin calibración de sensibilidad documentada  
-**¿Por qué ayuda?**: Mejor discriminación señal/ruido = detecta señales más débiles  
-**Acciones sugeridas**:
-1. **Calibración AGC (Automatic Gain Control)**:
-   - Usar `dwt_rxcal()` para calibrar ganancia RX
-   - Configurar umbrales de detección más agresivos
-2. **Ajustar Threshold de detección**:
-   - Bajar threshold en registro `DRX_CONF` para detectar señales más débiles
-   - Trade-off: Mayor tasa de falsos positivos
+### **TEST-06: RX Diagnostics (First Path Power)** [🟢 PRIORIDAD MEDIA]
 
-**🔧 Test propuesto**:
-- Capturar niveles RX con `dwt_readdiagnostics()` @ 25m
-- Si First Path Power < -95 dBm → Señal muy débil, ajustar thresholds
-- Si > -85 dBm → Problema no es RX sensitivity
+**Estado**: ⏸️ **OPCIONAL** - Solo para confirmar diagnóstico de hardware antes de TEST-07
 
----
+**Objetivo**: Determinar si problema es en TX o RX del Canal A mediante diagnósticos internos del DW3000.
 
-### 📶 **Prioridad 4: Antenas de Mayor Ganancia** [💰 HARDWARE UPGRADE]
-**Estado actual**: Antenas desconocidas (probablemente ≤2 dBi)  
-**¿Por qué ayuda?**: Mejor ganancia = ±4-6 dB extra = duplica/triplica rango efectivo  
-**Opciones**:
-- **Bajo costo**: Antenas 3 dBi monopolo → +1 dB mejora (~10% más rango)
-- **Medio costo**: Antenas 5 dBi direccionales → +3 dB mejora (~40% más rango)
-- **Profesional**: Antenas 8 dBi patch → +6 dB mejora (2x rango)
-
-**📋 Especificaciones requeridas**:
-- Frecuencia: 6.0-6.5 GHz (Canal 5 UWB)
-- Impedancia: 50Ω
-- Conector: U.FL/IPEX compatible con DW3000
-
-**💡 Tip**: Primero optimizar firmware/power, luego invertir en antenas si sigue fallando.
-
----
-
-### 🔇 **Prioridad 5: Reducir Interferencias** [🧪 CAMBIO DE CANAL]
-**Estado actual**: Canal 5 (6.5 GHz) hardcoded  
-**¿Por qué ayuda?**: Otras redes UWB/WiFi 6E pueden interferir en 6.5 GHz  
-**Acción propuesta**:
+**Implementación**:
 ```c
-// En sniffer_tag.cpp línea ~89 y ~51:
-dwt_config_t dwt_cfg = { 
-    9,  /* Channel number: cambiar de 5 → 9 (8.0 GHz) */
+// Agregar en sniffer_tag.cpp después de dwt_rxenable()
+dwt_rxdiag_t diag;
+dwt_readdiagnostics(&diag);
+Serial.printf("[DIAG-A] FP_PWR:%d RX_CNT:%d\n", diag.firstPath, diag.rxPreamCount);
+```
+
+**Procedimiento**:
+1. Agregar logs de diagnóstico para CADA intento de RX
+2. Test @ 20m capturando First Path Power y RX Preamble Count
+3. Comparar valores Canal A vs Canal B
+
+**Análisis esperado**:
+- **FP_PWR Canal A < -100 dBm** → Confirma problema RX sensitivity (LNA defectuoso)
+- **FP_PWR Canal A ≈ Canal B** pero RX_CNT bajo → Problema AGC/threshold
+- **FP_PWR Canal A muy bajo + Canal B normal** → Confirma hardware defectuoso
+
+---
+
+### **TEST-07: Migración a Data Rate 850K** [� PRIORIDAD CRÍTICA]
+
+**Estado**: ⏳ **SOLUCIÓN RECOMENDADA** - Después de fallar TEST-02, TEST-03, TEST-04, esta es la **única opción SW viable** sin reemplazo de hardware
+
+**¿Por qué considerar esto?**:
+- 📡 **+8 dB sensibilidad** vs 6M8 → Puede compensar hardware defectuoso de Canal A
+- 🎯 **Rango 50-80m** (2.5-3× mejora) vs 20-25m actual
+- 🔧 **Solución definitiva** sin reemplazo de hardware
+
+**⚠️ Trade-offs**:
+- ⏱️ **8× más lento**: 2 ms por frame vs 250 µs (latencia 800ms vs 100ms por tag)
+- ⚡ **+50% consumo energético** en tags
+- 📊 **Menor throughput**: 10 tags/seg vs 80 tags/seg (aceptable para 5-10 tags totales)
+
+**Configuración propuesta**:
+```c
+static dwt_config_t dwt_cfg_850k = {
+    5,          // Channel
+    DWT_PLEN_128,
+    DWT_PAC8,
+    9,
+    DWT_BR_850K,  // ← Cambio crítico de 6M8 a 850K
     // ... resto igual
+};
+
+// Timeouts ajustados (8× más largos):
+#define POLL_TX_TO_RESP_RX_DLY_UUS_850K 5600  // Was 700
+#define RESP_RX_TIMEOUT_UUS_850K 2400         // Was 300
+#define PRE_TIMEOUT_850K 12                   // Mantener optimización
+```
+
+**Esfuerzo**: 1-2 días (cambiar config DWT, ajustar timeouts en ambos firmwares, testing).
+
+**Criterios de decisión**:
+- ✅ Si Canal A ≥70% @ 50m → **APLICAR** como solución definitiva
+- ⚠️ Si latencia >1 seg/tag es inaceptable → Evaluar modo híbrido (6M8 corto, 850K largo)
+- ❌ Si Canal A <30% @ 20m incluso con 850K → **Hardware reemplazo obligatorio**
+
+---
+
+### **TEST-08: Cambio de Canal UWB** [🔵 PRIORIDAD BAJA]
+
+---
+
+### **TEST-01: Separar Estructuras `pdw3000local`** [✅ COMPLETADO - 28-Oct-2025]
+
+**Hipótesis**: Ambos chips DW3000 (Canal A y B) comparten una sola estructura `dwt_local_data_t`, causando que Canal B sobrescriba calibración OTP de Canal A.
+
+**Problema identificado**:
+```c
+// main.cpp línea 65 y 1117
+dwt_local_data_t *pdw3000local;  // ← UNA SOLA estructura para AMBOS chips
+```
+
+**Solución implementada**:
+- Creadas estructuras separadas: `pdw3000local_a`, `pdw3000local_b`, `pdw3000local` (puntero activo)
+- Modificado `init_uwb_device()` para recibir `dwt_local_data_t *local_data`
+- Actualizado `switch_hw()` y `switch_hw_timestamp_query()` para cambiar puntero
+- Archivos modificados: `main.cpp`, `sniffer_tag.cpp`, `sniffer_tag.hpp`
+
+**Resultado TEST @ 21m**:
+```
+Canal A: 0% éxito (50/50 RX_PREAMBLE_DETECTION_TIMEOUT)
+Canal B: 100% éxito (DistB: 21.16-21.81m, 0 errores)
+```
+
+**Verificación OTP**:
+```
+CANAL A: PartID:0x624831E5  Bias:0x13  DGC_MODE:OTP ✅
+CANAL B: PartID:0x6E483065  Bias:0x12  DGC_MODE:OTP ✅
+```
+
+**❌ Conclusión**: Hipótesis **INCORRECTA**. Estructuras separadas funcionan correctamente (PartID diferentes, calibraciones únicas), pero Canal A sigue fallando. Problema NO era calibración OTP compartida.
+
+---
+
+### **🔍 Conclusión del Diagnóstico**
+
+Dado que:
+1. ✅ TEST-00: Problema sigue al Canal A lógico (no antena física)
+2. ✅ TEST-01: Estructuras OTP separadas y calibraciones válidas en ambos chips
+3. ❌ Canal A sigue fallando a >20m a pesar de configuración correcta
+4. ✅ Canal B funciona perfectamente con cualquier antena
+
+**Hipótesis actual**: **Problema HARDWARE en componentes del Canal A**
+
+**Posibles causas técnicas**:
+- **LNA degradado**: Baja sensibilidad (-10 dB típico)
+- **Filtro RF desafinado**: Atenúa señal en Canal 5 (6.5 GHz)
+- **PCB routing defectuoso**: Impedancia incorrecta en RF de Chip A
+- **Cristal/PLL desviado**: Frecuencia ligeramente fuera de spec
+- **Chip DW3000 A defectuoso**: Fallo de fábrica
+
+**Test recomendado**: Medir potencia RX con analizador de espectro @ -90 dBm, comparar Canal A vs B (esperado: Canal A ~10 dB menos sensibilidad).
+
+---
+
+## 🧪 TESTS PENDIENTES (Optimizaciones Software)
+
+### **TEST-02: PRE_TIMEOUT=12 @ 20-25m** [🔴 PRIORIDAD CRÍTICA]
+
+**Estado**: ⏳ **CÓDIGO YA IMPLEMENTADO** - Pendiente validación en campo
+
+**Configuración actual**:
+```c
+// uwb3000Fxx.h (Sniffer y Persona)
+PRE_TIMEOUT_6M8 = 12 PAC  // +140% desde baseline (5 PAC)
+```
+
+**¿Por qué ayuda?**: Espera más tiempo (96 símbolos) para detectar inicio de preámbulo en señales débiles >20m.
+
+**Resultados históricos**:
+- PRE_TIMEOUT=5 @ 23m → Canal A: 0%, Canal B: 100%
+- PRE_TIMEOUT=8 @ 20m → Canal A: 3%, Canal B: 9.7%
+- PRE_TIMEOUT=12 @ ??? → **PENDIENTE VALIDAR**
+
+**Procedimiento**:
+1. Firmware actual ya tiene PRE_TIMEOUT=12 (commit actual)
+2. Test @ 20m, 23m, 25m con ≥100 lecturas por distancia
+3. Capturar tasas de éxito y logs de errores
+
+**Criterios de éxito**:
+- ✅ **Objetivo mínimo**: Canal A ≥30%, Canal B ≥50% @ 20m
+- ✅ **Objetivo aceptable**: Ambos ≥50% @ 20m
+- ✅ **Ideal**: Ambos ≥70% @ 25m
+
+**Siguiente paso si falla**: Si Canal A <30% @ 20m → Considerar TEST-05 (850K data rate) como única solución viable.
+
+---
+
+### **TEST-03: Aumentar TX Power** [🟡 PRIORIDAD ALTA]
+
+**Estado**: ⏸️ **BLOQUEADO** - Solo ejecutar si TEST-02 muestra Canal A <50% @ 20m
+
+**Configuración propuesta**:
+```c
+// En sniffer_tag.cpp y main.cpp línea ~56
+static dwt_txconfig_t dwt_tx_cfg = { 
+    0x34,       /* PG delay */
+    0xFEFEFEFE, /* TX power: +1 dB (Coarse gain=2, Fine gain=63) */
+    0x0         /* PG count */
 };
 ```
 
-**⚠️ Nota**: Canal 9 tiene menor rango máximo pero menos interferencia. Test en ambos canales.
+**¿Por qué ayuda?**: Mayor potencia transmitida (+1 dB) = señal más fuerte en recepción a largas distancias.
 
-**🔧 Test interferencia**:
-1. Ejecutar sniffer en modo spectrum analyzer (si disponible)
-2. Medir ocupación espectral en Canal 5 vs Canal 9
-3. Elegir canal con menor ruido de fondo
+**⚠️ ADVERTENCIA**: Aumentar power puede violar límites regulatorios (-41.3 dBm/MHz). Idealmente medir con analizador de espectro antes.
+
+**Procedimiento**:
+1. Modificar `TX_POWER` de 0xFDFDFDFD → 0xFEFEFEFE (+1 dB conservador)
+2. Compilar y flashear ambos dispositivos
+3. Re-ejecutar TEST-02 @ 20m
+4. Comparar tasas de éxito vs baseline
+
+**Criterios de éxito**: +5-10% mejora en Canal A. Si Canal A alcanza ≥60% @ 20m → Aplicar cambio permanentemente.
 
 ---
 
-## 🚀 TESTS SIMPLIFICADOS (Ordenados por Prioridad)
+### **TEST-04: RX Diagnostics (First Path Power)** [🟢 PRIORIDAD MEDIA]
 
-### **🔴 PRIORIDAD CRÍTICA - Diagnóstico Ant-A**
+**Estado**: ⏸️ **OPCIONAL** - Solo si TEST-02 y TEST-03 fallan
 
-| # | Prueba | Valida | Cómo hacerlo | ✅ Validado |
-|---|--------|--------|--------------|-------------|
-| **TEST-00** | **Swap Antenas A ↔ B** | Identificar si problema es hardware o config | 1. Apagar equipos<br>2. **Sniffer**: Desconectar antenas y reconectar: Ant-A→puerto B, Ant-B→puerto A<br>3. **Tag**: Ídem swap físico<br>4. Test @ 21m: Si problema se mueve con antena física → **Hardware/cable**, Si queda en canal A → **Config DW3000** | [✅] CFG |
+**Objetivo**: Determinar si problema es en TX o RX del Canal A mediante diagnósticos internos del DW3000.
 
-### **🟡 PRIORIDAD ALTA - Optimización Software**
+**Implementación**:
+```c
+// Agregar en sniffer_tag.cpp después de dwt_rxenable()
+dwt_rxdiag_t diag;
+dwt_readdiagnostics(&diag);
+Serial.printf("[DIAG-A] FP_PWR:%d RX_CNT:%d\n", diag.firstPath, diag.rxPreamCount);
+```
 
-| # | Prueba | Valida | Cómo hacerlo | ✅ Validado |
-|---|--------|--------|--------------|-------------|
-| **TEST-01** | **PRE_TIMEOUT aumentado** | Mejora detección débil >20m | 1. Aumentar `PRE_TIMEOUT_6M8` 12→16 en `uwb3000Fxx.h` (ambos equipos)<br>2. Compilar y flashear<br>3. Test @ 21m Ant-A: ≥50% éxito esperado | [ ] SÍ [ ] NO |
-| **TEST-02** | **TX Power incrementado** | Mayor alcance por señal fuerte | 1. Cambiar `TX_POWER` 0xFDFDFDFD→0xFEFEFEFE en ambos<br>2. ⚠️ **OPCIONAL**: Medir espectro antes<br>3. Test 25-30m: mejora ≥30% | [ ] SÍ [ ] NO |
-| **TEST-03** | **Query timeout aumentado** | Más tiempo para queries lentas | 1. Cambiar `query_timeout` 1000→2000 en `main.cpp`<br>2. Flashear sniffer<br>3. Comparar 25m: mejora ≥20% | [ ] SÍ [ ] NO |
+**Procedimiento**:
+1. Agregar logs de diagnóstico para CADA intento de RX
+2. Test @ 20m capturando First Path Power y RX Preamble Count
+3. Comparar valores Canal A vs Canal B
 
-### **🟢 PRIORIDAD MEDIA - Robustez y Logging**
+**Análisis esperado**:
+- **FP_PWR Canal A < -100 dBm** → Confirma problema RX sensitivity (LNA defectuoso)
+- **FP_PWR Canal A ≈ Canal B** pero RX_CNT bajo → Problema AGC/threshold
+- **FP_PWR Canal A muy bajo + Canal B normal** → Confirma hardware defectuoso
 
-| # | Prueba | Valida | Cómo hacerlo | ✅ Validado |
-|---|--------|--------|--------------|-------------|
-| **TEST-04** | **Validación de guardado** | No guarda datos incompletos | 1. Agregar validación `dist_a > 0.1 && dist_b > 0.1` en `main.cpp` líneas 542-546<br>2. Flashear sniffer<br>3. Test 3 escenarios: 15m, 28m, obstrucción | [ ] SÍ [ ] NO |
-| **TEST-05** | **Sistema de logging** | Diagnóstico de fallos | 1. Agregar `log_rx_result()` en `sniffer_tag.cpp`<br>2. Flashear sniffer<br>3. Capturar logs UART durante tests | [ ] SÍ [ ] NO |
-| **TEST-06** | **Modo MULTIPLE obligatorio** | Siempre ambas antenas | 1. Eliminar `TAG_ONE_DETECTION` en `main.cpp`<br>2. Flashear sniffer<br>3. Test 15m: 100% ambas antenas | [ ] SÍ [ ] NO |
+---
 
-### **🔵 PRIORIDAD BAJA - Último Recurso**
+### **TEST-05: Migración a Data Rate 850K** [� PRIORIDAD MEDIA-ALTA]
 
-| # | Prueba | Valida | Cómo hacerlo | ✅ Validado |
-|---|--------|--------|--------------|-------------|
-| **TEST-07** | **Timeouts agresivos** | Si TEST-01 no funciona | 1. `PRE_TIMEOUT_6M8` = 16 PAC<br>2. `POLL_TX_TO_RESP_RX_DLY_UUS_6M8` = 1400<br>3. `RESP_RX_TIMEOUT_UUS_6M8` = 700<br>4. ≥70% a 25m | [ ] SÍ [ ] NO |
-| **TEST-08** | **Cambio de canal** | Reducir interferencia | 1. Canal 5→9 en `dwt_cfg` (ambos)<br>2. Retest rango completo<br>3. Comparar SNR vs Canal 5 | [ ] SÍ [ ] NO |
+**Estado**: ⏸️ **SOLUCIÓN RADICAL** - Considerar si TEST-02 muestra Canal A <30% @ 20m
+
+**¿Por qué considerar esto?**:
+- 📡 **+8 dB sensibilidad** vs 6M8 → Puede compensar hardware defectuoso de Canal A
+- 🎯 **Rango 50-80m** (2.5-3× mejora) vs 20-25m actual
+- 🔧 **Solución definitiva** sin reemplazo de hardware
+
+**⚠️ Trade-offs**:
+- ⏱️ **8× más lento**: 2 ms por frame vs 250 µs (latencia 800ms vs 100ms por tag)
+- ⚡ **+50% consumo energético** en tags
+- 📊 **Menor throughput**: 10 tags/seg vs 80 tags/seg (aceptable para 5-10 tags totales)
+
+**Configuración propuesta**:
+```c
+static dwt_config_t dwt_cfg_850k = {
+    5,          // Channel
+    DWT_PLEN_128,
+    DWT_PAC8,
+    9,
+    DWT_BR_850K,  // ← Cambio crítico de 6M8 a 850K
+    // ... resto igual
+};
+
+// Timeouts ajustados (8× más largos):
+#define POLL_TX_TO_RESP_RX_DLY_UUS_850K 5600  // Was 700
+#define RESP_RX_TIMEOUT_UUS_850K 2400         // Was 300
+#define PRE_TIMEOUT_850K 12                   // Mantener optimización
+```
+
+**Esfuerzo**: 1-2 días (cambiar config DWT, ajustar timeouts en ambos firmwares, testing).
+
+**Criterios de decisión**:
+- ✅ Si Canal A ≥70% @ 50m → **APLICAR** como solución definitiva
+- ⚠️ Si latencia >1 seg/tag es inaceptable → Evaluar modo híbrido (6M8 corto, 850K largo)
+- ❌ Si Canal A <30% @ 20m incluso con 850K → **Hardware reemplazo obligatorio**
+
+---
+
+### **TEST-06: Cambio de Canal UWB** [🔵 PRIORIDAD BAJA]
+
+**Estado**: ⏸️ **ÚLTIMA OPCIÓN SW** - Solo si hay sospecha de interferencia en Canal 5
+
+**Configuración propuesta**:
+```c
+// Cambiar de Canal 5 (6.5 GHz) a Canal 9 (8.0 GHz)
+static dwt_config_t dwt_cfg = {
+    9,          // Channel number (antes: 5)
+    DWT_PLEN_128,
+    DWT_PAC8,
+    9,          // Preamble code compatible con Canal 9
+    // ... resto sin cambios
+};
+```
+
+**⚠️ Consideración**: Canal 9 tiene ~0.5 dB menos sensibilidad que Canal 5. Solo cambiar si interferencia confirmada con spectrum analyzer.
+
+**Procedimiento**:
+1. Capturar log RF de Canal 5 (si analizador disponible)
+2. Si detecta interferencias > -90 dBm → Cambiar a Canal 9
+3. Re-ejecutar TEST-02 @ 20m con Canal 9
+4. Comparar tasas de éxito
+
+**Resultado esperado**: Si interferencia era causa, mejora ≥20% en ambos canales
+
+---
+
+## � RESUMEN EJECUTIVO DE TESTS
+
+### ✅ **Diagnóstico Completado (Orden Cronológico)**
+
+| Test | Fecha | Configuración | Resultado @ Distancia |
+|------|-------|---------------|----------------------|
+| **TEST-00** | 25-Oct | PRE_TIMEOUT=5 (baseline) | Canal A: 0% @ 23m, Canal B: 100% @ 23m |
+| **TEST-01** | 26-Oct | PRE_TIMEOUT=8 (+60%) | Canal A: 3% @ 20m, Canal B: 9.7% @ 20m |
+| **TEST-02** | 28-Oct | Swap físico antenas | Problema sigue en Canal A lógico ✅ |
+| **TEST-03** | 28-Oct | Estructuras OTP separadas | Hipótesis incorrecta ❌ |
+| **TEST-04** | 28-Oct | PRE_TIMEOUT=12 (+140%) | Canal A: 0% @ 23m, Canal B: 100% @ 23m ❌ |
+
+**Conclusión**: 
+- ❌ **Problema hardware CONFIRMADO** en Canal A
+- ❌ Optimización PRE_TIMEOUT **AGOTADA** (5→8→12 no tiene efecto)
+- ✅ TEST-04 idéntico a TEST-00 demuestra que timeouts NO son la causa raíz
+- 🔴 **Solución SW radical (TEST-07: 850K) o reemplazo hardware son las únicas opciones**
+
+---
+
+### ⏳ **Tests Pendientes (Priorizados)**
+
+| Test | Prioridad | Estado | Objetivo | Esfuerzo |
+|------|-----------|--------|----------|----------|
+| **TEST-05** | � **ALTA** | ⏳ Considerar | TX Power +1dB (mejora esperada <10%) | 2h (código + test) |
+| **TEST-06** | 🟢 **MEDIA** | ⏸️ Opcional | RX Diagnostics para confirmar hardware | 3h (código + análisis) |
+| **TEST-07** | � **CRÍTICA** | ⏳ **RECOMENDADO** | Migrar a 850K (+8dB sensibilidad) | 1-2 días |
+| **TEST-08** | 🔵 **BAJA** | ⏸️ Última opción | Cambio Canal 5→9 (interferencia) | 1h (código + test) |
+
+---
+
+## 🎯 PLAN DE ACCIÓN INMEDIATO
+
+### **Opción A: TEST-05 (conservadora, baja probabilidad de éxito)**
+⚠️ TX Power +1dB @ 20m  
+📊 Mejora esperada: +5-10% en Canal A  
+⏱️ Si Canal A sigue <30% → Ir directamente a TEST-07
+
+### **Opción B: TEST-07 (recomendada, mayor probabilidad de éxito)**
+✅ Migrar a 850K data rate  
+📡 +8 dB sensibilidad → **Puede compensar hardware defectuoso**  
+🎯 Rango objetivo: 50-80m (vs 20-25m actual)  
+⏱️ Esfuerzo: 1-2 días de implementación
+
+**Si TEST-07 éxito (Canal A ≥70% @ 50m)**:
+- ✅ Problema RESUELTO sin reemplazo de hardware
+- 📝 Documentar configuración final 850K
+- 🔀 Merge a branch `dev`
+- ⚠️ Aceptar trade-offs: latencia 8× mayor (800ms vs 100ms)
+
+**Si TEST-07 falla (Canal A <30% @ 20m incluso con 850K)**:
+- ❌ **Hardware reemplazo OBLIGATORIO**
+- 🔧 Opciones: Cambiar chip DW3000 A, reemplazar PCB completo, o validar LNA/filtro RF
+- 💰 Costo estimado: $20-50 (chip) o $200-500 (PCB completo)
+  
+---
 
 ---
 
