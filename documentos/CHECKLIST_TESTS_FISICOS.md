@@ -4,17 +4,32 @@
 
 ---
 
-## ✅ PREPARACIÓN RÁPIDA
+## 📜 HISTORIAL DE INVESTIGACIÓN (Orden Cronológico)
 
-- [ ] **Hardware**: Sniffer + Tag cargados, antenas separadas 2m, cable UART, cinta métrica 30m
-- [ ] **Software**: STM32CubeIDE, terminal serial, branch `fix/detection-over-20m`
-- [ ] **Marcadores**: 10m, 15m, 20m, 25m, 30m
+### **ESTADO BASE DEL PROYECTO** [📅 22-Oct-2025]
+
+**Situación del Sistema**:
+- ✅ **Detección estable**: Sistema funcional hasta **±20 metros** de distancia
+- ❌ **Problema de software**: NO había "permanencia" de los tags detectados en el sistema
+- 🔧 **Causa raíz identificada**: Tiempos de detección de tags y de envío al servidor cuando no hay ningún tag
+
+**Acciones Realizadas**:
+
+1. **Análisis de Tiempos de Detección y Envío**:
+   - Se identificó que el timeout de envío al servidor (cuando no hay tags) estaba mal configurado
+   - Modificación de timeouts resolvió el problema de permanencia de tags
+   - Sistema comenzó a mantener correctamente la información de tags detectados
+
+2. **Análisis Completo del Sistema** (22-Oct-2025):
+   - 📄 **Documentación de Comunicación**: Análisis detallado de la comunicación Sniffer ↔ Tag
+   - 📄 **Documentación de Máquina de Estados**: Flujo completo de estados en ambos equipos (Sniffer y Persona)
+   - ✅ Sistema estabilizado y documentado para futuras mejoras
+
+**Conclusión**: Sistema operacional y estable @ ≤20m, con documentación técnica completa. A partir de este punto, se inicia investigación de fallas de detección >20m.
 
 ---
 
-## 📜 HISTORIAL DE INVESTIGACIÓN (Orden Cronológico)
-
-### **TEST-00: PRE_TIMEOUT=5 (Baseline)** [✅ COMPLETADO - 25-Oct-2025]
+### **TEST-00: PRE_TIMEOUT=5 (Baseline)** [✅ COMPLETADO - 23-Oct-2025]
 
 **Configuración**: `PRE_TIMEOUT_6M8 = 5 PAC` (40 símbolos, baseline de fábrica)
 
@@ -28,7 +43,7 @@ Canal B: 100% éxito (DistB: 22.88-23.42m, 0 errores)
 
 ---
 
-### **TEST-01: PRE_TIMEOUT=8 (Solución 1A)** [✅ COMPLETADO - 26-Oct-2025]
+### **TEST-01: PRE_TIMEOUT=8 (Solución 1A)** [✅ COMPLETADO - 23-Oct-2025]
 
 **Configuración**: `PRE_TIMEOUT_6M8 = 8 PAC` (64 símbolos, +60% vs baseline)
 
@@ -44,6 +59,35 @@ Canal B: 9.7% éxito (28 timeouts, 3 lecturas: 19.93-20.18m)
 - ⚠️ Ambos canales muestran baja tasa de éxito comparado con TEST-00 @ 23m
 
 **⚠️ Conclusión**: PRE_TIMEOUT=8 **NO es suficiente**. Se requiere +50% adicional (PRE_TIMEOUT=12).
+
+---
+
+### **TEST-01B: Cambio de Antenas AP + PRE_TIMEOUT=12** [✅ COMPLETADO - 27-Oct-2025]
+
+**Contexto**: Por indicación de Daniel, se cambiaron las antenas del AP por antenas anteriores para evaluar si el tipo de antena afectaba la detección.
+
+**Configuración**: 
+- `PRE_TIMEOUT_6M8 = 12 PAC` (96 símbolos, +140% vs baseline)
+- **Antenas**: Cambiadas de antenas AP a antenas anteriores
+- **Setup**: Tag montado en taburete con batería externa, en bajada del camión
+
+**Resultado @ 22.3m (Antena B)**:
+```
+Comportamiento dependiente de orientación del tag:
+- Posición 1 (luz LED apuntando al Sniffer): 1 antena detecta
+- Posición 2 (tag girado): Ninguna antena detecta
+```
+
+**⚠️ Observaciones Críticas**:
+- 🔄 **Polarización de antena afecta detección**: Orientación del tag es crítica
+- 📡 **Tag "mirando" al Sniffer**: LED apuntando hacia Sniffer necesario para detección
+- ⚠️ **Solo 1 antena detecta** (probablemente Antena B): Confirma problema asimétrico entre canales
+- 🔴 **Cambio de antenas AP NO resolvió problema**: Antenas anteriores muestran mismo comportamiento
+
+**❌ Conclusión**: 
+- Cambio de antenas AP → antenas anteriores **NO mejora detección** de Canal A
+- Problema de orientación/polarización puede ser factor adicional, pero NO explica falla total de Canal A
+- Se confirma que problema NO es tipo de antena externa, sino **componentes internos (LNA, chip DW3000)**
 
 ---
 
@@ -96,25 +140,36 @@ CANAL B: PartID:0x6E483065  Bias:0x12  DGC_MODE:OTP ✅
 
 ---
 
-### **TEST-04: PRE_TIMEOUT=12 (Solución 1B)** [✅ COMPLETADO - 28-Oct-2025]
+### **TEST-04: Eliminación HAL_Delay(1) en Persona** [✅ COMPLETADO - 28-Oct-2025]
 
-**Configuración**: `PRE_TIMEOUT_6M8 = 12 PAC` (96 símbolos, +140% vs baseline 5, +50% vs Solución 1A)
+**Contexto**: Análisis de código identificó un `HAL_Delay(1)` en `main.cpp` del tag Persona que podría causar descoordinación temporal en comunicación `MULTIPLE_DETECTION` en caso de falla.
 
-**Resultado @ 23m**:
+**Modificación realizada**:
+- **Archivo**: `Persona/Core/Src/main.cpp`
+- **Cambio**: Eliminado `HAL_Delay(1)` en caso de falla de comunicación MULTIPLE_DETECTION
+- **Objetivo**: Reducir jitter temporal (0-2ms) que podría causar timeouts en comunicación >20m
+
+**Configuración de prueba**:
+- `PRE_TIMEOUT_6M8 = 12 PAC` (mantenido desde TEST-01B)
+- **Setup**: Mismo taburete, misma posición que TEST-02 (21.7m)
+- **Orientación**: Tag apuntando al Sniffer (LED hacia Sniffer)
+
+**Resultado @ 21.7m**:
 ```
-Canal A: 0% éxito (152 timeouts RX_PREAMBLE_DETECTION_TIMEOUT)
-Canal B: 100% éxito (DistB: 22.88-23.42m, 0 errores)
+Canal A: 0% éxito (sin detección)
+Canal B: 100% éxito (solo Antena B detecta)
 ```
 
 **❌ Análisis**:
-- ❌ Canal A: **SIN MEJORA** - Permanece en 0% a pesar de +140% incremento desde baseline
-- ✅ Canal B: Funciona perfectamente (100% éxito)
-- ❌ PRE_TIMEOUT=12 **NO resuelve el problema** a pesar de alcanzar 75% del preámbulo total (96/128 símbolos)
-- 🔴 **Optimización de PRE_TIMEOUT ha alcanzado su límite de utilidad**
+- ❌ **Resultados similares a pruebas anteriores**: Sin mejora a pesar de eliminar HAL_Delay(1)
+- ⚠️ **Solo Antena B detecta**: Mismo comportamiento que TEST-02 y TEST-01B
+- 🔴 **Optimización de timing NO resuelve problema de Canal A**: Problema más profundo que delays en código
 
-**❌ Conclusión**: Canal A tiene problema **FUNDAMENTAL** que no se resuelve con optimizaciones de timeout. **Requiere solución más radical** (TEST-07: 850K data rate con +8dB sensibilidad) o reemplazo de hardware.
-
-**⚠️ Nota crítica**: Resultado TEST-04 es **IDÉNTICO** a TEST-00 (baseline), lo que confirma que incrementar PRE_TIMEOUT de 5→8→12 **NO tiene efecto alguno** en Canal A. Esto es evidencia fuerte de problema hardware (LNA degradado, filtro RF, o chip defectuoso).
+**❌ Conclusión**: 
+- Eliminación de `HAL_Delay(1)` **NO mejora detección** de Canal A
+- Confirma que problema NO es descoordinación temporal por delays en código
+- Se confirma **problema HARDWARE en componentes del Canal A** (LNA degradado, filtro RF, o chip DW3000 defectuoso)
+- **Requiere solución más radical**: TEST-07 (850K data rate con +8dB sensibilidad) o reemplazo de hardware
 
 ---
 
@@ -123,10 +178,13 @@ Canal B: 100% éxito (DistB: 22.88-23.42m, 0 errores)
 Dado que:
 1. ✅ **TEST-00**: PRE_TIMEOUT=5 @ 23m → Canal A: 0%, Canal B: 100%
 2. ✅ **TEST-01**: PRE_TIMEOUT=8 @ 20m → Canal A: 3%, Canal B: 9.7%
-3. ✅ **TEST-02**: Swap antenas → Problema sigue al Canal A lógico (no antena física)
-4. ✅ **TEST-03**: Estructuras OTP separadas → Calibraciones válidas en ambos chips, pero Canal A sigue fallando
-5. ✅ **TEST-04**: PRE_TIMEOUT=12 @ 23m → Canal A: 0% (IDÉNTICO a baseline), Canal B: 100%
-6. ❌ **Incrementar PRE_TIMEOUT de 5→8→12 (+140%) NO tiene efecto en Canal A**
+3. ✅ **TEST-01B**: Cambio antenas AP + PRE_TIMEOUT=12 @ 22.3m → Solo 1 antena detecta (dependiente de orientación)
+4. ✅ **TEST-02**: Swap antenas → Problema sigue al Canal A lógico (no antena física)
+5. ✅ **TEST-03**: Estructuras OTP separadas → Calibraciones válidas en ambos chips, pero Canal A sigue fallando
+6. ✅ **TEST-04**: Eliminación HAL_Delay(1) @ 21.7m → Sin mejora, solo Antena B detecta
+7. ❌ **Incrementar PRE_TIMEOUT de 5→8→12 (+140%) NO tiene efecto en Canal A**
+8. ❌ **Cambio de tipo de antenas (AP → anteriores) NO resuelve el problema**
+9. ❌ **Optimización de timing (eliminar HAL_Delay) NO resuelve el problema**
 
 **Hipótesis actual**: **Problema HARDWARE CONFIRMADO en componentes del Canal A**
 
@@ -462,16 +520,19 @@ static dwt_config_t dwt_cfg = {
 
 | Test | Fecha | Configuración | Resultado @ Distancia |
 |------|-------|---------------|----------------------|
-| **TEST-00** | 25-Oct | PRE_TIMEOUT=5 (baseline) | Canal A: 0% @ 23m, Canal B: 100% @ 23m |
-| **TEST-01** | 26-Oct | PRE_TIMEOUT=8 (+60%) | Canal A: 3% @ 20m, Canal B: 9.7% @ 20m |
+| **TEST-00** | 23-Oct | PRE_TIMEOUT=5 (baseline) | Canal A: 0% @ 23m, Canal B: 100% @ 23m |
+| **TEST-01** | 23-Oct | PRE_TIMEOUT=8 (+60%) | Canal A: 3% @ 20m, Canal B: 9.7% @ 20m |
+| **TEST-01B** | 27-Oct | Cambio antenas AP + PRE_TIMEOUT=12 | Solo 1 antena detecta @ 22.3m (dependiente orientación) |
 | **TEST-02** | 28-Oct | Swap físico antenas | Problema sigue en Canal A lógico ✅ |
 | **TEST-03** | 28-Oct | Estructuras OTP separadas | Hipótesis incorrecta ❌ |
-| **TEST-04** | 28-Oct | PRE_TIMEOUT=12 (+140%) | Canal A: 0% @ 23m, Canal B: 100% @ 23m ❌ |
+| **TEST-04** | 28-Oct | Eliminación HAL_Delay(1) en Persona | Sin mejora, solo Antena B detecta @ 21.7m ❌ |
 
 **Conclusión**: 
 - ❌ **Problema hardware CONFIRMADO** en Canal A
 - ❌ Optimización PRE_TIMEOUT **AGOTADA** (5→8→12 no tiene efecto)
-- ✅ TEST-04 idéntico a TEST-00 demuestra que timeouts NO son la causa raíz
+- ❌ Cambio de tipo de antenas **NO resuelve el problema**
+- ❌ Eliminación de delays en código **NO resuelve el problema**
+- ✅ Todas las optimizaciones SW probadas demuestran que el problema es HARDWARE
 - 🔴 **Solución SW radical (TEST-07: 850K) o reemplazo hardware son las únicas opciones**
 
 ---
