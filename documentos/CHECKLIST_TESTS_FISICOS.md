@@ -173,6 +173,391 @@ Canal B: 100% éxito (solo Antena B detecta)
 
 ---
 
+### **TEST-05: Comparación Configuraciones Múltiples Tags** [✅ COMPLETADO - 29-Oct-2025]
+
+**Contexto**: Se cambian antenas nuevamente a las del AP para prueba comparativa con 3 tags Persona con diferentes configuraciones de PRE_TIMEOUT y HAL_Delay.
+
+**Configuración Sniffer**:
+- `PRE_TIMEOUT_6M8 = 12 PAC` (96 símbolos)
+- **Antenas**: Antenas del AP (vueltas a configuración original)
+- **Setup**: Línea de vista, 3 tags simultáneos
+
+**Configuración Tags (3 variantes)**:
+| Tag ID | PRE_TIMEOUT | HAL_Delay(1) | Config |
+|--------|-------------|--------------|--------|
+| **0x2B45** | 8 PAC | ✅ CON | Baseline con delay |
+| **0x2B5E** | 8 PAC | ❌ SIN | Sin delay optimizado |
+| **0x2783** | 12 PAC | ❌ SIN | PRE_TIMEOUT aumentado + sin delay |
+
+**Resultados @ ~18-21m (línea de vista)**:
+
+**Tag 0x2B45** (PRE_TIMEOUT=8 + HAL_Delay):
+```
+Detección: 100% éxito
+DistA: 18.22-19.88m
+DistB: 16.87-18.57m
+Errores: Mínimos (ocasionales timeouts en Ant-B)
+```
+
+**Tag 0x2B5E** (PRE_TIMEOUT=8, sin HAL_Delay):
+```
+Detección: 100% éxito
+DistA: 18.74-21.43m
+DistB: 16.79-19.32m
+Errores: Frecuentes timeouts en Ant-B (1-50 errores por ciclo)
+Patrón: Errores incrementan con distancia (18m: pocos, 21m: muchos)
+```
+
+**Tag 0x2783** (PRE_TIMEOUT=12, sin HAL_Delay):
+```
+Detección: Variable (60-100%)
+DistA: 18.84-21.47m (frecuentes fallos >20m)
+DistB: 16.23-19.06m
+Errores: MUY frecuentes timeouts en Ant-A (hasta 50 errores consecutivos)
+Patrón crítico: 
+  - @ 18-19m: Ambas antenas funcionan
+  - @ >20m: Ant-A falla sistemáticamente (0% éxito con 50 timeouts)
+  - @ >20m: Solo Ant-B detecta (modo degradado R:3 lecturas)
+```
+
+**📊 Análisis Comparativo**:
+
+| Aspecto | Tag 0x2B45 (8+Delay) | Tag 0x2B5E (8) | Tag 0x2783 (12) |
+|---------|---------------------|----------------|-----------------|
+| **Tasa éxito @ 18m** | 100% ✅ | 100% ✅ | 100% ✅ |
+| **Tasa éxito @ >20m** | 100% ✅ | ~90% ⚠️ | ~60% ❌ |
+| **Errores Ant-A** | Casi nulos | Bajos | MUY ALTOS (50+) |
+| **Errores Ant-B** | Bajos | Medios | Bajos |
+| **Comportamiento** | Estable | Degradación gradual | Fallo crítico >20m |
+
+**🔍 Observaciones Críticas**:
+
+1. **⚠️ HAL_Delay(1) parece BENEFICIAR la comunicación**:
+   - Tag 0x2B45 (CON delay) tiene MENOS errores que 0x2B5E (SIN delay)
+   - Contradice hipótesis inicial de que HAL_Delay causaba problemas
+   - Posible explicación: Delay da tiempo al Sniffer para procesar entre frames
+
+2. **🔴 PRE_TIMEOUT=12 EMPEORA detección >20m**:
+   - Tag 0x2783 (PRE_TIMEOUT=12) tiene PEOR desempeño que 0x2B5E (PRE_TIMEOUT=8)
+   - @ >20m: 50 timeouts consecutivos en Ant-A con PRE_TIMEOUT=12
+   - Contradice expectativa de que mayor PRE_TIMEOUT mejora detección
+
+3. **📡 Patrón de fallo consistente en Ant-A @ >20m**:
+   - Todos los tags muestran degradación en Ant-A al alejarse
+   - Tag 0x2783 muestra fallo más severo: modo degradado R:3 (solo Ant-B)
+   - Confirma problema hardware de Ant-A/Canal A
+
+4. **⏱️ Timing de errores constante**: 
+   - Todos los timeouts duran 6ms (consistente con PRE_TIMEOUT configurado)
+   - No hay variación significativa en duración de timeouts
+
+**❌ Conclusión**:
+- ❌ **PRE_TIMEOUT=12 NO mejora detección >20m**: Al contrario, EMPEORA el rendimiento
+- ⚠️ **HAL_Delay(1) NO es perjudicial**: Tag con delay tiene MEJOR desempeño que sin delay
+- 🔴 **Problema hardware Ant-A/Canal A CONFIRMADO**: Fallo sistemático >20m en todos los tags
+- ✅ **Configuración óptima actual**: PRE_TIMEOUT=8 + HAL_Delay(1) (Tag 0x2B45)
+- 🔧 **Solución requerida**: TEST-07 (850K data rate) o reemplazo hardware de Canal A
+
+**⚠️ Nota importante**: Resultados contradicen hipótesis de optimización. Mayor PRE_TIMEOUT y eliminación de HAL_Delay NO mejoran detección, sugiriendo que problema es puramente hardware, no timing/configuración software.
+
+---
+
+### **TEST-06: Validación Tag con PRE_TIMEOUT=5 + HAL_Delay** [✅ COMPLETADO - 29-Oct-2025]
+
+**Contexto**: Se agregó un cuarto tag Persona (ID: 0x29EC) con configuración conservadora (PRE_TIMEOUT=5 baseline + HAL_Delay activado) para validar si la configuración más básica tiene mejor desempeño que las optimizadas.
+
+**Configuración Sniffer**:
+- `PRE_TIMEOUT_6M8 = 12 PAC` (96 símbolos)
+- **Antenas**: Antenas del AP (configuración estándar)
+- **Setup**: Línea de vista, test simultáneo con tags de TEST-05
+
+**Configuración Tag 0x29EC**:
+| Parámetro | Valor | Descripción |
+|-----------|-------|-------------|
+| **PRE_TIMEOUT** | 5 PAC | ⬇️ Baseline original (40 símbolos) |
+| **HAL_Delay(1)** | ✅ ACTIVADO | Delay de 1ms entre ciclos |
+| **Firmware** | Standard | Sin optimizaciones |
+
+**Resultados @ 13-19m (línea de vista)**:
+
+**Tag 0x29EC** (PRE_TIMEOUT=5 + HAL_Delay):
+```
+Detección: ~70% éxito (variable según distancia)
+DistA: N/A (fallo total Ant-A)
+DistB: 13.26-19.26m
+Modo operación: R:3 (solo Ant-B) mayormente
+                R:5 (ambas antenas) ocasionalmente @ <16m
+Errores: 50 timeouts consecutivos en Ant-A (máximo buffer)
+Patrón crítico: 
+  - @ 13-16m: Ocasionalmente logra R:5 (ambas antenas)
+  - @ >16m: Degradación total a R:3 (solo Ant-B)
+  - @ >18m: Errores incrementan en Ant-B también (25-50 timeouts)
+```
+
+**📊 Análisis Detallado**:
+
+**Distribución de Errores**:
+- **Ant-A**: 100% fallo (50/50 timeouts en buffer completo)
+- **Ant-B**: Funcional hasta ~18m, luego degradación
+- **Tipo de error**: 100% `RX_PREAMBLE_DETECTION_TIMEOUT` (6ms cada uno)
+- **Patrón temporal**: Errores constantes sin recuperación en Ant-A
+
+**Comparativa de Distancias**:
+```
+@ 13-15m: R:5 ocasional (15.27-15.90m DistA exitosa pocas veces)
+@ 15-17m: R:3 mayormente (DistB: 15.32-16.78m estable)
+@ 17-19m: R:3 exclusivo (DistB: 18.02-19.26m con errores en Ant-B)
+@ >19m: Detección intermitente (25 timeouts Ant-A + 25 Ant-B)
+```
+
+**🔍 Observaciones Críticas**:
+
+1. **🔴 PRE_TIMEOUT=5 (baseline) tiene PEOR rendimiento que PRE_TIMEOUT=8**:
+   - Tag 0x29EC (PRE_TIMEOUT=5): Fallo Ant-A desde ~15m
+   - Tag 0x2B45 (PRE_TIMEOUT=8): Ambas antenas funcionan hasta >20m
+   - Confirma que PRE_TIMEOUT=5 es insuficiente para distancias largas
+
+2. **📉 Degradación más temprana con PRE_TIMEOUT=5**:
+   - @ 15m: Tag 0x29EC ya está en modo R:3 (solo Ant-B)
+   - @ 15m: Tags con PRE_TIMEOUT=8 aún tienen R:5 (ambas antenas)
+   - Diferencia de ~5m en rango efectivo de Ant-A
+
+3. **⚠️ HAL_Delay(1) NO compensa PRE_TIMEOUT bajo**:
+   - Tag 0x29EC tiene HAL_Delay pero sigue fallando antes que 0x2B45
+   - Confirma que PRE_TIMEOUT es más crítico que HAL_Delay
+   - HAL_Delay beneficia SOLO cuando PRE_TIMEOUT es adecuado
+
+4. **📊 Consistencia con patrón hardware Canal A**:
+   - Fallo total de Ant-A @ distancias medias (15-19m)
+   - Ant-B funciona correctamente hasta ~18m
+   - Confirma problema hardware en Canal A del Sniffer
+
+5. **🔄 Errores balanceados Ant-A/Ant-B @ límite de rango**:
+   - @ >19m: 25 timeouts Ant-A + 25 Ant-B (50% cada uno)
+   - Sugiere que @ límite de rango ambos canales tienen dificultad
+   - Pero Ant-A falla mucho antes (15m vs 19m)
+
+**📋 Tabla Comparativa 4 Tags**:
+
+| Tag ID | PRE_TIMEOUT | HAL_Delay | Rango Ant-A | Rango Ant-B | Modo @ 18m |
+|--------|-------------|-----------|-------------|-------------|------------|
+| **0x2B45** | 8 PAC | ✅ SI | >20m ✅ | >20m ✅ | R:5 (dual) |
+| **0x2B5E** | 8 PAC | ❌ NO | >20m ✅ | >20m ⚠️ | R:5 (dual) |
+| **0x2783** | 12 PAC | ❌ NO | ~18m ❌ | >20m ✅ | R:3 (Ant-B) |
+| **0x29EC** | 5 PAC | ✅ SI | ~15m ❌ | ~19m ⚠️ | R:3 (Ant-B) |
+
+**❌ Conclusión**:
+
+1. **🔴 PRE_TIMEOUT=5 es INSUFICIENTE para operación >15m**:
+   - Rango efectivo Ant-A: ~15m (vs 20m con PRE_TIMEOUT=8)
+   - Degradación ~33% más temprana que configuración óptima
+
+2. **📉 Ranking de configuraciones (mejor a peor)**:
+   - 🥇 **PRE_TIMEOUT=8 + HAL_Delay(1)** (Tag 0x2B45): Mejor desempeño general
+   - 🥈 **PRE_TIMEOUT=8 sin HAL_Delay** (Tag 0x2B5E): Bueno pero con más errores
+   - 🥉 **PRE_TIMEOUT=5 + HAL_Delay(1)** (Tag 0x29EC): Rango reducido ~25%
+   - ❌ **PRE_TIMEOUT=12 sin HAL_Delay** (Tag 0x2783): Fallo crítico >20m
+
+3. **✅ Confirmación configuración óptima**: 
+   - **PRE_TIMEOUT=8 + HAL_Delay(1)** es la mejor combinación
+   - Proporciona balance entre sensibilidad y estabilidad
+   - Rango efectivo máximo: ~20m ambas antenas
+
+4. **⚠️ Problema hardware Canal A persiste en TODAS las configuraciones**:
+   - PRE_TIMEOUT=5: Fallo @ 15m
+   - PRE_TIMEOUT=8: Fallo @ 20m
+   - PRE_TIMEOUT=12: Fallo @ 20m (peor que 8)
+   - **Solución requerida**: TEST-07 (850K) o reemplazo hardware
+
+**🔧 Recomendación Final**:
+- ✅ **Mantener PRE_TIMEOUT=8 + HAL_Delay(1)** como configuración estándar
+- ❌ **Descartar PRE_TIMEOUT=5** (rango insuficiente)
+- ❌ **Descartar PRE_TIMEOUT=12** (empeora rendimiento)
+- 🔬 **Próximo paso**: Implementar TEST-07 (850K data rate) como última solución SW
+
+---
+
+### **TEST-07: Sniffer PRE_TIMEOUT=8 con Movimiento y Obstrucción Corporal** [✅ COMPLETADO - 29-Oct-2025]
+
+**Contexto**: Se modificó el preámbulo del Sniffer de 12 PAC a 8 PAC para sincronizarlo con los tags. **CONDICIÓN CRÍTICA**: Test realizado con movimiento constante del operador llevando los tags, con intervención corporal intermitente de línea de vista (NLOS - Non Line Of Sight parcial).
+
+**Configuración Sniffer**:
+- `PRE_TIMEOUT_6M8 = 8 PAC` ⬇️ (reducido desde 12 PAC)
+- **Antenas**: Antenas del AP
+- **Setup**: **MOVIMIENTO + OBSTRUCCIÓN CORPORAL** (condición NLOS parcial)
+
+**Configuración Tags** (mantenidas de TEST-05/06):
+| Tag ID | PRE_TIMEOUT | HAL_Delay(1) | Config |
+|--------|-------------|--------------|--------|
+| **0x2B45** | 8 PAC | ✅ SI | Configuración óptima |
+| **0x2B5E** | 8 PAC | ❌ NO | Sin delay |
+| **0x2783** | 12 PAC | ❌ NO | PRE_TIMEOUT alto |
+| **0x29EC** | 5 PAC | ✅ SI | PRE_TIMEOUT bajo |
+
+**⚠️ DIFERENCIA CLAVE**: A diferencia de TEST-05/06 (línea de vista estática), este test simula **condiciones reales de uso** con movimiento y obstrucción humana intermitente.
+
+---
+
+**Resultados @ 2.74-18.85m (NLOS parcial con movimiento)**:
+
+**FASE 1: Distancias cortas (2-11m) - Línea de vista mayormente libre**:
+```
+Tags: Todos detectados con R:5 (ambas antenas)
+DistA: 4.51-11.19m
+DistB: 2.74-9.02m
+Errores: Mínimos (Tag 0x2B45: 25 errores mixtos Ant-A/B)
+Comportamiento: ESTABLE, ambas antenas funcionan correctamente
+```
+
+**FASE 2: Distancias medias (11-16m) - Obstrucción corporal intermitente**:
+```
+Tags: Degradación a R:3 (solo una antena)
+Tag 0x2B5E: R:3 con Ant-A fallando (50 timeouts Ant-A)
+Tag 0x2B45: R:3 con Ant-A fallando (48 timeouts Ant-A, 2 Ant-B)
+Tag 0x29EC: R:3 con Ant-A fallando (50 timeouts Ant-A)
+Tag 0x2783: R:3 con Ant-A fallando (50 timeouts Ant-A)
+
+Patrón: Fallo sistemático de Ant-A con obstrucción corporal
+```
+
+**FASE 3: Distancias largas (16-19m) - Cambio de orientación**:
+```
+🔄 INVERSIÓN DE ERRORES (fenómeno crítico):
+
+Tag 0x2B5E @ 18.60-18.84m: 
+  - R:5 (ambas antenas funcionan)
+  - Errores: 18-50 timeouts en Ant-B (Ant-A sin errores)
+
+Tag 0x29EC @ 18.02-18.83m:
+  - R:3 con Ant-B fallando (50 timeouts Ant-B)
+  - R:5 ocasional (ambas funcionan con errores en Ant-B)
+  - DistA: 18.02-18.83m (Ant-A FUNCIONAL)
+  - DistB: N/A o 16.01-16.91m
+
+Tag 0x2783 @ 18.81-18.83m:
+  - R:5 (ambas antenas funcionan)
+  - Errores: 28 Ant-A + 22 Ant-B (balanceados)
+  - También detectado con Ant-B fallando (50 timeouts Ant-B, Ant-A=0)
+
+Tag 0x2B45 @ 18.66-18.85m:
+  - R:5 (ambas antenas funcionan)
+  - Errores variables según orientación
+```
+
+**FASE 4: Retorno a distancias cortas (12-16m) - Movimiento continuo**:
+```
+Tags: Comportamiento errático dependiente de orientación
+Tag 0x2783 @ 14.82m: Ant-B fallando (50 timeouts), Ant-A funcional
+Tag 0x29EC @ 14.79m: Ant-B fallando (50 timeouts), Ant-A funcional
+Tag 0x2B45 @ 15.48-15.94m: 
+  - R:5 con errores mixtos (7 Ant-A + 43 Ant-B)
+  - R:3 con Ant-B fallando completamente
+
+Patrón: INVERSIÓN COMPLETA vs FASE 2 (ahora Ant-B falla, Ant-A funciona)
+```
+
+---
+
+**📊 Análisis Crítico del Fenómeno de Inversión**:
+
+**🔴 Descubrimiento MÁS IMPORTANTE del testing completo**:
+
+1. **Ant-A NO tiene problema hardware permanente**:
+   - @ FASE 3: Ant-A funciona perfectamente (0 errores) mientras Ant-B falla (50 timeouts)
+   - Tag 0x29EC @ 18.79m: DistA=18.79m EXITOSA, DistB=N/A (Ant-B 50 timeouts)
+   - Tag 0x2783 @ 18.83m: DistA=18.83m EXITOSA, DistB=N/A (Ant-B 50 timeouts)
+
+2. **El problema es de ORIENTACIÓN/POLARIZACIÓN de antenas**:
+   - En línea de vista estática (TEST-05/06): Ant-A falla sistemáticamente
+   - Con movimiento/rotación (TEST-07): Errores se invierten entre Ant-A y Ant-B
+   - Patrón: La antena que está en SOMBRA respecto al cuerpo del operador falla
+
+3. **Sniffer PRE_TIMEOUT=8 MEJORA detección con movimiento**:
+   - Tags con PRE_TIMEOUT=8 (0x2B45, 0x2B5E, 0x29EC) funcionan mejor
+   - Tag 0x2783 (PRE_TIMEOUT=12) sigue mostrando problemas
+
+4. **Obstrucción corporal afecta más que distancia**:
+   - @ 11-14m con cuerpo obstruyendo: R:3 con 50 timeouts
+   - @ 18-19m con mejor orientación: R:5 con ambas antenas funcionando
+
+---
+
+**📋 Tabla Comparativa de Configuraciones bajo NLOS**:
+
+| Tag ID | PRE_TIMEOUT | Rango Ant-A | Rango Ant-B | Comportamiento NLOS |
+|--------|-------------|-------------|-------------|---------------------|
+| **0x2B45** | 8 PAC + Delay | 2-19m ✅ | 2-16m ⚠️ | Mejor resiliencia a obstrucción |
+| **0x2B5E** | 8 PAC | 2-19m ✅ | 2-19m ✅ | Funciona bien con movimiento |
+| **0x29EC** | 5 PAC + Delay | 2-19m ✅* | 2-16m ⚠️ | Rango corto en estático, OK con movimiento |
+| **0x2783** | 12 PAC | 2-19m ⚠️ | 2-19m ⚠️ | Más errores con cualquier orientación |
+
+*✅ = Funcional, ⚠️ = Intermitente según orientación, ❌ = Fallo total
+
+---
+
+**🔍 Observaciones Técnicas**:
+
+1. **⚡ Fenómeno de polarización cruzada**:
+   - Antenas Sniffer tienen orientación fija (A=izquierda, B=derecha)
+   - Tags en movimiento cambian orientación de antena respecto a Sniffer
+   - Cuando antena Tag queda perpendicular a antena Sniffer → timeouts
+
+2. **📡 Diversidad de antenas funciona PARCIALMENTE**:
+   - Con LOS (TEST-05/06): Ant-B compensa falla de Ant-A → R:3 funcional
+   - Con NLOS (TEST-07): Ambas antenas se afectan según orientación → R:2 o pérdida
+
+3. **🎯 Mejor configuración para NLOS confirmada**:
+   - **PRE_TIMEOUT=8 en AMBOS** (Sniffer y Tag)
+   - **HAL_Delay(1) opcional** (no crítico con movimiento)
+   - **Antenas AP** (mantener)
+
+4. **🔄 Patrón de alternancia de errores**:
+   ```
+   Posición 1 (cuerpo bloquea Ant-A Sniffer): 
+     → Tag detectado con Ant-B (50 timeouts Ant-A)
+   
+   Rotación 90° (cuerpo bloquea Ant-B Sniffer):
+     → Tag detectado con Ant-A (50 timeouts Ant-B)
+   
+   Posición frontal (LOS limpio):
+     → Tag detectado con ambas antenas (errores mínimos)
+   ```
+
+---
+
+**❌ Conclusión TEST-07**:
+
+1. **🎉 DESCARTE DE HIPÓTESIS HARDWARE DEFECTUOSO**:
+   - Ant-A funciona perfectamente cuando orientación es favorable
+   - Ant-B también falla cuando orientación es desfavorable
+   - Problema NO es hardware defectuoso, es **ORIENTACIÓN DE ANTENAS**
+
+2. **📐 Causa raíz identificada: POLARIZACIÓN Y GEOMETRÍA**:
+   - Antenas tienen patrón de radiación direccional
+   - Obstrucción corporal crea zona de sombra RF
+   - Separación de 2m entre Ant-A y Ant-B del Sniffer no es suficiente para diversidad completa
+
+3. **✅ Configuración Sniffer PRE_TIMEOUT=8 VALIDADA**:
+   - Mejor sincronización con tags
+   - Menor cantidad de timeouts espurios
+   - Rango efectivo similar a PRE_TIMEOUT=12 pero más estable
+
+4. **⚠️ TEST-05/06 eran casos extremos (peor caso)**:
+   - Línea de vista estática con orientación desfavorable para Ant-A
+   - Con movimiento, problema se distribuye entre ambas antenas
+   - Confirma que sistema es funcional en condiciones REALES
+
+5. **🔧 Soluciones recomendadas** (orden de prioridad):
+   - ✅ **MANTENER configuración actual** (PRE_TIMEOUT=8 ambos lados)
+   - 🔄 **Aumentar separación Ant-A/Ant-B** a 3-4m (mejora diversidad espacial)
+   - 📡 **Agregar algoritmo de selección dinámica** de antena basado en RSSI
+   - 🔀 **Implementar diversidad de polarización** (1 antena vertical, 1 horizontal)
+   - 🚫 **NO NECESARIO**: Cambio a 850K data rate ni reemplazo hardware
+
+**🎯 RESULTADO FINAL**: Sistema es **FUNCIONAL** con configuración actual. Problema identificado como **geométrico/orientación**, NO hardware defectuoso. Mejoras posibles son de arquitectura RF (separación antenas, diversidad), no de firmware.
+
+---
+
 ### **🔍 Conclusión del Diagnóstico**
 
 Dado que:
