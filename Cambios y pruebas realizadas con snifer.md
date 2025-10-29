@@ -29,3 +29,14 @@ Luego de implementar el Logging, de probar y de analizar la comunicación entre 
 - Se siguió con el analisis de los timeouts y posibles problemas con la comunicación entre el sniffer y el tag persona.
 
 - Se modificó el main.cpp del tag persona, se elimino un hal_delay(1) que se enocntraba en la comunicación  MULTIPLE_DETECTION en caso de falla, pero los resultados son similares a los anteriores. En el mismo taburete y misma posición (21.7 metros apuntando al sniffer) solo detecta la antena B.
+
+- Para descartar un posible probelma de hardware, ya que se detectan errores constantes con la antena A, se hace un cruzamiento físico de las antenas. Luego de este cruzamiento de antenas, se obtiene el mismo resultado, solo toma detecciones la antena b y la antena a sigue con RX_PREAMBLE_DETECTION
+
+- Mediante otro analisis se encontró que los transmisores utilizan un método de calibración el cual es propio de cada transmisor, en conjunto a esto, se estaba utilizando la misma estructura para ambos transmisores en el sniffer, lo cual es incorrecto en caso de que la calibración afecte mucho en la detección. se opta por que cada transmisor utilice su propia estructura para calibrarse. Los rersultados siguen siendo los mismos, esto no solucionó el error.
+Se contrastó que se estaba utilizadno bien la estructura asiganda a cada transmisor mediante un log en la inicialización de cada transmisor.
+
+
+
+*29-10-2025
+
+- 
