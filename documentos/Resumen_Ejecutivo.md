@@ -99,20 +99,20 @@ Tag 0x29EC: PRE_TIMEOUT=5 + HAL_Delay(1)  → Rango reducido 33%
 ### **Migración a Data Rate 850K**
 
 **Justificación**:
-- **+8 dB sensibilidad** vs configuración actual (6.8 Mbps)
+- **+6.8 dB sensibilidad** (según fabricante) vs configuración actual (6.8 Mbps)
 - **Rango objetivo**: 30-50m (1.5-2.5× mejora sobre 20m actual)
 - **Robustez NLOS**: Mayor inmunidad a obstrucciones y orientación desfavorable
 - **Solución FW**: No requiere cambios hardware
 
 **Trade-offs aceptables (en modo multiple detection)**:
-- **Latencia**: 500-600ms vs 85-100ms actual por tag (aceptable para 5-10 tags)
-- **Consumo**: +50% en tags (de ~40 mAh a ~60 mAh, aún muy bajo)
-- **Throughput**: 15-20 tags/seg vs 80-100 tags/seg actual (suficiente para aplicación)
+- **Latencia**: 160-200ms vs 30-100ms actual por tag
+- **Consumo**: Se obtendrá un aproximado del impacto en la duración para el día lunes
+- **Throughput**: 5-6.25 tags/seg vs 10-33 tags/seg actual 
 
 **Trade-offs aceptables (en modo one detection)**:
-- **Latencia**: ~10-15ms vs ~2ms actual por medición (3 transmisiones: Sniffer→Tag→Sniffer)
-- **Consumo**: Similar (+50% por transmisión, pero menos transmisiones totales)
-- **Throughput**: ~100 mediciones/seg vs ~500 mediciones/seg actual
+- **Latencia**: ~50ms vs ~15ms actual por tag
+- **Consumo**: Se obtendrá un aproximado del impacto en la duración para el día lunes
+- **Throughput**: ~20 tags/seg vs ~66 tags/seg actual
 
 **Esfuerzo estimado**: 
 - **Desarrollo**: 2-3 días (cambio config DWT, ajuste timeouts, compilación)
@@ -144,7 +144,7 @@ Tag 0x29EC: PRE_TIMEOUT=5 + HAL_Delay(1)  → Rango reducido 33%
 
 ## Plan de Acción
 
-**Semana 1 (30 Oct - 3 Nov)**:
+**Semana 1 (03 Nov - 7 Nov)**:
 1. Implementar migración a 850K (2-3 días)
 2. Testing en campo @ 20m, 30m, 40m (1-2 días)
 3. Validar latencia y consumo aceptables
@@ -160,7 +160,7 @@ Tag 0x29EC: PRE_TIMEOUT=5 + HAL_Delay(1)  → Rango reducido 33%
 ## Métricas de Éxito
 
 ### **Objetivos Cumplidos**
-- Sistema funcional @ 20m (configuración óptima identificada)
+- Sistema funcional hasta 20m (configuración óptima identificada)
 - Causa raíz diagnosticada (orientación antenas, NO hardware defectuoso)
 - 7 tests completados con análisis
 - Configuración óptima validada (PRE_TIMEOUT=8)
