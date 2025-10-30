@@ -1,8 +1,16 @@
 # Resumen Pruebas SmartLocate
-
-**Proyecto**: Sniffer-Tag Firmware (DW3000 UWB)  
+ 
 **Período de Testing**: 22-29 Octubre 2025  
 **Estado**: Sistema Funcional - Optimizaciones Identificadas
+
+---
+
+## Definiciones
+
+- **LOS** (Line Of Sight): Línea de vista directa sin obstrucciones entre emisor y receptor
+- **NLOS** (Non Line Of Sight): Sin línea de vista directa, con obstrucciones (paredes, personas, objetos)
+- **OTP** (One-Time Programmable): Memoria de calibración de fábrica del chip, programada una sola vez
+- **PAC** (Preamble Acquisition Chunk): Unidad de tiempo que el receptor espera para detectar el inicio de una señal.
 
 ---
 
@@ -11,10 +19,10 @@
 ### **Estado del Sistema**
 - **Operacional**: Sistema funciona correctamente hasta **20m** en línea de vista
 - **Limitación identificada**: Degradación de detección >20m por orientación de antenas
-- **Solución disponible**: Migración a data rate 850K puede extender rango a **30-50m**
+- **Solución disponible**: Migración a data rate 850K podría extender rango a **30-50m**
 
 ### **Configuración Óptima Validada**
-- **PRE_TIMEOUT**: 8 PAC (ambos dispositivos)
+- **PRE_TIMEOUT**: 8 PAC (ambos dispositivos) -  (~16 µs)
 - **Data Rate actual**: 6.8 Mbps
 - **Rango efectivo**: 20m (línea de vista con orientación favorable)
 
@@ -32,6 +40,11 @@
 | TEST-02 | 28-Oct | Problema en antena física | Descartado |
 | TEST-03 | 28-Oct | Calibración OTP compartida | Descartado |
 | TEST-04 | 28-Oct | Delays en código | Descartado |
+
+**Razonamiento de las hipótesis probadas**:
+- **PRE_TIMEOUT**: Señales débiles a larga distancia requieren más tiempo para detectar el preámbulo. Aumentar el timeout debería mejorar la sensibilidad del receptor.
+- **Calibración OTP**: Se sospechaba que ambos chips DW3000 compartían la misma estructura de calibración en memoria, causando que Canal B sobrescribiera los valores de Canal A.
+- **HAL_Delay(1)**: Se pensaba que el delay de 1ms entre lecturas introducía jitter y desincronización en el protocolo de comunicación, afectando el timing crítico de las respuestas UWB.
 
 **Conclusión Preliminar**: Sospecha de problema hardware en Canal A del Sniffer
 
@@ -56,22 +69,14 @@ Tag 0x29EC: PRE_TIMEOUT=5 + HAL_Delay(1)  → Rango reducido 33%
 ---
 
 ### **TEST-07**: Prueba con Movimiento y Obstrucción (29 Oct)
-**Objetivo**: Validar sistema en condiciones reales de uso
+**Objetivo**: Validar sistema en movimiento y con obstrucción corporal
 
 **Setup**: Operador en movimiento con tags, obstrucción corporal intermitente (NLOS)
-
-**DESCUBRIMIENTO CRÍTICO**:
-```
-Fenómeno de inversión de errores detectado:
-  - Línea vista estática: Canal A falla sistemáticamente
-  - Con movimiento/rotación: Errores se distribuyen entre Canal A y B
-  - @ 18.79m con movimiento: Canal A funciona, Canal B falla
-```
 
 **Conclusión TEST-07**: 
 - **NO hay problema hardware defectuoso**
 - **Problema es ORIENTACIÓN/POLARIZACIÓN de antenas**
-- **Sistema funciona correctamente** en condiciones reales de uso
+- **Sistema funciona correctamente** en movimiento y con obstruccion corporal hasta ~19m
 
 ---
 
@@ -86,10 +91,6 @@ Fenómeno de inversión de errores detectado:
 | PRE_TIMEOUT=12 | ~18m | ~18m | No mejora |
 | 850K (proyectado) | **30-50m** | **30-50m** | **Siguiente paso** |
 
-### **Causa Raíz Identificada**
-- **Problema**: Polarización de antenas + separación de solo 2m entre antenas del Sniffer
-- **Efecto**: Una antena queda en "sombra" RF según orientación del tag
-- **Impacto**: Degradación a modo single-antenna (R:3) en orientaciones desfavorables
 
 ---
 
@@ -101,12 +102,17 @@ Fenómeno de inversión de errores detectado:
 - **+8 dB sensibilidad** vs configuración actual (6.8 Mbps)
 - **Rango objetivo**: 30-50m (1.5-2.5× mejora sobre 20m actual)
 - **Robustez NLOS**: Mayor inmunidad a obstrucciones y orientación desfavorable
-- **Solución SW pura**: No requiere cambios hardware
+- **Solución FW**: No requiere cambios hardware
 
-**Trade-offs aceptables**:
-- **Latencia**: 800ms vs 100ms actual por tag (aceptable para 5-10 tags)
+**Trade-offs aceptables (en modo multiple detection)**:
+- **Latencia**: 500-600ms vs 85-100ms actual por tag (aceptable para 5-10 tags)
 - **Consumo**: +50% en tags (de ~40 mAh a ~60 mAh, aún muy bajo)
-- **Throughput**: 10 tags/seg vs 80 tags/seg actual (suficiente para aplicación)
+- **Throughput**: 15-20 tags/seg vs 80-100 tags/seg actual (suficiente para aplicación)
+
+**Trade-offs aceptables (en modo one detection)**:
+- **Latencia**: ~10-15ms vs ~2ms actual por medición (3 transmisiones: Sniffer→Tag→Sniffer)
+- **Consumo**: Similar (+50% por transmisión, pero menos transmisiones totales)
+- **Throughput**: ~100 mediciones/seg vs ~500 mediciones/seg actual
 
 **Esfuerzo estimado**: 
 - **Desarrollo**: 2-3 días (cambio config DWT, ajuste timeouts, compilación)
@@ -120,23 +126,23 @@ Fenómeno de inversión de errores detectado:
 
 ---
 
-## Análisis Costo-Beneficio
+## Análisis
 
 ### **Opción A: Migración 850K** (RECOMENDADA)
 - **Costo**: ~1 semana desarrollo
 - **Beneficio**: 1.5-2.5× extensión de rango (20m → 30-50m)
 - **Riesgo**: Bajo (solo cambio de configuración, reversible)
-- **ROI**: Excelente
+
 
 ### **Opción B: Mantener configuración actual**
 - **Costo**: 0 (sin cambios)
 - **Beneficio**: Sistema funciona correctamente hasta 20m
 - **Riesgo**: Ninguno
-- **ROI**: N/A (mantiene estado actual)
+
 
 ---
 
-## Plan de Acción Recomendado
+## Plan de Acción
 
 **Semana 1 (30 Oct - 3 Nov)**:
 1. Implementar migración a 850K (2-3 días)
@@ -148,7 +154,6 @@ Fenómeno de inversión de errores detectado:
 - Si 850K logra 30-70% @ 30m → **Evaluar ajustes adicionales**
 - Si 850K <30% @ 30m → **Investigar interferencias o problemas adicionales** (improbable)
 
-**Probabilidad de éxito**: **80-85%** basado en especificaciones técnicas DW3000
 
 ---
 
@@ -157,7 +162,7 @@ Fenómeno de inversión de errores detectado:
 ### **Objetivos Cumplidos**
 - Sistema funcional @ 20m (configuración óptima identificada)
 - Causa raíz diagnosticada (orientación antenas, NO hardware defectuoso)
-- 7 tests completados con análisis exhaustivo
+- 7 tests completados con análisis
 - Configuración óptima validada (PRE_TIMEOUT=8)
 
 ### **Objetivos Pendientes**
@@ -166,38 +171,4 @@ Fenómeno de inversión de errores detectado:
 - Pruebas de consumo energético prolongado
 - Validación en entorno industrial con interferencias
 
----
 
-## Notas Técnicas
-
-### **Lecciones Aprendidas**
-1. **Aumentar PRE_TIMEOUT no siempre mejora**: PRE_TIMEOUT=12 empeoró rendimiento
-2. **HAL_Delay(1) es beneficioso**: Contrario a hipótesis inicial
-3. **Testing con movimiento es crítico**: Revela comportamiento real vs casos estáticos extremos
-4. **Geometría de antenas es factor dominante**: Más importante que ajustes de software
-
-### **Documentación Completa**
-- `CHECKLIST_TESTS_FISICOS.md`: 855 líneas con análisis detallado de 7 tests
-- `ANALISIS_EJECUTIVO_COMUNICACION.md`: 680 líneas con análisis de timing
-- Logs completos en `/logs/` (29-Oct-2025)
-
----
-
-## Conclusión Ejecutiva
-
-**Estado del Proyecto**: **EN BUEN CAMINO**
-
-- Sistema funciona correctamente en condiciones reales (20m)
-- Problema diagnosticado (orientación antenas, NO hardware defectuoso)
-- Solución clara identificada (migración 850K, 1 semana desarrollo)
-- ROI favorable (1.5-2.5× extensión rango con cambio SW puro)
-
-**Recomendación**: **Proceder con migración a 850K** como próximo paso inmediato.
-
-**Riesgo del proyecto**: **BAJO** - Solución técnica clara y probada en literatura técnica.
-
----
-
-**Preparado por**: Equipo de Desarrollo  
-**Fecha**: 29 Octubre 2025  
-**Próxima Revisión**: Post-implementación 850K (estimada 5 Nov 2025)
