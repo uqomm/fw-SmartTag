@@ -16,16 +16,11 @@
 
 ## Resumen de Situación Actual
 
-### **Estado del Sistema**
-- **A evaluar**: Se evaluará el funcionamiento del sistema en Multiple Detection.
-- **Operacional**: Sistema funciona correctamente hasta **20m** en línea de vista y con tag orientado en direccion al sniffer
-- **Limitación identificada**: Degradación de detección > 12m por orientación de antenas
-- **Solución disponible**: Migración a data rate 850K podría extender rango a **30-50m**
-
-### **Configuración Óptima Validada**
-- **PRE_TIMEOUT**: 8 PAC (ambos dispositivos) - (~16 µs)
-- **Data Rate actual**: 6.8 Mbps
-- **Rango efectivo**: 20m (línea de vista con orientación favorable)
+| Aspecto | Descripción |
+|---------|-------------|
+| Estado del Sistema | Operacional hasta 20m en LOS con orientación favorable; limitación por orientación de antenas >12m |
+| Configuración Óptima | PRE_TIMEOUT=8 PAC (~16 µs), Data Rate=6.8 Mbps, Rango efectivo=20m |
+| Solución Disponible | Migración a 850K para extender rango a 30-50m |
 
 ---
 
@@ -41,6 +36,8 @@
 | TEST-02 | 28-Oct | Problema en antena física | Descartado |
 | TEST-03 | 28-Oct | Calibración OTP compartida | Descartado |
 | TEST-04 | 28-Oct | Delays en código | Descartado |
+
+<div style="page-break-after: always;"></div>
 
 **Razonamiento de las hipótesis probadas**:
 - **PRE_TIMEOUT**: Señales débiles a larga distancia requieren más tiempo para detectar el preámbulo. Aumentar el timeout debería mejorar la sensibilidad del receptor.
@@ -89,28 +86,28 @@
 
 ---
 
+<div style="page-break-after: always;"></div>
+
 ## Próximos Pasos Recomendados
 
 ### **Migración a Data Rate 850K**
 
-**Justificación**:
-- **+6.8 dB sensibilidad** (según fabricante) vs configuración actual (6.8 Mbps)
-- **Rango objetivo**: 30-50m (1.5-2.5× mejora sobre 20m actual)
-- **Robustez NLOS**: Mayor inmunidad a obstrucciones y orientación desfavorable
-- **Solución FW**: No requiere cambios hardware
+| Beneficio | Descripción |
+|-----------|-------------|
+| Sensibilidad | +6.8 dB vs 6.8 Mbps |
+| Rango | 30-50m (1.5-2.5× mejora) |
+| Robustez NLOS | Mayor inmunidad a obstrucciones/orientación |
+| Implementación | Solo FW, no requiere HW |
 
-**Trade-offs aceptables (en modo multiple detection)**:
-- **Latencia**: 160-200ms vs 30-100ms actual por tag
-- **Consumo**: Se obtendrá un aproximado del impacto en la duración para el día lunes
-- **Throughput**: 5-6.25 tags/seg vs 10-33 tags/seg actual 
+**Trade-offs**:
 
-**Trade-offs aceptables (en modo one detection)**:
-- **Latencia**: ~50ms vs ~15ms actual por tag
-- **Consumo**: Se obtendrá un aproximado del impacto en la duración para el día lunes
-- **Throughput**: ~20 tags/seg vs ~66 tags/seg actual
+| Modo | Latencia | Consumo | Throughput |
+|------|----------|---------|------------|
+| Multiple Detection | 160-200ms vs 30-100ms actual | A evaluar | 5-6.25 vs 10-33 tags/seg |
+| One Detection | ~50ms vs ~15ms actual | A evaluar | ~20 vs ~66 tags/seg |
 
 **Esfuerzo estimado**: 
-- **Desarrollo**: 2-3 días (cambio config DWT, ajuste timeouts, compilación)
+- **Desarrollo**: 2-3 días (cambio config transmisores, ajuste timeouts, compilación)
 - **Testing**: 1-2 días (validación en campo @ 20m, 30m, 50m)
 - **Total**: **1 semana** (incluyendo validación completa)
 
@@ -123,31 +120,29 @@
 
 ## Análisis
 
-### **Opción A: Migración 850K** (RECOMENDADA)
-- **Costo**: ~1 semana desarrollo
-- **Beneficio**: 1.5-2.5× extensión de rango (20m → 30-50m)
-- **Riesgo**: Bajo (solo cambio de configuración, reversible)
-
-
-### **Opción B: Mantener configuración actual**
-- **Costo**: 0 (sin cambios)
-- **Beneficio**: Sistema funciona correctamente hasta 20m
-- **Riesgo**: Ninguno
+| Opción | Costo | Beneficio | Riesgo |
+|--------|-------|-----------|--------|
+| **A: Migración 850K** (Recomendada) | ~1 semana desarrollo | 1.5-2.5× extensión de rango (20m → 30-50m) | Bajo (solo config FW, reversible) |
+| **B: Mantener actual** | 0 (sin cambios) | Funciona hasta 20m | Ninguno |
 
 
 ---
 
+<div style="page-break-after: always;"></div>
+
 ## Plan de Acción
 
-**Semana 1 (03 Nov - 7 Nov)**:
-1. Implementar migración a 850K (2-3 días)
-2. Testing en campo @ 20m, 30m, 40m (1-2 días)
-3. Validar latencia y consumo aceptables
+| Semana | Tareas |
+|--------|--------|
+| Semana 1 (03 Nov - 7 Nov) | 1. Implementar migración a 850K (2-3 días)<br>2. Testing en campo @ 20m, 30m, 40m (1-2 días)<br>3. Validar latencia y consumo aceptables |
 
 **Criterio de decisión**:
-- Si 850K logra >70% @ 30m → **Evaluar consumo e Implementar como solución definitiva**
-- Si 850K logra 30-70% @ 30m → **Evaluar ajustes adicionales**
-- Si 850K <30% @ 30m → **Investigar interferencias o problemas adicionales** (improbable)
+
+| Condición | Acción |
+|-----------|--------|
+| 850K >70% @ 30m | Evaluar consumo e implementar como solución definitiva |
+| 850K 30-70% @ 30m | Evaluar ajustes adicionales |
+| 850K <30% @ 30m | Investigar interferencias o problemas adicionales (improbable)
 
 
 ---
