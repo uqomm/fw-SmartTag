@@ -17,12 +17,13 @@
 ## Resumen de Situación Actual
 
 ### **Estado del Sistema**
-- **Operacional**: Sistema funciona correctamente hasta **20m** en línea de vista
-- **Limitación identificada**: Degradación de detección >20m por orientación de antenas
+- **A evaluar**: Se evaluará el funcionamiento del sistema en Multiple Detection.
+- **Operacional**: Sistema funciona correctamente hasta **20m** en línea de vista y con tag orientado en direccion al sniffer
+- **Limitación identificada**: Degradación de detección > 12m por orientación de antenas
 - **Solución disponible**: Migración a data rate 850K podría extender rango a **30-50m**
 
 ### **Configuración Óptima Validada**
-- **PRE_TIMEOUT**: 8 PAC (ambos dispositivos) -  (~16 µs)
+- **PRE_TIMEOUT**: 8 PAC (ambos dispositivos) - (~16 µs)
 - **Data Rate actual**: 6.8 Mbps
 - **Rango efectivo**: 20m (línea de vista con orientación favorable)
 
@@ -53,13 +54,7 @@
 ### **TEST-05 y TEST-06**: Comparación Multi-Tag (29 Oct)
 **Objetivo**: Validar configuraciones óptimas con 4 tags simultáneos
 
-**Configuraciones probadas**:
-```
-Tag 0x2B45: PRE_TIMEOUT=8 + HAL_Delay(1)  → Mejor rendimiento
-Tag 0x2B5E: PRE_TIMEOUT=8 sin HAL_Delay   → Bueno con errores
-Tag 0x2783: PRE_TIMEOUT=12 sin HAL_Delay  → Empeora >20m
-Tag 0x29EC: PRE_TIMEOUT=5 + HAL_Delay(1)  → Rango reducido 33%
-```
+
 
 **Hallazgos clave**:
 - PRE_TIMEOUT=8 es configuración óptima
@@ -76,7 +71,7 @@ Tag 0x29EC: PRE_TIMEOUT=5 + HAL_Delay(1)  → Rango reducido 33%
 **Conclusión TEST-07**: 
 - **NO hay problema hardware defectuoso**
 - **Problema es ORIENTACIÓN/POLARIZACIÓN de antenas**
-- **Sistema funciona correctamente** en movimiento y con obstruccion corporal hasta ~19m
+- **Sistema funciona correctamente** en movimiento, con obstruccion corporal y con tags orientados hacia el sniffer hasta ~19m
 
 ---
 
@@ -150,7 +145,7 @@ Tag 0x29EC: PRE_TIMEOUT=5 + HAL_Delay(1)  → Rango reducido 33%
 3. Validar latencia y consumo aceptables
 
 **Criterio de decisión**:
-- Si 850K logra >70% @ 30m → **Implementar como solución definitiva**
+- Si 850K logra >70% @ 30m → **Evaluar consumo e Implementar como solución definitiva**
 - Si 850K logra 30-70% @ 30m → **Evaluar ajustes adicionales**
 - Si 850K <30% @ 30m → **Investigar interferencias o problemas adicionales** (improbable)
 
@@ -160,15 +155,15 @@ Tag 0x29EC: PRE_TIMEOUT=5 + HAL_Delay(1)  → Rango reducido 33%
 ## Métricas de Éxito
 
 ### **Objetivos Cumplidos**
-- Sistema funcional hasta 20m (configuración óptima identificada)
-- Causa raíz diagnosticada (orientación antenas, NO hardware defectuoso)
+- Sistema funcional hasta 20m (con linea de vista y orientación de antenas favorable)
+- Actualmente, la orientación de las antenas y la línea de vista son factores críticos para el desempeño del sistema
 - 7 tests completados con análisis
-- Configuración óptima validada (PRE_TIMEOUT=8)
+- Configuración óptima actual validada (PRE_TIMEOUT=8)
 
 ### **Objetivos Pendientes**
 - Validación de rango extendido >30m (requiere 850K)
 - Testing con 10+ tags simultáneos
-- Pruebas de consumo energético prolongado
+- Pruebas de consumo 
 - Validación en entorno industrial con interferencias
 
 
