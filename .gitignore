@@ -21,7 +21,7 @@ Release/
 .pcy
 .settings/
 *.launch
-.cproject
+#.cproject
 .project
 .mxproject
 
