@@ -31,6 +31,17 @@ Este documento describe el paso a paso para migrar el sistema SmartLocate (Sniff
 - Ajustar SFD timeout: `(1025 + 1 + 8 - 32) = 1002` (recalcular).
 - Verificar antenna delay y calibración.
 
+### 2.4 Actualizar `sniffer_tag.cpp`
+- Actualizar constantes de timeout y delays:
+  - `POLL_RX_TO_RESP_TX_DLY_UUS_6M8` → `POLL_RX_TO_RESP_TX_DLY_UUS_850K`
+  - `RESP_RX_TIMEOUT_UUS_6M8` → `RESP_RX_TIMEOUT_UUS_850K`
+  - `PRE_TIMEOUT_6M8` → `PRE_TIMEOUT_850K`
+  - `RESP_TX_TO_FINAL_RX_DLY_UUS_6M8` → `RESP_TX_TO_FINAL_RX_DLY_UUS_850K`
+  - `FINAL_RX_TIMEOUT_UUS_6M8` → `FINAL_RX_TIMEOUT_UUS_850K`
+- Actualizar configuración del DW3000 en `init_uwb_device()` y `reset_actual_hw()`: `DWT_BR_6M8` → `DWT_BR_850K`, `DWT_PLEN_128` → `DWT_PLEN_1024`, `DWT_PAC8` → `DWT_PAC32`.
+- Ajustar SFD timeout en funciones: `(129 + 8 - 8)` → `(1025 + 1 + 8 - 32)`.
+- Actualizar `setup_and_transmit()` y `setup_and_transmit_for_timestamp_query()` para usar nuevas constantes.
+
 ### 2.3 Compilar y Flashear
 - Compilar proyecto Sniffer.
 - Flashear en dispositivo.
@@ -47,7 +58,15 @@ Este documento describe el paso a paso para migrar el sistema SmartLocate (Sniff
 - Modificar configuración DW3000 idéntica al Sniffer.
 - Verificar delays de respuesta.
 
-### 3.3 Compilar y Flashear
+### 3.3 Actualizar `human_tag.c`
+- Actualizar constantes de timeout y delays:
+  - `POLL_RX_TO_RESP_TX_DLY_UUS_6M8` → `POLL_RX_TO_RESP_TX_DLY_UUS_850K`
+  - `PRE_TIMEOUT_6M8` → `PRE_TIMEOUT_850K`
+  - `RESP_TX_TO_FINAL_RX_DLY_UUS_6M8` → `RESP_TX_TO_FINAL_RX_DLY_UUS_850K`
+  - `FINAL_RX_TIMEOUT_UUS_6M8` → `FINAL_RX_TIMEOUT_UUS_850K`
+- Actualizar funciones como `process_first_tag_information()`, `process_response()`, `send_response_with_timestamps()` y `start_tag_reception_inmediate()` para usar nuevas constantes.
+
+### 3.4 Compilar y Flashear
 - Compilar proyecto Tag.
 - Flashear en dispositivo.
 - Verificar indicadores LED (WS2812) y batería (BQ25150).
