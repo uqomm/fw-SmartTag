@@ -102,6 +102,23 @@ Este documento describe el paso a paso para migrar el sistema SmartLocate (Sniff
 
 ---
 
+## Paso 6: Optimizaciones Avanzadas (Opcional)
+- Aplicar solo si los cambios iniciales no alcanzan métricas de éxito (ej. detección <70% @30m, errores RXSTO/RXFTO recurrentes).
+- **Parámetros a Modificar**:
+  - **SFD Timeout**: Aumentar ×8 (ej. `SFD_TIMEOUT_850K = 520` µs) en `uwb3000Fxx.c` (registro `DRX_SFDTOC`).
+  - **RX Frame Wait Timeout**: Aumentar ×8 (ej. `RX_FWTO_850K = 80000` µs) en `uwb3000Fxx.h` y referencias.
+  - **Antenna Delay**: Recalibrar TX/RX delays en `uwb3000Fxx.c` (función de calibración).
+  - **STS Configuration**: Habilitar STS (ej. `STS_LEN_850K = 128`) para inmunidad a interferencias.
+  - **SNIFF Mode**: Ajustar `SNIFF_ON` y `SNIFF_OFF` para ahorro de energía.
+  - **DGC y RX Tuning**: Retunear `DGC_CFG` si hay problemas de sensibilidad.
+- **Subpasos**:
+  - Actualizar constantes en `uwb3000Fxx.h` y `uwb3000Fxx.c`.
+  - Modificar referencias en `sniffer_tag.cpp` y `human_tag.c`.
+  - Compilar, flashear y retestear con métricas extendidas.
+- **Tiempo Adicional**: +1 día desarrollo + testing.
+
+---
+
 ## Notas Técnicas
 - **Escalado**: Todos los timeouts ×8 por data rate (6.8M → 850K).
 - **Compatibilidad**: Ambos dispositivos deben usar configuración idéntica.
