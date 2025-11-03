@@ -17,13 +17,13 @@ Release/
 *.cyclo
 
 # STM32CubeIDE specific files
-.cstat
-.pcy
-.settings/
-*.launch
+#.cstat
+#.pcy
+#.settings/
+#*.launch
 #.cproject
-.project
-.mxproject
+#.project
+#.mxproject
 
 # System files
 .DS_Store
