@@ -22,8 +22,8 @@ Este documento describe el paso a paso para migrar el sistema SmartLocate (Sniff
 - Cambiar `DWT_PLEN_128` → `DWT_PLEN_1024`
 - Cambiar `DWT_PAC8` → `DWT_PAC32`
 - Actualizar timeouts:
-  - `POLL_TX_TO_RESP_RX_DLY_UUS_6M8` → `POLL_TX_TO_RESP_RX_DLY_UUS_850K = 60` (escalado ×8)
-  - `RESP_RX_TIMEOUT_UUS_6M8` → `RESP_RX_TIMEOUT_UUS_850K = 2000` (escalado ×8)
+  - `POLL_TX_TO_RESP_RX_DLY_UUS_6M8 = 700` → `POLL_TX_TO_RESP_RX_DLY_UUS_850K = 5600` (escalado ×8)
+  - `RESP_RX_TIMEOUT_UUS_6M8 = 250` → `RESP_RX_TIMEOUT_UUS_850K = 2000` (escalado ×8)
 - Actualizar `PRE_TIMEOUT_6M8 = 8` (mantener), `PRE_TIMEOUT_850K = 32` (calculado)
 
 ### 2.2 Actualizar `uwb3000Fxx.c`
