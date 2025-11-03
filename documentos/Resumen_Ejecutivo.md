@@ -41,6 +41,7 @@
 
 **Razonamiento de las hipótesis probadas**:
 - **PRE_TIMEOUT**: Señales débiles a larga distancia requieren más tiempo para detectar el preámbulo. Aumentar el timeout debería mejorar la sensibilidad del receptor.
+- **PROBLEMA EN ANTENA**: Se sospechaba que una antena o cable defectuoso causaba la falla del Canal A, pero los cambios e intercambios físicos mostraron que el problema persiste en Canal A.
 - **Calibración OTP**: Se sospechaba que ambos chips DW3000 compartían la misma estructura de calibración en memoria, causando que Canal B sobrescribiera los valores de Canal A.
 - **HAL_Delay(1)**: Se pensaba que el delay de 1ms entre lecturas introducía jitter y desincronización en el protocolo de comunicación, afectando el timing crítico de las respuestas UWB.
 
@@ -84,7 +85,6 @@
 | 850K (proyectado) | **30-50m** | **30-50m** | **Siguiente paso** |
 
 
----
 
 <div style="page-break-after: always;"></div>
 
@@ -147,7 +147,7 @@
 
 ---
 
-## Métricas de Éxito
+## Criterios de Aceptación
 
 ### **Objetivos Cumplidos**
 - Sistema funcional hasta 20m (con linea de vista y orientación de antenas favorable)
