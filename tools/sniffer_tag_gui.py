@@ -60,7 +60,7 @@ class SnifferTagGUI:
         }
         
         # Tag tracking
-        self.active_tags = {}  # tag_id -> {last_seen, readings, distance_a, distance_b, battery}
+        self.active_tags = {}  # tag_id -> {last_seen, readings, distance_a, distance_b, battery, detecciones_efectivas, detecciones_erradas}
         
         # Auto-scroll for log display
         self.auto_scroll_var = tk.BooleanVar(value=True)
@@ -363,7 +363,7 @@ class SnifferTagGUI:
                    command=self.clear_active_tags).grid(row=0, column=1, padx=5)
         
         # Active tags display with treeview
-        self.tags_tree = ttk.Treeview(middle_frame, columns=('ID', 'Readings', 'Dist A', 'Dist B', 'Battery', 'Last Seen'), 
+        self.tags_tree = ttk.Treeview(middle_frame, columns=('ID', 'Readings', 'Dist A', 'Dist B', 'Battery', 'Efectivas', 'Erradas', 'Last Seen'), 
                                        show='headings', height=25)
         self.tags_tree.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5)
         
@@ -373,6 +373,8 @@ class SnifferTagGUI:
         self.tags_tree.heading('Dist A', text='Dist A (m)')
         self.tags_tree.heading('Dist B', text='Dist B (m)')
         self.tags_tree.heading('Battery', text='Battery')
+        self.tags_tree.heading('Efectivas', text='Efectivas')
+        self.tags_tree.heading('Erradas', text='Erradas')
         self.tags_tree.heading('Last Seen', text='Last Seen')
         
         self.tags_tree.column('ID', width=80, anchor='center')
@@ -380,6 +382,8 @@ class SnifferTagGUI:
         self.tags_tree.column('Dist A', width=80, anchor='center')
         self.tags_tree.column('Dist B', width=80, anchor='center')
         self.tags_tree.column('Battery', width=70, anchor='center')
+        self.tags_tree.column('Efectivas', width=70, anchor='center')
+        self.tags_tree.column('Erradas', width=70, anchor='center')
         self.tags_tree.column('Last Seen', width=120, anchor='center')
         
         # Scrollbar for tags tree
@@ -852,13 +856,45 @@ class SnifferTagGUI:
                     pass
             self.stats['avg_battery'].append(battery)
             
+            # Classify detection as efectiva or errada
+            try:
+                dist_a_val = float(dist_a) if dist_a != 'N/A' else 0
+                dist_b_val = float(dist_b) if dist_b != 'N/A' else 0
+                
+                # Check if tag already exists to preserve counters
+                if tag_id in self.active_tags:
+                    efectivas = self.active_tags[tag_id].get('detecciones_efectivas', 0)
+                    erradas = self.active_tags[tag_id].get('detecciones_erradas', 0)
+                else:
+                    efectivas = 0
+                    erradas = 0
+                
+                # Increment counters based on detection quality
+                if dist_a_val > 0 and dist_b_val > 0:
+                    # Detección efectiva: ambas antenas detectaron
+                    efectivas += 1
+                else:
+                    # Detección errada: solo una antena o ninguna
+                    erradas += 1
+                    
+            except ValueError:
+                # Si no se puede parsear, contar como errada
+                if tag_id in self.active_tags:
+                    efectivas = self.active_tags[tag_id].get('detecciones_efectivas', 0)
+                    erradas = self.active_tags[tag_id].get('detecciones_erradas', 0) + 1
+                else:
+                    efectivas = 0
+                    erradas = 1
+            
             # Update active tags
             self.active_tags[tag_id] = {
                 'readings': readings,
                 'distance_a': dist_a,
                 'distance_b': dist_b,
                 'battery': battery,
-                'last_seen': datetime.now()
+                'last_seen': datetime.now(),
+                'detecciones_efectivas': efectivas,
+                'detecciones_erradas': erradas
             }
             
             # Update tags display
@@ -905,6 +941,8 @@ class SnifferTagGUI:
                 info['distance_a'],
                 info['distance_b'],
                 info['battery'],
+                info.get('detecciones_efectivas', 0),
+                info.get('detecciones_erradas', 0),
                 last_seen
             ))
     
