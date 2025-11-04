@@ -28,7 +28,7 @@ Este documento describe el paso a paso para migrar el sistema SmartLocate (Sniff
 
 ### 2.2 Actualizar `uwb3000Fxx.c`
 - Modificar `defatult_dwt_config` para usar nuevos valores.
-- Ajustar SFD timeout: `(1025 + 1 + 8 - 32) = 1002` (recalcular).
+- Ajustar SFD timeout: `(1025 + 1 + 8 - 32) = 1002` (recalculado).
 - Verificar antenna delay y calibración.
 
 ### 2.4 Actualizar `sniffer_tag.cpp`
