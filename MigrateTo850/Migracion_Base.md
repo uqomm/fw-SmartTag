@@ -24,6 +24,9 @@ Este documento describe el paso a paso para migrar el sistema SmartLocate (Sniff
 - Actualizar timeouts:
   - `POLL_TX_TO_RESP_RX_DLY_UUS_6M8 = 700` → `POLL_TX_TO_RESP_RX_DLY_UUS_850K = 5600` (escalado ×8)
   - `RESP_RX_TIMEOUT_UUS_6M8 = 250` → `RESP_RX_TIMEOUT_UUS_850K = 2000` (escalado ×8)
+  - `RESP_TX_TO_FINAL_RX_DLY_UUS_6M8 = 500` → `RESP_TX_TO_FINAL_RX_DLY_UUS_850K = 4000` (escalado ×8)
+  - `FINAL_RX_TIMEOUT_UUS_6M8 = 220` → `FINAL_RX_TIMEOUT_UUS_850K = 1760` (escalado ×8)
+  - `POLL_RX_TO_RESP_TX_DLY_UUS_6M8 = 900` → `POLL_RX_TO_RESP_TX_DLY_UUS_850K = 7200` (escalado ×8)
 - Actualizar `PRE_TIMEOUT_6M8 = 8` (mantener), `PRE_TIMEOUT_850K = 32` (calculado)
 
 ### 2.2 Actualizar `uwb3000Fxx.c`
@@ -127,3 +130,24 @@ Este documento describe el paso a paso para migrar el sistema SmartLocate (Sniff
 **Responsable**: [Tu Nombre]  
 **Fecha Inicio**: [Fecha]  
 **Estado**: Planificado
+
+---
+
+## Anexos: Glosario de Parámetros
+
+Este glosario explica los parámetros modificados durante la migración a 850 Kbps, basados en el Manual de Usuario DW3000 y el protocolo UWB. Incluye su significado, valor típico y razón de cambio.
+
+### Parámetros de Configuración Básica
+- **DWT_BR_850K**: Velocidad de datos (Data Rate) del DW3000. Valor: 0. Cambiado de DWT_BR_6M8 (6.8 Mbps) para reducir velocidad 8×, mejorando sensibilidad (+6 dB) y alcance a costa de latencia.
+- **DWT_PLEN_1024**: Longitud del preámbulo (Preamble Length). Valor: 0x02. Cambiado de DWT_PLEN_128 (128 símbolos) a 1024 símbolos para mejorar detección en entornos ruidosos/NLOS.
+- **DWT_PAC32**: Tamaño del chunk de adquisición de preámbulo (Preamble Acquisition Chunk). Valor: 2. Cambiado de DWT_PAC8 (8 símbolos) a 32 para procesar preámbulos largos eficientemente.
+
+### Timeouts y Delays (Escalados ×8 para 850 Kbps)
+- **POLL_TX_TO_RESP_RX_DLY_UUS_850K**: Delay entre transmisión de POLL y recepción de respuesta. Valor: 5600 µs. Escalado desde 700 µs @6.8M para dar tiempo al Tag de responder.
+- **RESP_RX_TIMEOUT_UUS_850K**: Timeout para recepción de respuesta. Valor: 2000 µs. Escalado desde 250 µs para evitar timeouts prematurados en transmisiones lentas.
+- **PRE_TIMEOUT_850K**: Timeout de preámbulo (en múltiplos de PAC). Valor: 32. Calculado desde 8 @6.8M para compensar PAC mayor (32 vs 8).
+- **RESP_TX_TO_FINAL_RX_DLY_UUS_850K**: Delay entre transmisión de respuesta y recepción final. Valor: 4000 µs. Escalado desde 500 µs para sincronización en ranging bidireccional.
+- **FINAL_RX_TIMEOUT_UUS_850K**: Timeout para recepción final. Valor: 1760 µs. Escalado desde 220 µs para recepciones lentas.
+- **POLL_RX_TO_RESP_TX_DLY_UUS_850K**: Delay entre recepción de POLL y transmisión de respuesta (en Tag). Valor: 7200 µs. Escalado desde 900 µs para consistencia en protocolo.
+
+Estos parámetros aseguran compatibilidad y desempeño óptimo a 850 Kbps. Referencias: Manual DW3000 (secciones 3.2, 4.1, 8.1).
