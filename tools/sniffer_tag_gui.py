@@ -27,6 +27,7 @@ from datetime import datetime
 import struct
 import os
 import re
+import csv
 
 
 class SnifferTagGUI:
@@ -61,6 +62,9 @@ class SnifferTagGUI:
         
         # Tag tracking
         self.active_tags = {}  # tag_id -> {last_seen, readings, distance_a, distance_b, battery, detecciones_efectivas, detecciones_erradas}
+        
+        # Effective detections capture storage
+        self.efectivas_capturas = []  # Lista para almacenar capturas de detecciones efectivas
         
         # Auto-scroll for log display
         self.auto_scroll_var = tk.BooleanVar(value=True)
@@ -408,10 +412,14 @@ class SnifferTagGUI:
         clear_btn = ttk.Button(log_control_frame, text="🗑 Clear Log", command=self.clear_log)
         clear_btn.grid(row=0, column=2, padx=5)
         
+        export_btn = ttk.Button(log_control_frame, text="📥 Export Efectivas", command=self.export_efectivas_capturas)
+        export_btn.grid(row=0, column=3, padx=5)
+        ToolTip(export_btn, "Export captured effective detections\n(Dist A > 0 AND Dist B > 0) to CSV file")
+        
         # Auto-scroll checkbox
         auto_scroll_cb = ttk.Checkbutton(log_control_frame, text="Auto-scroll", 
                                           variable=self.auto_scroll_var)
-        auto_scroll_cb.grid(row=0, column=3, padx=5)
+        auto_scroll_cb.grid(row=0, column=4, padx=5)
         
         # Log display
         self.log_display = scrolledtext.ScrolledText(right_frame, width=70, height=45, 
@@ -488,6 +496,43 @@ class SnifferTagGUI:
                 else:
                     crc >>= 1
         return struct.pack("<H", crc)
+    
+    def export_efectivas_capturas(self):
+        """Export captured effective detections to CSV file"""
+        if not self.efectivas_capturas:
+            messagebox.showwarning("No Data", "No hay capturas de detecciones efectivas para exportar.")
+            return
+        
+        # Open file dialog
+        from tkinter import filedialog
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        default_filename = f"detecciones_efectivas_{timestamp}.csv"
+        
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+            initialfile=default_filename,
+            title="Guardar Detecciones Efectivas"
+        )
+        
+        if not filepath:
+            return  # User cancelled
+        
+        try:
+            with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
+                fieldnames = ['Timestamp', 'Tag ID', 'Distancia A (cm)', 'Distancia B (cm)', 'Batería (%)']
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                
+                writer.writeheader()
+                for captura in self.efectivas_capturas:
+                    writer.writerow(captura)
+            
+            messagebox.showinfo("Éxito", f"Se exportaron {len(self.efectivas_capturas)} detecciones a:\n{filepath}")
+            self.update_status_bar(f"Exported {len(self.efectivas_capturas)} detections to CSV")
+            
+        except Exception as e:
+            messagebox.showerror("Error de Exportación", f"No se pudo guardar el archivo:\n{str(e)}")
+            self.update_status_bar(f"Export failed: {str(e)}")
         
     def toggle_connection(self):
         """Connect/Disconnect from serial port"""
@@ -873,6 +918,15 @@ class SnifferTagGUI:
                 if dist_a_val > 0 and dist_b_val > 0:
                     # Detección efectiva: ambas antenas detectaron
                     efectivas += 1
+                    
+                    # Capture effective detection for export
+                    self.efectivas_capturas.append({
+                        'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        'Tag ID': f"0x{tag_id}",
+                        'Distancia A (cm)': f"{dist_a_val:.2f}",
+                        'Distancia B (cm)': f"{dist_b_val:.2f}",
+                        'Batería (%)': battery
+                    })
                 else:
                     # Detección errada: solo una antena o ninguna
                     erradas += 1
