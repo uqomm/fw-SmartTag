@@ -697,17 +697,17 @@ typedef struct {
 
 /* This is the delay from the end of the frame transmission to the enable of the receiver, as programmed for the DW IC's wait for response feature. */
 #define RESP_TX_TO_FINAL_RX_DLY_UUS_6M8 500
-#define RESP_TX_TO_FINAL_RX_DLY_UUS_850K 60
+#define RESP_TX_TO_FINAL_RX_DLY_UUS_850K 4000  // Escalado ×8 desde 6M8
 
 /* Receive final timeout. See NOTE 5 below. */
 #define FINAL_RX_TIMEOUT_UUS_6M8 220
-#define FINAL_RX_TIMEOUT_UUS_850K 5000
+#define FINAL_RX_TIMEOUT_UUS_850K 1760  // Escalado ×8 desde 6M8
 
 /* Delay between frames, in UWB microseconds. See NOTE 4 below. */
 /* This is the delay from Frame RX timestamp to TX reply timestamp used for calculating/setting the DW IC's delayed TX function. This includes the
  * frame length of approximately 190 us with above configuration. */
 #define POLL_RX_TO_RESP_TX_DLY_UUS_6M8 900
-#define POLL_RX_TO_RESP_TX_DLY_UUS_850K 900
+#define POLL_RX_TO_RESP_TX_DLY_UUS_850K 7200  // Escalado ×8 desde 6M8
 
 /* Inter-ranging delay period, in milliseconds. */
 #define RNG_DELAY_MS 1000
@@ -723,14 +723,14 @@ typedef struct {
 /* Delay between frames, in UWB microseconds. See NOTE 4 below. */
 /* This is the delay from the end of the frame transmission to the enable of the receiver, as programmed for the DW IC's wait for response feature. */
 #define POLL_TX_TO_RESP_RX_DLY_UUS_6M8 700
-#define POLL_TX_TO_RESP_RX_DLY_UUS_850K 60
+#define POLL_TX_TO_RESP_RX_DLY_UUS_850K 5600  // Escalado ×8 desde 6M8
 
 /* Receive response timeout. See NOTE 5 below. */
 #define RESP_RX_TIMEOUT_UUS_6M8 600  // Aumentado de 300 a 600 (+100%) - Solución 1B para detección >20m
-#define RESP_RX_TIMEOUT_UUS_850K    2000
+#define RESP_RX_TIMEOUT_UUS_850K 2000  // Escalado ×8 para 850K
 /* Preamble timeout, in multiple of PAC size. See NOTE 7 below. */
 #define PRE_TIMEOUT_6M8 12  // Aumentado de 8 a 12 (+50% adicional, +140% desde baseline 5) - Solución 1B para mejorar tasa de éxito a >50%
-#define PRE_TIMEOUT_850K 0
+#define PRE_TIMEOUT_850K 32  // Calculado: PAC32 requiere timeout de 32 (escalado desde PAC8=8)
 
 // OTP addresses definitions
 #define LDOTUNELO_ADDRESS (0x04)

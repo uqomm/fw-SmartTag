@@ -41,7 +41,7 @@ TAG_STATUS_t process_first_tag_information(TAG_t *tag) {
 	tag->poll_rx_timestamp = get_rx_timestamp_u64();
 	/** Set send time for response */
 	uint32_t resp_tx_time = (uint32_t) ((tag->poll_rx_timestamp
-			+ ((POLL_RX_TO_RESP_TX_DLY_UUS_6M8) * UUS_TO_DWT_TIME))
+			+ ((POLL_RX_TO_RESP_TX_DLY_UUS_850K) * UUS_TO_DWT_TIME))
 			>> RESPONSE_TX_TIME_SHIFT_AMOUNT);
 	dwt_setdelayedtrxtime(resp_tx_time);
 
@@ -163,7 +163,7 @@ TAG_STATUS_t process_response(TAG_t *tag) {
 
 	/** Set send time for response */
 	uint32_t resp_tx_time = (uint32_t) ((poll_rx_timestamp
-			+ ((POLL_RX_TO_RESP_TX_DLY_UUS_6M8) * UUS_TO_DWT_TIME))
+			+ ((POLL_RX_TO_RESP_TX_DLY_UUS_850K) * UUS_TO_DWT_TIME))
 			>> RESPONSE_TX_TIME_SHIFT_AMOUNT);
 	dwt_setdelayedtrxtime(resp_tx_time);
 
@@ -206,7 +206,7 @@ uint32_t send_response_with_timestamps(uint8_t *tx_resp_msg, uint8_t size,
 
 	/* Set send time for response. See NOTE 9 below. */
 	resp_tx_time = (uint32_t) ((poll_rx_timestamp
-			+ ((POLL_RX_TO_RESP_TX_DLY_UUS_6M8) * UUS_TO_DWT_TIME)) >> 8);
+			+ ((POLL_RX_TO_RESP_TX_DLY_UUS_850K) * UUS_TO_DWT_TIME)) >> 8);
 
 	/* Response TX timestamp is the transmission time we programmed plus the antenna delay. */
 	resp_tx_timestamp = (((uint64_t) (resp_tx_time & 0xFFFFFFFEUL)) << 8)
@@ -234,11 +234,11 @@ uint32_t send_response_with_timestamps(uint8_t *tx_resp_msg, uint8_t size,
 		};
 		dwt_setdelayedtrxtime(resp_tx_time);
 		/* Set expected delay and timeout for final message reception. See NOTE 4 and 5 below. */
-		dwt_setrxaftertxdelay(RESP_TX_TO_FINAL_RX_DLY_UUS_6M8);
+		dwt_setrxaftertxdelay(RESP_TX_TO_FINAL_RX_DLY_UUS_850K);
 		/* FINAL_RX_TIMEOUT_UUS. */
-		dwt_setrxtimeout(FINAL_RX_TIMEOUT_UUS_6M8);
+		dwt_setrxtimeout(FINAL_RX_TIMEOUT_UUS_850K);
 		/* Set preamble timeout for expected frames. See NOTE 6 below. */
-		dwt_setpreambledetecttimeout(PRE_TIMEOUT_6M8);
+		dwt_setpreambledetecttimeout(PRE_TIMEOUT_850K);
 
 		/* Increment frame sequence number after transmission of the response message (modulo 256). */
 		frame_seq_nb++;
