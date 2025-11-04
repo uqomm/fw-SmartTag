@@ -27,7 +27,6 @@ from datetime import datetime
 import struct
 import os
 import re
-import csv
 
 
 class SnifferTagGUI:
@@ -63,9 +62,8 @@ class SnifferTagGUI:
         # Tag tracking
         self.active_tags = {}  # tag_id -> {last_seen, readings, distance_a, distance_b, battery, detecciones_efectivas, detecciones_erradas}
         
-        # Detection history (new)
-        self.detection_history = []  # List of detection snapshots: [{'tag_id', 'readings', 'distance_a', 'distance_b', 'battery', 'detecciones_efectivas', 'detecciones_erradas', 'timestamp'}]
-        self.max_history_entries = 10000  # Limit to prevent memory issues
+        # Detection history - stores all detections with timestamp
+        self.detection_history = []  # list of {timestamp, tag_id, readings, distance_a, distance_b, battery, detecciones_efectivas, detecciones_erradas, detection_type}
         
         # Auto-scroll for log display
         self.auto_scroll_var = tk.BooleanVar(value=True)
@@ -366,9 +364,7 @@ class SnifferTagGUI:
         ttk.Label(tags_label_frame, text="Active Tags:", font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky=tk.W)
         ttk.Button(tags_label_frame, text="🗑 Clear Tags", 
                    command=self.clear_active_tags).grid(row=0, column=1, padx=5)
-        
-        # New buttons for detection history
-        ttk.Button(tags_label_frame, text="📥 Export History", 
+        ttk.Button(tags_label_frame, text="💾 Export History", 
                    command=self.export_detection_history).grid(row=0, column=2, padx=5)
         ttk.Button(tags_label_frame, text="🗑 Clear History", 
                    command=self.clear_detection_history).grid(row=0, column=3, padx=5)
@@ -908,20 +904,19 @@ class SnifferTagGUI:
                 'detecciones_erradas': erradas
             }
             
-            # Add to detection history
-            effective = dist_a_val > 0 and dist_b_val > 0
+            # Store detection in history
+            detection_type = "efectiva" if (dist_a_val > 0 and dist_b_val > 0) else "errada"
             self.detection_history.append({
-                'timestamp': datetime.now().isoformat(),
+                'timestamp': datetime.now(),
                 'tag_id': tag_id,
-                'distance_a': dist_a_val,
-                'distance_b': dist_b_val,
+                'readings': readings,
+                'distance_a': dist_a,
+                'distance_b': dist_b,
                 'battery': battery,
-                'effective': effective
+                'detecciones_efectivas': efectivas,
+                'detecciones_erradas': erradas,
+                'detection_type': detection_type
             })
-            
-            # Limit history size to prevent memory issues
-            if len(self.detection_history) > 10000:
-                self.detection_history.pop(0)
             
             # Update tags display
             self.update_tags_display()
@@ -978,6 +973,58 @@ class SnifferTagGUI:
             self.active_tags.clear()
             self.update_tags_display()
             self.update_status_bar("Active tags cleared")
+    
+    def export_detection_history(self):
+        """Export detection history to CSV file"""
+        if not self.detection_history:
+            messagebox.showinfo("No Data", "No detection history to export")
+            return
+        
+        filename = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+            initialfile=f"detection_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        )
+        
+        if filename:
+            try:
+                import csv
+                with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+                    fieldnames = ['timestamp', 'tag_id', 'readings', 'distance_a', 'distance_b', 'battery', 'detecciones_efectivas', 'detecciones_erradas', 'detection_type']
+                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                    
+                    # Write header
+                    writer.writeheader()
+                    
+                    # Write data
+                    for detection in self.detection_history:
+                        writer.writerow({
+                            'timestamp': detection['timestamp'].strftime('%Y-%m-%d %H:%M:%S.%f')[:-3],
+                            'tag_id': f"0x{detection['tag_id']}",
+                            'readings': detection['readings'],
+                            'distance_a': detection['distance_a'],
+                            'distance_b': detection['distance_b'],
+                            'battery': detection['battery'],
+                            'detecciones_efectivas': detection['detecciones_efectivas'],
+                            'detecciones_erradas': detection['detecciones_erradas'],
+                            'detection_type': detection['detection_type']
+                        })
+                
+                messagebox.showinfo("Success", f"Detection history exported to:\n{filename}\n\nTotal detections: {len(self.detection_history)}")
+                self.update_status_bar(f"History exported to {os.path.basename(filename)}")
+                
+            except Exception as e:
+                messagebox.showerror("Export Error", f"Failed to export history:\n{str(e)}")
+    
+    def clear_detection_history(self):
+        """Clear the detection history"""
+        if not self.detection_history:
+            messagebox.showinfo("No Data", "Detection history is already empty")
+            return
+        
+        if messagebox.askyesno("Clear History", f"Clear detection history?\n\nCurrent detections: {len(self.detection_history)}"):
+            self.detection_history.clear()
+            self.update_status_bar("Detection history cleared")
         
     def update_statistics(self):
         """Update statistics display"""
@@ -990,6 +1037,7 @@ Total Detections: {self.stats['tags_detected']}
 Unique Tags: {len(self.stats['unique_tags'])}
 Total Readings: {self.stats['total_readings']}
 Active Tags: {len(self.active_tags)}
+History Entries: {len(self.detection_history)}
 
 Average Distance A: {avg_dist_a:.2f} m
 Average Distance B: {avg_dist_b:.2f} m
@@ -1020,40 +1068,7 @@ Log Lines: {len(self.log_buffer)}
             }
             self.update_statistics()
             self.update_status_bar("Statistics cleared")
-    
-    def export_detection_history(self):
-        """Export detection history to CSV file"""
-        if not self.detection_history:
-            messagebox.showinfo("Export History", "No detection history to export.")
-            return
-            
-        filename = filedialog.asksaveasfilename(
-            defaultextension=".csv",
-            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
-            initialfile=f"detection_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-        )
-        
-        if filename:
-            try:
-                with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
-                    fieldnames = ['timestamp', 'tag_id', 'distance_a', 'distance_b', 'battery', 'effective']
-                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                    
-                    writer.writeheader()
-                    for detection in self.detection_history:
-                        writer.writerow(detection)
-                        
-                messagebox.showinfo("Success", f"Detection history exported to:\n{filename}")
-                self.update_status_bar(f"History exported to {os.path.basename(filename)}")
-            except Exception as e:
-                messagebox.showerror("Export Error", f"Failed to export history:\n{str(e)}")
-    
-    def clear_detection_history(self):
-        """Clear detection history"""
-        if messagebox.askyesno("Clear History", "Clear all detection history?"):
-            self.detection_history.clear()
-            self.update_status_bar("Detection history cleared")
-    
+                
     def save_log(self):
         """Save log to file"""
         # Always allow saving, even if empty
