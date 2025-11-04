@@ -38,15 +38,15 @@ void init_uwb_device(Uwb_HW_t *uwb_hw, SPI_HandleTypeDef *hspi,
 
 	/* Default communication configuration. We use default non-STS DW mode. */
 	dwt_config_t dwt_cfg = { 5, /* Channel number. */
-	DWT_PLEN_128, /* Preamble length. Used in TX only. */
-	DWT_PAC8, /* Preamble acquisition chunk size. Used in RX only. */
+	DWT_PLEN_1024, /* Preamble length. Used in TX only. */
+	DWT_PAC32, /* Preamble acquisition chunk size. Used in RX only. */
 	9, /* TX preamble code. Used in TX only. */
 	9, /* RX preamble code. Used in RX only. */
 	1, /* 0 to use standard 8 symbol SFD, 1 to use non-standard 8 symbol, 2 for non-standard 16 symbol SFD and 3 for 4z 8 symbol SDF type */
-	DWT_BR_6M8, /* Data rate. */
+	DWT_BR_850K, /* Data rate. */
 	DWT_PHRMODE_STD, /* PHY header mode. */
 	DWT_PHRRATE_STD, /* PHY header rate. */
-	(129 + 8 - 8), /* SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. */
+	(1025 + 1 + 8 - 32), /* SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. */
 	DWT_STS_MODE_OFF, /* STS disabled */
 	DWT_STS_LEN_64,/* STS length see allowed values in Enum dwt_sts_lengths_e */
 	DWT_PDOA_M0 /* PDOA mode off */
@@ -80,15 +80,15 @@ void reset_actual_hw() {
 
 	/* Default communication configuration. We use default non-STS DW mode. */
 	dwt_config_t dwt_cfg = { 5, /* Channel number. */
-	DWT_PLEN_128, /* Preamble length. Used in TX only. */
-	DWT_PAC8, /* Preamble acquisition chunk size. Used in RX only. */
+	DWT_PLEN_1024, /* Preamble length. Used in TX only. */
+	DWT_PAC32, /* Preamble acquisition chunk size. Used in RX only. */
 	9, /* TX preamble code. Used in TX only. */
 	9, /* RX preamble code. Used in RX only. */
 	1, /* 0 to use standard 8 symbol SFD, 1 to use non-standard 8 symbol, 2 for non-standard 16 symbol SFD and 3 for 4z 8 symbol SDF type */
-	DWT_BR_6M8, /* Data rate. */
+	DWT_BR_850K, /* Data rate. */
 	DWT_PHRMODE_STD, /* PHY header mode. */
 	DWT_PHRRATE_STD, /* PHY header rate. */
-	(129 + 8 - 8), /* SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. */
+	(1025 + 1 + 8 - 32), /* SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. */
 	DWT_STS_MODE_OFF, /* STS disabled */
 	DWT_STS_LEN_64,/* STS length see allowed values in Enum dwt_sts_lengths_e */
 	DWT_PDOA_M0 /* PDOA mode off */
@@ -248,9 +248,9 @@ TAG_STATUS_t tag_discovery_new_new(TAG_t *tag, Sniffer_State _interfaz_state,
 
 TAG_STATUS_t setup_and_transmit(TAG_t *tag, uint8_t *tx_buffer,
 		uint8_t tx_buffer_size, uint8_t *rx_buffer, uint32_t *rx_buffer_size) {
-	dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS_6M8);
-	dwt_setrxtimeout(RESP_RX_TIMEOUT_UUS_6M8);
-	dwt_setpreambledetecttimeout(PRE_TIMEOUT_6M8);
+	dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS_850K);
+	dwt_setrxtimeout(RESP_RX_TIMEOUT_UUS_850K);
+	dwt_setpreambledetecttimeout(PRE_TIMEOUT_850K);
 
 	return transmit_and_receive(tx_buffer, tx_buffer_size, rx_buffer,
 			rx_buffer_size);
@@ -269,9 +269,9 @@ TAG_STATUS_t tag_receive_cmd(TAG_t *tag, uint8_t *rx_buffer,
 	*(uint16_t*) (tx_buffer + sizeof(tag->command) + sizeof(tag->id)) = d_a.get_media_multiplier(100);
 	*(uint16_t*) (tx_buffer + sizeof(tag->command) + sizeof(tag->id) + sizeof(d_a.get_media_multiplier(100))) = d_b.get_media_multiplier(100);
 
-	dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS_6M8);
-	dwt_setrxtimeout(RESP_RX_TIMEOUT_UUS_6M8);
-	dwt_setpreambledetecttimeout(PRE_TIMEOUT_6M8);
+	dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS_850K);
+	dwt_setrxtimeout(RESP_RX_TIMEOUT_UUS_850K);
+	dwt_setpreambledetecttimeout(PRE_TIMEOUT_850K);
 
 	TAG_STATUS_t status_reg = setup_and_transmit_for_timestamp_query(tag,
 			tx_buffer, rx_buffer, &rx_buffer_size);
@@ -328,9 +328,9 @@ TAG_STATUS_t handle_received_command(TAG_t *tag, const uint8_t *rx_buffer) {
 
 static TAG_STATUS_t setup_and_transmit_for_timestamp_query(TAG_t *tag,
 		uint8_t *tx_buffer, uint8_t *rx_buffer, uint32_t *rx_buffer_size) {
-	dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS_6M8);
-	dwt_setrxtimeout(RESP_RX_TIMEOUT_UUS_6M8);
-	dwt_setpreambledetecttimeout(PRE_TIMEOUT_6M8);
+	dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS_850K);
+	dwt_setrxtimeout(RESP_RX_TIMEOUT_UUS_850K);
+	dwt_setpreambledetecttimeout(PRE_TIMEOUT_850K);
 
 	return transmit_and_receive(tx_buffer, TX_BUFFER_SIZE, rx_buffer,
 			rx_buffer_size);
@@ -425,7 +425,7 @@ uint32_t send_response_with_timestamps(uint8_t *tx_resp_msg, uint8_t size,
 
 	/* Set send time for response. See NOTE 9 below. */
 	resp_tx_time = (uint32_t) ((poll_rx_timestamp
-			+ ((POLL_RX_TO_RESP_TX_DLY_UUS_6M8) * UUS_TO_DWT_TIME)) >> 8);
+			+ ((POLL_RX_TO_RESP_TX_DLY_UUS_850K) * UUS_TO_DWT_TIME)) >> 8);
 
 	/* Response TX timestamp is the transmission time we programmed plus the antenna delay. */
 	resp_tx_timestamp = (((uint64_t) (resp_tx_time & 0xFFFFFFFEUL)) << 8)
@@ -453,11 +453,11 @@ uint32_t send_response_with_timestamps(uint8_t *tx_resp_msg, uint8_t size,
 		};
 		dwt_setdelayedtrxtime(resp_tx_time);
 		/* Set expected delay and timeout for final message reception. See NOTE 4 and 5 below. */
-		dwt_setrxaftertxdelay(RESP_TX_TO_FINAL_RX_DLY_UUS_6M8);
+		dwt_setrxaftertxdelay(RESP_TX_TO_FINAL_RX_DLY_UUS_850K);
 		/* FINAL_RX_TIMEOUT_UUS. */
-		dwt_setrxtimeout(FINAL_RX_TIMEOUT_UUS_6M8);
+		dwt_setrxtimeout(FINAL_RX_TIMEOUT_UUS_850K);
 		/* Set preamble timeout for expected frames. See NOTE 6 below. */
-		dwt_setpreambledetecttimeout(PRE_TIMEOUT_6M8);
+		dwt_setpreambledetecttimeout(PRE_TIMEOUT_850K);
 
 		/* Increment frame sequence number after transmission of the response message (modulo 256). */
 		frame_seq_nb++;
@@ -504,7 +504,7 @@ int send_message_with_human_tag_timestamp() {
 
 	/* Set send time for response. See NOTE 9 below. */
 	resp_tx_time = (uint32_t) ((poll_rx_timestamp
-			+ ((POLL_RX_TO_RESP_TX_DLY_UUS_6M8) * UUS_TO_DWT_TIME)) >> 8);
+			+ ((POLL_RX_TO_RESP_TX_DLY_UUS_850K) * UUS_TO_DWT_TIME)) >> 8);
 
 	dwt_setdelayedtrxtime(resp_tx_time);
 
@@ -517,11 +517,11 @@ int send_message_with_human_tag_timestamp() {
 			(uint32_t) resp_tx_timestamp };
 	memcpy(tx_resp_msg + 1, timestamps, sizeof(timestamps));
 	/* Set expected delay and timeout for final message reception. See NOTE 4 and 5 below. */
-	dwt_setrxaftertxdelay(RESP_TX_TO_FINAL_RX_DLY_UUS_6M8);
+	dwt_setrxaftertxdelay(RESP_TX_TO_FINAL_RX_DLY_UUS_850K);
 	/* FINAL_RX_TIMEOUT_UUS. */
-	dwt_setrxtimeout(FINAL_RX_TIMEOUT_UUS_6M8);
+	dwt_setrxtimeout(FINAL_RX_TIMEOUT_UUS_850K);
 	/* Set preamble timeout for expected frames. See NOTE 6 below. */
-	dwt_setpreambledetecttimeout(PRE_TIMEOUT_6M8);
+	dwt_setpreambledetecttimeout(PRE_TIMEOUT_850K);
 	/* Write and send the response message. See NOTE 10 below.*/
 	dwt_writetxdata(sizeof(tx_resp_msg), tx_resp_msg, 0); /* Zero offset in TX buffer. */
 	dwt_writetxfctrl(sizeof(tx_resp_msg), 0, 1); /* Zero offset in TX buffer, ranging. */
