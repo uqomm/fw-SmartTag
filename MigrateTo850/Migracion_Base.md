@@ -18,9 +18,9 @@ Este documento describe el paso a paso para migrar el sistema SmartLocate (Sniff
 
 ## Paso 2: Cambios en Sniffer (`sniffer-tag/Core`)
 ### 2.1 Actualizar `uwb3000Fxx.h`
-- Cambiar `DWT_BR_6M8` → `DWT_BR_850K`
-- Cambiar `DWT_PLEN_128` → `DWT_PLEN_1024`
-- Cambiar `DWT_PAC8` → `DWT_PAC32`
+- Usar `DWT_BR_850K` en lugar de `DWT_BR_6M8` (las definiciones ya existen; actualizar referencias en código)
+- Usar `DWT_PLEN_1024` en lugar de `DWT_PLEN_128`
+- Usar `DWT_PAC32` en lugar de `DWT_PAC8`
 - Actualizar timeouts:
   - `POLL_TX_TO_RESP_RX_DLY_UUS_6M8 = 700` → `POLL_TX_TO_RESP_RX_DLY_UUS_850K = 5600` (escalado ×8)
   - `RESP_RX_TIMEOUT_UUS_6M8 = 250` → `RESP_RX_TIMEOUT_UUS_850K = 2000` (escalado ×8)
