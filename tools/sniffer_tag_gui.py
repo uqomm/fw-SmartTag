@@ -63,8 +63,9 @@ class SnifferTagGUI:
         # Tag tracking
         self.active_tags = {}  # tag_id -> {last_seen, readings, distance_a, distance_b, battery, detecciones_efectivas, detecciones_erradas}
         
-        # Effective detections capture storage
-        self.efectivas_capturas = []  # Lista para almacenar capturas de detecciones efectivas
+        # Detection history (new)
+        self.detection_history = []  # List of detection snapshots: [{'tag_id', 'readings', 'distance_a', 'distance_b', 'battery', 'detecciones_efectivas', 'detecciones_erradas', 'timestamp'}]
+        self.max_history_entries = 10000  # Limit to prevent memory issues
         
         # Auto-scroll for log display
         self.auto_scroll_var = tk.BooleanVar(value=True)
@@ -366,6 +367,12 @@ class SnifferTagGUI:
         ttk.Button(tags_label_frame, text="🗑 Clear Tags", 
                    command=self.clear_active_tags).grid(row=0, column=1, padx=5)
         
+        # New buttons for detection history
+        ttk.Button(tags_label_frame, text="📥 Export History", 
+                   command=self.export_detection_history).grid(row=0, column=2, padx=5)
+        ttk.Button(tags_label_frame, text="🗑 Clear History", 
+                   command=self.clear_detection_history).grid(row=0, column=3, padx=5)
+        
         # Active tags display with treeview
         self.tags_tree = ttk.Treeview(middle_frame, columns=('ID', 'Readings', 'Dist A', 'Dist B', 'Battery', 'Efectivas', 'Erradas', 'Last Seen'), 
                                        show='headings', height=25)
@@ -412,14 +419,10 @@ class SnifferTagGUI:
         clear_btn = ttk.Button(log_control_frame, text="🗑 Clear Log", command=self.clear_log)
         clear_btn.grid(row=0, column=2, padx=5)
         
-        export_btn = ttk.Button(log_control_frame, text="📥 Export Efectivas", command=self.export_efectivas_capturas)
-        export_btn.grid(row=0, column=3, padx=5)
-        ToolTip(export_btn, "Export captured effective detections\n(Dist A > 0 AND Dist B > 0) to CSV file")
-        
         # Auto-scroll checkbox
         auto_scroll_cb = ttk.Checkbutton(log_control_frame, text="Auto-scroll", 
                                           variable=self.auto_scroll_var)
-        auto_scroll_cb.grid(row=0, column=4, padx=5)
+        auto_scroll_cb.grid(row=0, column=3, padx=5)
         
         # Log display
         self.log_display = scrolledtext.ScrolledText(right_frame, width=70, height=45, 
@@ -496,43 +499,6 @@ class SnifferTagGUI:
                 else:
                     crc >>= 1
         return struct.pack("<H", crc)
-    
-    def export_efectivas_capturas(self):
-        """Export captured effective detections to CSV file"""
-        if not self.efectivas_capturas:
-            messagebox.showwarning("No Data", "No hay capturas de detecciones efectivas para exportar.")
-            return
-        
-        # Open file dialog
-        from tkinter import filedialog
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        default_filename = f"detecciones_efectivas_{timestamp}.csv"
-        
-        filepath = filedialog.asksaveasfilename(
-            defaultextension=".csv",
-            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
-            initialfile=default_filename,
-            title="Guardar Detecciones Efectivas"
-        )
-        
-        if not filepath:
-            return  # User cancelled
-        
-        try:
-            with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
-                fieldnames = ['Timestamp', 'Tag ID', 'Distancia A (cm)', 'Distancia B (cm)', 'Batería (%)']
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                
-                writer.writeheader()
-                for captura in self.efectivas_capturas:
-                    writer.writerow(captura)
-            
-            messagebox.showinfo("Éxito", f"Se exportaron {len(self.efectivas_capturas)} detecciones a:\n{filepath}")
-            self.update_status_bar(f"Exported {len(self.efectivas_capturas)} detections to CSV")
-            
-        except Exception as e:
-            messagebox.showerror("Error de Exportación", f"No se pudo guardar el archivo:\n{str(e)}")
-            self.update_status_bar(f"Export failed: {str(e)}")
         
     def toggle_connection(self):
         """Connect/Disconnect from serial port"""
@@ -918,15 +884,6 @@ class SnifferTagGUI:
                 if dist_a_val > 0 and dist_b_val > 0:
                     # Detección efectiva: ambas antenas detectaron
                     efectivas += 1
-                    
-                    # Capture effective detection for export
-                    self.efectivas_capturas.append({
-                        'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        'Tag ID': f"0x{tag_id}",
-                        'Distancia A (cm)': f"{dist_a_val:.2f}",
-                        'Distancia B (cm)': f"{dist_b_val:.2f}",
-                        'Batería (%)': battery
-                    })
                 else:
                     # Detección errada: solo una antena o ninguna
                     erradas += 1
@@ -950,6 +907,21 @@ class SnifferTagGUI:
                 'detecciones_efectivas': efectivas,
                 'detecciones_erradas': erradas
             }
+            
+            # Add to detection history
+            effective = dist_a_val > 0 and dist_b_val > 0
+            self.detection_history.append({
+                'timestamp': datetime.now().isoformat(),
+                'tag_id': tag_id,
+                'distance_a': dist_a_val,
+                'distance_b': dist_b_val,
+                'battery': battery,
+                'effective': effective
+            })
+            
+            # Limit history size to prevent memory issues
+            if len(self.detection_history) > 10000:
+                self.detection_history.pop(0)
             
             # Update tags display
             self.update_tags_display()
@@ -1048,7 +1020,40 @@ Log Lines: {len(self.log_buffer)}
             }
             self.update_statistics()
             self.update_status_bar("Statistics cleared")
-                
+    
+    def export_detection_history(self):
+        """Export detection history to CSV file"""
+        if not self.detection_history:
+            messagebox.showinfo("Export History", "No detection history to export.")
+            return
+            
+        filename = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+            initialfile=f"detection_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        )
+        
+        if filename:
+            try:
+                with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+                    fieldnames = ['timestamp', 'tag_id', 'distance_a', 'distance_b', 'battery', 'effective']
+                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                    
+                    writer.writeheader()
+                    for detection in self.detection_history:
+                        writer.writerow(detection)
+                        
+                messagebox.showinfo("Success", f"Detection history exported to:\n{filename}")
+                self.update_status_bar(f"History exported to {os.path.basename(filename)}")
+            except Exception as e:
+                messagebox.showerror("Export Error", f"Failed to export history:\n{str(e)}")
+    
+    def clear_detection_history(self):
+        """Clear detection history"""
+        if messagebox.askyesno("Clear History", "Clear all detection history?"):
+            self.detection_history.clear()
+            self.update_status_bar("Detection history cleared")
+    
     def save_log(self):
         """Save log to file"""
         # Always allow saving, even if empty
