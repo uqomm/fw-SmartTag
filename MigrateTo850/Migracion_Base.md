@@ -57,8 +57,9 @@ Este documento describe el paso a paso para migrar el sistema SmartLocate (Sniff
 - Mismos cambios que Sniffer (data rate, preámbulo, PAC, timeouts).
 - Asegurar consistencia entre dispositivos.
 
-### 3.2 Actualizar `uwb3000Fxx.c`
-- Modificar configuración DW3000 idéntica al Sniffer.
+### 3.2 Actualizar `main.cpp` y configuración DW3000
+- Modificar `defatult_dwt_config` para usar nuevos valores: `DWT_BR_850K`, `DWT_PLEN_1024`, `DWT_PAC32`, SFD timeout `(1025 + 1 + 8 - 32)`.
+- Cambiar `RATE_6M8` → `RATE_850K` en llamadas a `tag_init()` y `sleep_in_out()` (estas constantes controlan el modo de rate en funciones de inicialización).
 - Verificar delays de respuesta.
 
 ### 3.3 Actualizar `human_tag.c`
