@@ -47,3 +47,5 @@ Thumbs.db
 **/Debug/
 **/Release/
 /.metadata/
+
+**/__pycache__/*
