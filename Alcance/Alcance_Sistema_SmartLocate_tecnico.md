@@ -208,10 +208,10 @@ TAG_DISCOVERY → TAG_ONE_DETECTION → TAG_END_READINGS
 | **Latencia por tag (One)** | ~15 ms | Sin queries adicionales |
 
 **Conclusiones clave:**
-- ✅ No hay defectos hardware (Canal A OK tras TEST-07)
-- ✅ Sistema estable en movimiento y NLOS hasta 19m
-- ⚠️ Limitación principal: orientación de antena del tag >12m
-- ✅ PRE_TIMEOUT=8 óptimo (PRE_TIMEOUT=12 no mejora)
+-  No hay defectos hardware (Canal A OK tras TEST-07)
+-  Sistema estable en movimiento y NLOS hasta 19m
+-  Limitación principal: orientación de antena del tag >12m
+-  PRE_TIMEOUT=8 óptimo (PRE_TIMEOUT=12 no mejora)
 
 ### 4.2. Migración a 850 Kbps (Noviembre 2025)
 
@@ -220,30 +220,30 @@ TAG_DISCOVERY → TAG_ONE_DETECTION → TAG_END_READINGS
 
 | Métrica | 6.8 Mbps | 850 Kbps | Mejora |
 |---------|----------|----------|--------|
-| **Rango LOS (óptimo)** | 20m | **38m** | **+90%** ✅ |
+| **Rango LOS (óptimo)** | 20m | **38m** | **+90%**  |
 | **Rango robusto** | 12m | 12m | 0% (baseline) |
 | **Sensibilidad** | Baseline | **+6 dB** | Teórico confirmado |
 | **Detección @ 0-12m** | 100% | 100% | Consistente |
 | **Detección @ 12-38m** | <30% | Variable | Depende orientación |
 | **Latencia (Multiple)** | 30-100 ms | 160-200 ms | +60-100% |
 | **Throughput (Multiple)** | 10-33 tags/s | 5-6.25 tags/s | -50% |
-| **CRC errors @ 38m** | N/A | 0% | Señal limpia ✅ |
+| **CRC errors @ 38m** | N/A | 0% | Señal limpia  |
 
 **Beneficios logrados:**
-- ✅ Extensión de rango: 20m → 38m (+90%)
-- ✅ +6 dB sensibilidad (frames largos, preámbulo 1024)
-- ✅ Mejor tolerancia NLOS y orientación >12m
-- ✅ Robustez mejorada con PAC32 (mejor detección en ruido)
+-  Extensión de rango: 20m → 38m (+90%)
+-  +6 dB sensibilidad (frames largos, preámbulo 1024)
+-  Mejor tolerancia NLOS y orientación >12m
+-  Robustez mejorada con PAC32 (mejor detección en ruido)
 
 **Trade-offs aceptados:**
-- ⚠️ Latencia aumenta ~100 ms (aceptable para tracking)
-- ⚠️ Throughput reducido 50% (5-6 tags/seg suficiente para 50 tags con sleep 15s)
+-  Latencia aumenta ~100 ms (aceptable para tracking)
+-  Throughput reducido 50% (5-6 tags/seg suficiente para 50 tags con sleep 15s)
 
 **Condiciones críticas validadas:**
-- ✅ Alimentación 12V esencial (performance degradado con <12V)
-- ✅ LOS requerido para rango >12m
-- ✅ Orientación favorable de antena tag necesaria >12m
-- ✅ 0% CRC errors en 38m (señal limpia, sin interferencias)
+-  Alimentación 12V esencial (performance degradado con <12V)
+-  LOS requerido para rango >12m
+-  Orientación favorable de antena tag necesaria >12m
+-  0% CRC errors en 38m (señal limpia, sin interferencias)
 
 ---
 
@@ -264,22 +264,22 @@ TAG_DISCOVERY → TAG_ONE_DETECTION → TAG_END_READINGS
 |-----------|----------------|----------|-------|
 | **Tags por Sniffer** | 50 (límite software) | <10 probados | Escalabilidad no validada |
 | **Tags simultáneos activos** | 50 | 4 | TEST-05, TEST-06 (Oct 2025) |
-| **Update rate por tag** | 1 detección / 15s | ✅ Validado | Sleep time con lecturas exitosas |
-| **Latencia detección** | <1 segundo | ✅ Validado | 160-200 ms @ 850K |
-| **Throughput teórico** | 5-6 tags/seg | ✅ Validado | Multiple Detection mode |
-| **Tiempo ciclo 50 tags** | ~10 segundos | ⚠️ Proyectado | No probado con alta densidad |
+| **Update rate por tag** | 1 detección / 15s |  Validado | Sleep time con lecturas exitosas |
+| **Latencia detección** | <1 segundo |  Validado | 160-200 ms @ 850K |
+| **Throughput teórico** | 5-6 tags/seg |  Validado | Multiple Detection mode |
+| **Tiempo ciclo 50 tags** | ~10 segundos |  Proyectado | No probado con alta densidad |
 
 ### 5.3. Batería y Autonomía
 
 | Parámetro | Especificación | Validado | Notas |
 |-----------|----------------|----------|-------|
-| **Capacidad batería** | 1200 mAh Li-Ion | ✅ Hardware | BQ25150 |
-| **Autonomía @ 6.8M** | ~7 días | ⚠️ No probado | Estimado brochure |
-| **Autonomía @ 850K** | **Pendiente validar** | ❌ No probado | Frames más largos → mayor consumo TX |
-| **Consumo activo** | ~100 mA | ✅ Datasheet | DW3000 TX/RX |
-| **Consumo sleep** | ~1 µA | ✅ Datasheet | STM32U5 STOP mode |
-| **Duty cycle típico** | 0.2-1% | ⚠️ Estimado | 200ms activo / 15s sleep |
-| **Carga completa** | USB-C, ~2 horas | ✅ Hardware | BQ25150 charge controller |
+| **Capacidad batería** | 1200 mAh Li-Ion |  Hardware | BQ25150 |
+| **Autonomía @ 6.8M** | ~7 días |  No probado | Estimado brochure |
+| **Autonomía @ 850K** | **Pendiente validar** |  No probado | Frames más largos → mayor consumo TX |
+| **Consumo activo** | ~100 mA |  Datasheet | DW3000 TX/RX |
+| **Consumo sleep** | ~1 µA |  Datasheet | STM32U5 STOP mode |
+| **Duty cycle típico** | 0.2-1% |  Estimado | 200ms activo / 15s sleep |
+| **Carga completa** | USB-C, ~2 horas |  Hardware | BQ25150 charge controller |
 
 **Consumo estimado @ 850K:**
 - Activo (200 ms cada 15s): 100 mA × 0.2s = 20 mAs
@@ -296,15 +296,15 @@ TAG_DISCOVERY → TAG_ONE_DETECTION → TAG_END_READINGS
 | **Temperatura operación** | -20°C a +60°C | Brochure servidor |
 | **Temperatura almacenamiento** | -40°C a +85°C | Datasheet STM32 |
 | **Humedad relativa** | 0-95% (sin condensación) | Típico IP54 |
-| **Protección ingreso** | No especificada | ⚠️ Pendiente certificación |
-| **Resistencia vibración** | No especificada | ⚠️ Pendiente testing |
-| **Resistencia impacto** | No especificada | ⚠️ Pendiente testing |
+| **Protección ingreso** | No especificada |  Pendiente certificación |
+| **Resistencia vibración** | No especificada |  Pendiente testing |
+| **Resistencia impacto** | No especificada |  Pendiente testing |
 
 ---
 
 ## 6. Análisis de Gaps - Validado vs Pendiente
 
-### 6.1. VALIDADO ✅
+### 6.1. VALIDADO 
 
 | Capacidad | Evidencia | Fecha Validación |
 |-----------|-----------|------------------|
@@ -318,7 +318,7 @@ TAG_DISCOVERY → TAG_ONE_DETECTION → TAG_END_READINGS
 | Migración 850K exitosa | Implementación completa, rango +90% | Nov 2025 |
 | Firmware estable | 0% CRC errors @ 38m, sistema robusto | Nov 2025 |
 
-### 6.2. PENDIENTE DE VALIDACIÓN ⚠️
+### 6.2. PENDIENTE DE VALIDACIÓN 
 
 | Capacidad | Riesgo | Prioridad | Tiempo Estimado |
 |-----------|--------|-----------|-----------------|
@@ -331,7 +331,7 @@ TAG_DISCOVERY → TAG_ONE_DETECTION → TAG_END_READINGS
 | **Testing vibración/impacto** | BAJO | BAJA | 1 semana |
 | **Temperatura extrema (-20°C, +60°C)** | BAJO | BAJA | 1 semana |
 
-### 6.3. NO APLICABLE / DESCARTADO ❌
+### 6.3. NO APLICABLE / DESCARTADO 
 
 | Ítem Brochure | Realidad Técnica | Acción Requerida |
 |---------------|------------------|------------------|
@@ -350,7 +350,7 @@ TAG_DISCOVERY → TAG_ONE_DETECTION → TAG_END_READINGS
 - **Altura sobre piso:** 3 metros (validado en túneles Ø 3m)
 - **Orientación antenas:** Vertical (omnidireccional en plano horizontal)
 - **Separación antenas A-B:** 2.4 metros (1.2m a cada lado del sniffer)
-- **Alimentación:** 12V DC estabilizado (⚠️ crítico para performance)
+- **Alimentación:** 12V DC estabilizado ( crítico para performance)
 - **Backhaul:** LoRa a servidor (frecuencia y potencia por configurar)
 
 **Patrón de cobertura (plano horizontal):**
@@ -384,10 +384,10 @@ TAG_DISCOVERY → TAG_ONE_DETECTION → TAG_END_READINGS
 - **Indicador LED:** Verde (batería OK), Amarillo (batería media), Rojo (batería baja)
 
 **Factores críticos de performance:**
-- ✅ **Orientación antenna tag:** Vertical óptimo (omnidireccional horizontal)
-- ⚠️ **Obstrucción corporal:** Tolerable hasta 19m (TEST-07 validado)
-- ⚠️ **Orientación desfavorable:** Limita rango a 12m
-- ✅ **Movimiento:** No afecta detección (TEST-07 @ 19m caminando)
+-  **Orientación antenna tag:** Vertical óptimo (omnidireccional horizontal)
+-  **Obstrucción corporal:** Tolerable hasta 19m (TEST-07 validado)
+-  **Orientación desfavorable:** Limita rango a 12m
+-  **Movimiento:** No afecta detección (TEST-07 @ 19m caminando)
 
 ### 7.3. Espaciado de Sniffers en Túnel
 
@@ -457,7 +457,7 @@ Tiempo disponible para detección:
 - Ciclos por día: 4 × 60 × 24 = 5760
 - Consumo diario: 5760 × 20 mAs = 115.2 mAh/día
 - **Autonomía proyectada:** 1200 mAh / 115.2 mAh/día ≈ **10.4 días**
-- **Margen:** +48% sobre especificación brochure (7 días) ✅
+- **Margen:** +48% sobre especificación brochure (7 días) 
 
 #### TEST-10: Alta Densidad (25-50 Tags Simultáneos)
 **Objetivo:** Validar performance con máxima densidad de tags especificada
@@ -483,7 +483,7 @@ Tiempo ciclo 50 tags @ 850K:
 - Tiempo por tag (promedio): 180 ms
 - Total: 50 × 0.18s = 9 segundos
 - Overhead (switches, sleep commands): ~1s
-- Total estimado: ~10 segundos ✅
+- Total estimado: ~10 segundos 
 
 Nota: Sistema secuencial (no paralelo) → no hay colisiones RF
 ```
@@ -654,13 +654,13 @@ MILESTONE 3 (Fin Semana 8): Sistema Certificado para Comercialización
 
 | Componente | Madurez | Estado | Acción Requerida |
 |------------|---------|--------|------------------|
-| **Firmware Sniffer** | 85% | ✅ Estable | Validaciones pendientes (TEST-08, TEST-10) |
-| **Firmware Tag** | 85% | ✅ Estable | Validación batería (TEST-09) |
-| **Hardware Sniffer** | 90% | ✅ Producible | Certificaciones IP, EMC |
-| **Hardware Tag** | 90% | ✅ Producible | Certificaciones IP, vibración |
-| **Protocolo UWB** | 95% | ✅ Validado | Optimizaciones opcionales |
-| **Integración Sistema** | 70% | ⚠️ Parcial | Servidor web, visualización 2D |
-| **Documentación** | 60% | ⚠️ Incompleta | Manuales instalación, troubleshooting |
+| **Firmware Sniffer** | 85% |  Estable | Validaciones pendientes (TEST-08, TEST-10) |
+| **Firmware Tag** | 85% |  Estable | Validación batería (TEST-09) |
+| **Hardware Sniffer** | 90% |  Producible | Certificaciones IP, EMC |
+| **Hardware Tag** | 90% |  Producible | Certificaciones IP, vibración |
+| **Protocolo UWB** | 95% |  Validado | Optimizaciones opcionales |
+| **Integración Sistema** | 70% |  Parcial | Servidor web, visualización 2D |
+| **Documentación** | 60% |  Incompleta | Manuales instalación, troubleshooting |
 
 **Evaluación global:** Sistema en **TRL 7** (System prototype demonstration in operational environment)
 
@@ -672,22 +672,22 @@ MILESTONE 3 (Fin Semana 8): Sistema Certificado para Comercialización
 
 ### 11.2. Fortalezas Técnicas
 
-✅ **Tecnología UWB validada:** DW3000 chip maduro, protocolo TWR robusto  
-✅ **Rango extendido demostrado:** 38m LOS (+90% vs baseline 6.8M)  
-✅ **Triangulación 2D funcional:** Dual-antenna alternancia automática  
-✅ **Firmware estable:** 0% CRC errors @ 38m, manejo de errores robusto  
-✅ **Migración exitosa:** 6.8M → 850K en 1 semana (bajo riesgo)  
-✅ **Bajo consumo:** STM32U5 + sleep profundo (~1 µA)  
-✅ **Escalabilidad teórica:** 50 tags/sniffer (software ready, pending test)  
+ **Tecnología UWB validada:** DW3000 chip maduro, protocolo TWR robusto  
+ **Rango extendido demostrado:** 38m LOS (+90% vs baseline 6.8M)  
+ **Triangulación 2D funcional:** Dual-antenna alternancia automática  
+ **Firmware estable:** 0% CRC errors @ 38m, manejo de errores robusto  
+ **Migración exitosa:** 6.8M → 850K en 1 semana (bajo riesgo)  
+ **Bajo consumo:** STM32U5 + sleep profundo (~1 µA)  
+ **Escalabilidad teórica:** 50 tags/sniffer (software ready, pending test)  
 
 ### 11.3. Debilidades Técnicas
 
-⚠️ **Validaciones incompletas:** Vehículos, batería, alta densidad sin probar  
-⚠️ **Documentación desactualizada:** Brochures describen VHF vs. UWB real  
-⚠️ **Integración servidor:** Visualización 2D no documentada técnicamente  
-⚠️ **Certificaciones ausentes:** IP, EMC, RF compliance pendientes  
-⚠️ **Orientación crítica:** Performance degrada >12m con orientación desfavorable  
-⚠️ **Dependencia 12V:** Alimentación inadecuada afecta rango  
+ **Validaciones incompletas:** Vehículos, batería, alta densidad sin probar  
+ **Documentación desactualizada:** Brochures describen VHF vs. UWB real  
+ **Integración servidor:** Visualización 2D no documentada técnicamente  
+ **Certificaciones ausentes:** IP, EMC, RF compliance pendientes  
+ **Orientación crítica:** Performance degrada >12m con orientación desfavorable  
+ **Dependencia 12V:** Alimentación inadecuada afecta rango  
 
 ### 11.4. Recomendaciones para Ingeniería
 
@@ -708,12 +708,6 @@ MILESTONE 3 (Fin Semana 8): Sistema Certificado para Comercialización
 10. Implementar ranging adaptativo (ajustar queries por SNR)
 11. Diseño antena custom (+2 dBi ganancia)
 12. Pre-compliance testing RF (antes de certificación formal)
-
-**Prioridad BAJA (Long-term):**
-13. Certificaciones formales (IP, EMC, RF) - **8-12 semanas total**
-14. Rediseño mecánico para IP65 (vs. IP54 actual)
-15. Integración acelerómetro en tag (sleep adaptativo)
-16. Desarrollo servidor web custom (vs. solución actual no documentada)
 
 ---
 
