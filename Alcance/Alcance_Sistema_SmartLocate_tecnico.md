@@ -48,36 +48,7 @@ El sistema SmartLocate es una solución de localización en tiempo real basada e
 - **Montaje:** Rack 19", 2U
 - **Software:** Servidor web embebido (visualización 2D)
 
-### 2.2. Arquitectura de Comunicación
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    TÚNEL MINERO (Ø ~3m)                      │
-│                                                               │
-│  ┌──────────┐                                                │
-│  │ Sniffer  │ ← Altura: 3m sobre piso                        │
-│  │  ┌───┐   │                                                │
-│  │  │ANT│   │ ← Antena A                                     │
-│  │  │ A │   │                                                │
-│  └──┴───┴───┘                                                │
-│       ↕ 2.4m                                                 │
-│  ┌─────────┐                                                 │
-│  │  ┌───┐  │ ← Antena B                                      │
-│  │  │ANT│  │                                                 │
-│  │  │ B │  │                                                 │
-│  └──┴───┴──┘                                                 │
-│       ║                                                       │
-│       ║ UWB Ranging (6.5 GHz, Channel 9)                     │
-│       ║                                                       │
-│   ●───╫───● ← Tags en personas (caminando)                   │
-│       ║                                                       │
-│   🚗──╫──● ← Tags en vehículos (hasta 30 km/h - pendiente)   │
-│       ║                                                       │
-│       ▼                                                       │
-│   [LoRa TX] → Servidor VSDR-TG                               │
-│                                                               │
-└─────────────────────────────────────────────────────────────┘
-```
 
 ### 2.3. Protocolo UWB - Two-Way Ranging
 
@@ -127,7 +98,7 @@ Tag → STOP Mode (15s con lecturas, 500ms sin lecturas)
 | **SFD Timeout** | 129 + 8 - 12 = 125 | 1025 + 1 + 8 - 32 = 1002 |
 | **Rango LOS validado** | 20m | **38m** |
 | **Sensibilidad** | Baseline | **+6 dB** |
-| **Latencia por tag** | 30-100 ms | 160-200 ms |
+
 
 **Nota:** Todos los timeouts escalados por factor ×8 debido a frames 8× más largos (850K vs 6.8M).
 
@@ -152,10 +123,7 @@ TAG_DISCOVERY → TAG_SEND_TIMESTAMP_QUERY → TAG_END_READINGS → (repeat)
                   Counter: 3×A + 3×B
 ```
 
-**Rendimiento (850 Kbps):**
-- Latencia por tag: 160-200 ms
-- Throughput: 5-6.25 tags/seg
-- Capacidad: Hasta 50 tags (limitado por software, no probado)
+
 
 **Casos de Error Manejados:**
 - `RX_PREAMBLE_TIMEOUT`: Señal débil, incrementa error_crc, reintenta
@@ -204,8 +172,7 @@ TAG_DISCOVERY → TAG_ONE_DETECTION → TAG_END_READINGS
 | **Tasa detección @ 20m** | 70-80% | LOS, orientación favorable |
 | **Tasa detección @ >20m** | <30% | Limitado por orientación/polarización |
 | **Tags simultáneos probados** | 4 | TEST-05, TEST-06 |
-| **Latencia por tag (Multiple)** | 30-100 ms | Variable por errores CRC |
-| **Latencia por tag (One)** | ~15 ms | Sin queries adicionales |
+
 
 **Conclusiones clave:**
 -  No hay defectos hardware (Canal A OK tras TEST-07)
@@ -236,11 +203,9 @@ TAG_DISCOVERY → TAG_ONE_DETECTION → TAG_END_READINGS
 -  Robustez mejorada con PAC32 (mejor detección en ruido)
 
 **Trade-offs aceptados:**
--  Latencia aumenta ~100 ms (aceptable para tracking)
--  Throughput reducido 50% (5-6 tags/seg suficiente para 50 tags con sleep 15s)
+-  Throughput reducido, habría que validar si afecta a nuestro sistema.
 
 **Condiciones críticas validadas:**
--  Alimentación 12V esencial (performance degradado con <12V)
 -  LOS requerido para rango >12m
 -  Orientación favorable de antena tag necesaria >12m
 -  0% CRC errors en 38m (señal limpia, sin interferencias)
@@ -282,25 +247,12 @@ TAG_DISCOVERY → TAG_ONE_DETECTION → TAG_END_READINGS
 | **Carga completa** | USB-C, ~2 horas |  Hardware | BQ25150 charge controller |
 
 **Consumo estimado @ 850K:**
-- Activo (200 ms cada 15s): 100 mA × 0.2s = 20 mAs
-- Sleep (14.8s): 1 µA × 14.8s ≈ 0.015 mAs
-- **Total por ciclo:** ~20 mAs
-- **Autonomía estimada:** 1200 mAh / (20 mAs × 4 ciclos/min × 60 min × 24 h) ≈ **5-6 días**
 
-⚠️ **Validación pendiente:** Prueba de batería en campo durante 7 días (TEST crítico).
+Según pruebas realizadas con un Tag, se obtuvo lo siguiente:
 
-### 5.4. Temperatura y Ambiente
+- En caso más desfavorable 6.5 Días de batería
+- En caso de múltiple detection efectivo constante, 14 Dias de batería.
 
-| Parámetro | Especificación | Fuente |
-|-----------|----------------|--------|
-| **Temperatura operación** | -20°C a +60°C | Brochure servidor |
-| **Temperatura almacenamiento** | -40°C a +85°C | Datasheet STM32 |
-| **Humedad relativa** | 0-95% (sin condensación) | Típico IP54 |
-| **Protección ingreso** | No especificada |  Pendiente certificación |
-| **Resistencia vibración** | No especificada |  Pendiente testing |
-| **Resistencia impacto** | No especificada |  Pendiente testing |
-
----
 
 ## 6. Análisis de Gaps - Validado vs Pendiente
 
@@ -326,19 +278,6 @@ TAG_DISCOVERY → TAG_ONE_DETECTION → TAG_END_READINGS
 | **Autonomía batería 7 días @ 850K** | MEDIO | ALTA | 2-3 días |
 | **Alta densidad (25-50 tags simultáneos)** | MEDIO | ALTA | 1 día |
 | **NLOS severo (múltiples paredes)** | BAJO | MEDIA | 1 día |
-| **Interferencia EMI industrial** | MEDIO | MEDIA | 1 semana |
-| **Certificación IP (polvo/agua)** | BAJO | BAJA | Depende laboratorio |
-| **Testing vibración/impacto** | BAJO | BAJA | 1 semana |
-| **Temperatura extrema (-20°C, +60°C)** | BAJO | BAJA | 1 semana |
-
-### 6.3. NO APLICABLE / DESCARTADO 
-
-| Ítem Brochure | Realidad Técnica | Acción Requerida |
-|---------------|------------------|------------------|
-| Rango 80m caminando | Máx. 38m validado UWB | Actualizar brochure a 38m |
-| Frecuencias VHF (143-187 MHz) | UWB ~6.5 GHz (Ch9) | Corregir brochure o aclarar híbrido |
-| TDOA triangulation | TWR (Two-Way Ranging) | Actualizar descripción técnica |
-| Leaky Feeder integration | UWB antenas omni (LoRa backhaul) | Aclarar arquitectura real |
 
 ---
 
@@ -353,33 +292,12 @@ TAG_DISCOVERY → TAG_ONE_DETECTION → TAG_END_READINGS
 - **Alimentación:** 12V DC estabilizado ( crítico para performance)
 - **Backhaul:** LoRa a servidor (frecuencia y potencia por configurar)
 
-**Patrón de cobertura (plano horizontal):**
-```
-        Ant A (1.2m izq)    Sniffer    Ant B (1.2m der)
-             │                 │              │
-             ●─────────────────●──────────────●
-                      2.4m total
-                           
-        ┌─────────────────────────────────────────┐
-        │           ZONA DE COBERTURA             │
-        │                                         │
-        │    ●●●●●●●●●●●●●●●●●●●●●●●●●●●●●       │
-        │    ●                             ●      │ ← 38m radio
-        │    ●    12m robusto (garantizado)●      │   (LOS óptimo)
-        │    ●         ┌────────┐          ●      │
-        │    ●         │Sniffer │          ●      │
-        │    ●         └────────┘          ●      │
-        │    ●                             ●      │
-        │    ●●●●●●●●●●●●●●●●●●●●●●●●●●●●●       │
-        │                                         │
-        └─────────────────────────────────────────┘
-```
+
 
 ### 7.2. Configuración del Tag
 
 **Portación recomendada:**
 - **Ubicación:** Sobre ropa exterior (chaleco, casco)
-- **Orientación:** Antena hacia arriba (vertical)
 - **Evitar:** Bloqueo con objetos metálicos, mochilas pesadas
 - **Indicador LED:** Verde (batería OK), Amarillo (batería media), Rojo (batería baja)
 
@@ -388,18 +306,6 @@ TAG_DISCOVERY → TAG_ONE_DETECTION → TAG_END_READINGS
 -  **Obstrucción corporal:** Tolerable hasta 19m (TEST-07 validado)
 -  **Orientación desfavorable:** Limita rango a 12m
 -  **Movimiento:** No afecta detección (TEST-07 @ 19m caminando)
-
-### 7.3. Espaciado de Sniffers en Túnel
-
-**Para cobertura continua:**
-
-| Rango objetivo | Espaciado sniffers | Overlap | Notas |
-|----------------|--------------------|---------|-------|
-| **Robusto (12m)** | 20m | 4m (17%) | Cobertura garantizada |
-| **Óptimo (38m)** | 70m | 6m (8%) | Requiere LOS, 12V, orientación |
-| **Conservador (20m)** | 36m | 4m (10%) | Balance costo-confiabilidad |
-
-**Recomendación:** Espaciado 36m (cobertura 20m por sniffer) para balance entre costo y confiabilidad.
 
 ---
 
@@ -421,19 +327,12 @@ TAG_DISCOVERY → TAG_ONE_DETECTION → TAG_END_READINGS
 **Métricas de éxito:**
 - ≥70% de tags detectados (≥18 de 25)
 - Latencia <1s por tag detectado
-- 0 falsos positivos
+
 
 **Duración:** 1 día  
 **Riesgo si falla:** ALTO - Caso de uso principal del brochure
 
-**Análisis técnico:**
-```
-Tiempo disponible para detección:
-- Ventana de paso: 2 × 38m / 8.3 m/s ≈ 9.2 segundos
-- Tiempo por tag @ 850K: 160-200 ms
-- Tags detectables teóricos: 9.2s / 0.2s ≈ 46 tags
-- Conclusión: Factible técnicamente, requiere validación práctica
-```
+
 
 #### TEST-09: Autonomía de Batería @ 850K
 **Objetivo:** Validar duración de batería en condiciones reales de operación
@@ -445,119 +344,32 @@ Tiempo disponible para detección:
 - Hasta descarga completa (cutoff voltage)
 
 **Métricas de éxito:**
-- ≥5 días de operación continua
-- Curva de descarga lineal y predecible
-- Sin degradación de performance con batería baja (>10%)
+- ≥6 días de operación continua
+
 
 **Duración:** 7 días (prueba continua)  
 **Riesgo si falla:** MEDIO - Expectativa del cliente basada en brochure (7 días)
 
-**Estimación teórica:**
-- Consumo por ciclo: ~20 mAs (200ms @ 100mA activo + 14.8s @ 1µA sleep)
-- Ciclos por día: 4 × 60 × 24 = 5760
-- Consumo diario: 5760 × 20 mAs = 115.2 mAh/día
-- **Autonomía proyectada:** 1200 mAh / 115.2 mAh/día ≈ **10.4 días**
-- **Margen:** +48% sobre especificación brochure (7 días) 
+
 
 #### TEST-10: Alta Densidad (25-50 Tags Simultáneos)
 **Objetivo:** Validar performance con máxima densidad de tags especificada
 
 **Setup:**
-- 50 tags distribuidos en área 20m × 20m
+- 50 tags distribuidos en área 20m × 3m
 - Sniffer central @ 3m altura
-- Múltiples detecciones consecutivas (10 ciclos)
 - Monitoreo de colisiones, timeouts, latencias
 
 **Métricas de éxito:**
 - 100% de tags detectados en cada ciclo (50/50)
-- Latencia promedio <300 ms por tag
 - Tiempo ciclo completo <15 segundos
 - 0 colisiones de frames (protocolo secuencial)
 
 **Duración:** 1 día  
 **Riesgo si falla:** MEDIO - Especificación brochure (50 tags/sniffer)
 
-**Análisis técnico:**
-```
-Tiempo ciclo 50 tags @ 850K:
-- Tiempo por tag (promedio): 180 ms
-- Total: 50 × 0.18s = 9 segundos
-- Overhead (switches, sleep commands): ~1s
-- Total estimado: ~10 segundos 
 
-Nota: Sistema secuencial (no paralelo) → no hay colisiones RF
-```
-
-### 8.2. Fase 2: Validaciones de Robustez (Semana 3-4)
-
-**Prioridad MEDIA - Recomendadas para ambientes industriales**
-
-#### TEST-11: NLOS Severo (Múltiples Obstrucciones)
-**Objetivo:** Caracterizar performance en NLOS con paredes, equipos, vehículos
-
-**Setup:**
-- Escenarios: 1 pared, 2 paredes, obstáculos metálicos
-- Materiales: concreto, metal, madera
-- Rangos: 5m, 10m, 15m
-
-**Duración:** 1 día
-
-#### TEST-12: Interferencia EMI/RFI Industrial
-**Objetivo:** Validar inmunidad a interferencias electromagnéticas de equipos mineros
-
-**Setup:**
-- Co-ubicación con motores, inversores, soldadoras
-- Medición con spectrum analyzer (baseline vs. interferido)
-- Tasas de error CRC, RXFTO, RXPTO
-
-**Duración:** 1 semana (requiere acceso a mina en operación)
-
-#### TEST-13: Temperatura Extrema
-**Objetivo:** Validar operación en -20°C y +60°C (especificación brochure)
-
-**Setup:**
-- Cámara climática o ambiente controlado
-- Pruebas de rango, latencia, consumo
-- Carga de batería en temperatura extrema
-
-**Duración:** 1 semana (requiere cámara climática)
-
-### 8.3. Fase 3: Certificaciones y Compliance (Semana 5-8)
-
-**Prioridad BAJA - Requeridas para comercialización formal**
-
-#### CERT-01: Certificación IP (Protección Ingreso)
-**Objetivo:** IP54 mínimo (polvo, salpicaduras agua)
-
-**Tests:**
-- IP5X: Protección contra polvo
-- IPX4: Protección contra salpicaduras
-- Laboratorio certificado
-
-**Duración:** 2-3 semanas (laboratorio externo)  
-**Costo estimado:** $2,000-5,000 USD
-
-#### CERT-02: Testing de Vibración e Impacto
-**Objetivo:** MIL-STD-810G o equivalente minero
-
-**Tests:**
-- Vibración random (vehículos, equipos)
-- Impacto (caídas desde 1.5m)
-- Durabilidad conectores
-
-**Duración:** 1-2 semanas (laboratorio externo)  
-**Costo estimado:** $3,000-6,000 USD
-
-#### CERT-03: Certificación RF (FCC, CE, regulaciones locales)
-**Objetivo:** Cumplimiento regulatorio para comercialización
-
-**Tests:**
-- Emisiones RF (FCC Part 15, ETSI EN 300 328)
-- SAR (Specific Absorption Rate) si portátil
-- EMC (Electromagnetic Compatibility)
-
-**Duración:** 4-6 semanas (laboratorio certificado)  
-**Costo estimado:** $10,000-20,000 USD
+        
 
 ### 8.4. Cronograma Consolidado
 
@@ -567,20 +379,9 @@ Semana 1-2: Validaciones Críticas
 ├─ TEST-09: Batería @ 850K (inicio, 7 días paralelo)
 └─ TEST-10: Alta densidad 50 tags (1 día)
 
-Semana 3-4: Validaciones de Robustez
+Semana 3: Validaciones de Robustez
 ├─ TEST-11: NLOS severo (1 día)
-├─ TEST-12: EMI industrial (1 semana)
-└─ TEST-13: Temperatura extrema (1 semana)
 
-Semana 5-8: Certificaciones (paralelo con laboratorios)
-├─ CERT-01: IP rating (2-3 semanas)
-├─ CERT-02: Vibración/impacto (1-2 semanas)
-└─ CERT-03: RF compliance (4-6 semanas)
-
-═══════════════════════════════════════════════════
-MILESTONE 1 (Fin Semana 2): Sistema Validado para Piloto
-MILESTONE 2 (Fin Semana 4): Sistema Validado para Producción
-MILESTONE 3 (Fin Semana 8): Sistema Certificado para Comercialización
 ```
 
 ---
@@ -731,21 +532,9 @@ MILESTONE 3 (Fin Semana 8): Sistema Certificado para Comercialización
 - **BQ25150 Datasheet** (Texas Instruments) - Battery charger IC
 - **SX1278 Datasheet** (Semtech) - LoRa transceiver
 
-### 12.3. Estándares y Normativas Aplicables
 
-- **IEEE 802.15.4a/4z** - UWB PHY/MAC layer standard
-- **FCC Part 15.503** - UWB emission limits (US)
-- **ETSI EN 302 065** - UWB regulations (Europe)
-- **MIL-STD-810G** - Environmental testing (vibration, shock, temperature)
-- **IEC 60529** - IP rating classification
-- **IEC 61000-6-2** - EMC immunity (industrial environments)
 
----
 
-**Documento preparado por:** Equipo de Ingeniería SmartLocate  
-**Fecha:** 27 de Noviembre de 2025  
-**Versión:** 1.0  
-**Próxima revisión:** Post TEST-08, TEST-09, TEST-10 (estimado: Diciembre 2025)
 
 ---
 
