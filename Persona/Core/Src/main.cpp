@@ -342,7 +342,7 @@ int main(void)
 			break;
 
 		case TAG_WAIT_SEND_TX:
-			HAL_Delay(1); // TODO quizas hall delay 2
+			HAL_Delay(8); // TODO quizas hall delay 2
 			tag_status = process_second(tag);
 			if (tag_status == TAG_SLEEP)
 				tag_status = TAG_SLEEP_RECIVED;

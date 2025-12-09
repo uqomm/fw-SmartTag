@@ -1149,7 +1149,7 @@ int main(void)
 	uint32_t sniffer_id = _dwt_otpread(PARTID_ADDRESS);
 
 	Sniffer_State interfaz_state = MASTER_ONE_DETECTION; // MASTER_MULTIPLE_DETECTION      MASTER_ONE_DETECTION									  // tiempo de sleep
-	interfaz_state = MASTER_MULTIPLE_DETECTION; // Force multiple detection mode for testing
+//	interfaz_state = MASTER_MULTIPLE_DETECTION; // Force multiple detection mode for testing
 	TAG_STATUS_t tag_status = TAG_DISCOVERY;
 	uint32_t lora_send_timeout = 5000;
 	uint32_t lora_send_timeout_for_not_detection = 10000;
