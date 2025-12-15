@@ -1152,7 +1152,7 @@ int main(void)
 //	interfaz_state = MASTER_MULTIPLE_DETECTION; // Force multiple detection mode for testing
 	TAG_STATUS_t tag_status = TAG_DISCOVERY;
 	uint32_t lora_send_timeout = 16000;
-	uint32_t lora_send_timeout_for_not_detection = 10000;
+	uint32_t lora_send_timeout_for_not_detection = 20000;
 	uint32_t lora_send_ticks = HAL_GetTick();
 	uint32_t query_timeout = 1000;
 	uint32_t query_ticks;
@@ -1437,7 +1437,7 @@ int main(void)
 		{
 
 			// Log system status periodically when no tags are detected
-			log_system_status();
+//			log_system_status();
 
 			if ((tag_map.size() == 0) && (tag_map_od.size() == 0)) {
 
