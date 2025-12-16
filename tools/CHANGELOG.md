@@ -6,7 +6,20 @@ Registro de cambios para las herramientas de control del firmware sniffer-tag.
 
 ### Added
 
-#### UWB Timeout Configuration (sniffer_tag_gui.py)
+#### Detection History Management (2025-11-04)
+- **Seguimiento de detecciones efectivas y erróneas**
+  - Historial completo de todas las detecciones
+  - Clasificación automática: efectivas vs erróneas
+  - Contadores en tiempo real de cada tipo
+  - Panel dedicado en GUI con estadísticas
+
+- **Exportación a CSV** (2025-11-04)
+  - Exportar detecciones efectivas a archivo CSV
+  - Campos: timestamp, tag_id, distancia, estado
+  - Función de guardado con diálogo de archivo
+  - Formato compatible con análisis posterior
+
+#### UWB Timeout Configuration (sniffer_tag_gui.py) (2025-10-27)
 - **8 parámetros UWB configurables** para optimización del protocolo DS-TWR:
   - **RX Timeouts**:
     - PRE_TIMEOUT: Timeout de detección de preámbulo (PAC units, 1-64)
