@@ -1,97 +1,126 @@
-# STM32 Projects Collection
+# fw-SmartTag
 
-This repository contains four STM32-based projects for different communication and sensing applications.
+Firmware for the SmartTag UWB-based indoor localization system, consisting of personal tags and sniffer devices for real-time positioning.
 
-## Projects Overview
+## 🎯 System Overview
 
-### 1. Sniffer Project
-- **MCU**: STM32G474RET
-- **Description**: A sniffer implementation for monitoring and analyzing communications.
-- **Key Features**:
-  - Distance handling capabilities
-  - LORA communication support (SX1278)
-  - EEPROM memory management
-  - UART communication
-  - UWB (Ultra-wideband) support with DW3000 chip
+```mermaid
+block-beta
+  columns 3
+  
+  block:Tags:1
+    columns 1
+    Tag1["Personal Tag<br/>STM32U535"]
+    Tag2["Personal Tag<br/>STM32U535"]
+    TagN["Personal Tag<br/>STM32U535"]
+  end
+  
+  space
+  
+  block:Sniffer:1
+    columns 1
+    SnifferDev["Sniffer Device<br/>STM32G474"]
+    UWB["DW3000 UWB<br/>DS-TWR Protocol"]
+    LoRaModule["LoRa SX1278<br/>Long Range"]
+  end
+  
+  Tags--"UWB Ranging<br/>38m max"-->Sniffer
+  space:3
+  Sniffer--"Distance Data<br/>LoRa 915MHz"-->Server["Backend Server"]
+  
+  classDef tag fill:#4A90E2,stroke:#2E5C8A,color:#fff
+  classDef sniffer fill:#50C878,stroke:#2E7D4E,color:#fff
+  classDef server fill:#F39C12,stroke:#C87F0A,color:#fff
+  
+  class Tag1,Tag2,TagN tag
+  class SnifferDev,UWB,LoRaModule sniffer
+  class Server server
+```
 
-### 2. RDSS Master TX (Transmitter)
-- **MCU**: STM32F103C8
-- **Description**: Master transmitter node for RDSS (Radio Determination Satellite Service) system
-- **Key Features**:
-  - LORA communication (SX1278)
-  - Command message handling
-  - GPIO control
-  - Memory management
-  - UART communication interface
+## 📦 Projects
 
-### 3. RDSS Master RX (Receiver)
-- **MCU**: STM32F103C8
-- **Description**: Master receiver node for RDSS system
-- **Key Features**:
-  - LORA communication (SX1278)
-  - Command message processing
-  - GPIO handling
-  - Memory management
-  - UART communication interface
+### 🏷️ Persona (Personal Tag)
+**MCU:** STM32U535VET  
+**Role:** UWB responder worn by personnel
 
-### 4. Persona Project
-- **MCU**: STM32U535VET
-- **Description**: Advanced communication and control system
-- **Key Features**:
-  - UWB (Ultra-wideband) communication
-  - Battery management (BQ25150)
-  - RGB LED control (WS2812)
-  - I2C communication
-  - GPIO management
-  - Advanced power management features
+**Features:**
+- UWB communication with DW3000
+- Battery management (BQ25150)
+- RGB LED status indicator (WS2812)
+- Low-power sleep modes
+- I2C & GPIO interfaces
 
-## Common Features Across Projects
+### 📡 Sniffer-Tag (Location Anchor)
+**MCU:** STM32G474RET  
+**Role:** UWB initiator for distance measurement
 
-- **Hardware Abstraction Layer (HAL)** support
-- **CMSIS** (Cortex Microcontroller Software Interface Standard) implementation
-- **DMA** support for efficient data transfer
-- **GPIO** control and management
-- **SPI** communication interface
-- **UART** communication capabilities
+**Features:**
+- Dual DW3000 UWB chips (DS-TWR protocol)
+- LoRa transmission (SX1278, 915MHz)
+- 8 configurable UWB timeouts
+- EEPROM configuration storage
+- UART command interface
+- Supports up to 255 tags per sniffer
 
-## Development Environment
+### 🛠️ Tools
+GUI applications for configuration and monitoring:
+- `sniffer_tag_gui.py` - UWB timeout configuration
+- `gui_tool.py` - Detection history and CSV export
+- `jira_manager.py` - Development workflow integration
 
-- STM32CubeIDE
-- STM32 HAL Drivers
-- C/C++ programming languages
+## 🚀 Quick Start
 
-## Project Structure
+1. **Clone repository:**
+   ```bash
+   git clone https://github.com/uqomm/fw-SmartTag.git
+   cd fw-SmartTag
+   ```
 
-Each project follows a similar structure:
-ProjectName/ ├── Core/ │ ├── Inc/ # Header files │ ├── Src/ # Source files │ └── Startup/ # Startup code ├── Drivers/ # STM32 HAL and CMSIS drivers └── [Project specific files]
+2. **Open in STM32CubeIDE:**
+   - Import the desired project (Persona or sniffer-tag)
+   - Build for Debug or Release
 
+3. **Flash firmware:**
+   - Connect ST-LINK programmer
+   - Flash to target device
 
+## 📚 Documentation
 
-## Building and Flashing
+Comprehensive technical documentation is available in the `docs/` submodule:
+- System architecture and specifications
+- UWB timeout configuration guide
+- Migration guides (850K baud rate)
+- Protocol specifications
+- Test reports and analysis
 
-1. Open the project in STM32CubeIDE
-2. Select the appropriate build configuration (Debug/Release)
-3. Build the project
-4. Connect your STM32 board
-5. Flash the program using ST-LINK
+Access docs: `docs/docs/fw-smartTag/`
 
-## Dependencies
+## 🏗️ Development
 
-- STM32CubeIDE (or equivalent toolchain)
-- ST-LINK utility for flashing
-- Appropriate STM32 HAL drivers (included in each project)
+- **IDE:** STM32CubeIDE
+- **Language:** C/C++
+- **HAL:** STM32 HAL Drivers
+- **Version Control:** Git with submodules
 
-## License
+## 📋 Changelog
 
+See project-specific CHANGELOGs:
+- [Sniffer-Tag CHANGELOG](sniffer-tag/CHANGELOG.md)
+- [Persona CHANGELOG](Persona/CHANGELOG.md)
+- [Tools CHANGELOG](tools/CHANGELOG.md)
 
+## 📄 License
 
-## Contributing
+Proprietary - UQOMM
 
-For contributions, please:
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+## 🤝 Contributing
 
-## Contact
+1. Create a feature branch
+2. Commit changes with descriptive messages
+3. Push to branch and create Pull Request
+4. Ensure all tests pass before merging
+
+---
+
+**Latest Release:** v1.0.0  
+**Repository:** https://github.com/uqomm/fw-SmartTag
