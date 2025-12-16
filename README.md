@@ -178,7 +178,7 @@ sequenceDiagram
     Tag-->>Sniffer: FINAL Response
     Note left of Tag: RX timestamp: T6
     
-    rect rgb(200, 230, 255)
+    rect rgb(80, 200, 120)
     Note over Sniffer: Calculate Distance<br/>TOF = [(T4-T1)-(T3-T2)+(T6-T5)-(T6-T3)]/4<br/>Distance = TOF × c
     end
     
@@ -202,7 +202,7 @@ sequenceDiagram
     participant LoRa as LoRa Module<br/>(SX1276)
     participant Gateway as Gateway<br/>(VHF Receiver)
     
-    rect rgb(220, 240, 255)
+    rect rgb(74, 144, 226)
     Note over Tags,Sniffer: UWB Detection Phase
     loop For each Tag (up to 255)
         Tags->>Sniffer: UWB DS-TWR Protocol
@@ -211,7 +211,7 @@ sequenceDiagram
     end
     end
     
-    rect rgb(240, 255, 220)
+    rect rgb(155, 89, 182)
     Note over Sniffer,Gateway: LoRa Transmission Phase
     
     Sniffer->>Sniffer: Build Data Packet<br/>Format: [Sniffer_ID | Tag_Count | Data...]
