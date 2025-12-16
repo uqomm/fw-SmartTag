@@ -6,7 +6,7 @@ Firmware for the SmartTag UWB-based indoor localization system, consisting of pe
 
 ```mermaid
 block-beta
-  columns 5
+  columns 7
   
   block:Tags:1
     columns 1
@@ -34,7 +34,11 @@ block-beta
   
   space
   
-  Server["Backend Server<br/>Cloud/Local<br/>☁️"]
+  block:Server:1
+    columns 1
+    BackendServer["Backend Server<br/>Cloud/Local<br/>☁️"]
+    Database["Database<br/>Storage"]
+  end
   
   Tags--"UWB Ranging<br/>DS-TWR Protocol<br/>38m max"-->Sniffer
   Sniffer--"LoRa VHF<br/>Distance Data<br/>Long Range"-->Gateway
@@ -48,7 +52,7 @@ block-beta
   class Tag1,Tag2,TagN tag
   class SnifferDev,UWB,LoRaModule sniffer
   class GatewayDev,Processor gateway
-  class Server server
+  class BackendServer,Database server
 ```
 
 **Data Flow:** Tags (UWB) → Sniffer (LoRa VHF) → Gateway (Internet) → Backend Server
