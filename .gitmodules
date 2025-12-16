@@ -1,4 +1,4 @@
 [submodule "docs"]
-	path = docs
-	url = https://github.com/uqomm/sw-documentation.git
-	branch = dev-vlad-validation
+        path = docs
+        url = https://github.com/uqomm/sw-documentation.git
+        branch = master
