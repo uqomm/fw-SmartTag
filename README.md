@@ -6,36 +6,52 @@ Firmware for the SmartTag UWB-based indoor localization system, consisting of pe
 
 ```mermaid
 block-beta
-  columns 3
+  columns 5
   
   block:Tags:1
     columns 1
-    Tag1["Personal Tag<br/>STM32U535"]
-    Tag2["Personal Tag<br/>STM32U535"]
-    TagN["Personal Tag<br/>STM32U535"]
+    Tag1["Personal Tag<br/>STM32U535<br/>🏷️"]
+    Tag2["Personal Tag<br/>STM32U535<br/>🏷️"]
+    TagN["... More Tags<br/>STM32U535<br/>🏷️"]
   end
   
   space
   
   block:Sniffer:1
     columns 1
-    SnifferDev["Sniffer Device<br/>STM32G474"]
-    UWB["DW3000 UWB<br/>DS-TWR Protocol"]
-    LoRaModule["LoRa SX1276<br/>VHF Transmission"]
+    SnifferDev["Sniffer Device<br/>STM32G474<br/>📡"]
+    UWB["DW3000 UWB<br/>Dual Chip"]
+    LoRaModule["LoRa SX1276<br/>VHF TX"]
   end
   
-  Tags--"UWB Ranging<br/>38m max"-->Sniffer
-  space:3
-  Sniffer--"Distance Data<br/>LoRa VHF"-->Server["Gateway/Server"]
+  space
   
-  classDef tag fill:#4A90E2,stroke:#2E5C8A,color:#fff
-  classDef sniffer fill:#50C878,stroke:#2E7D4E,color:#fff
-  classDef server fill:#F39C12,stroke:#C87F0A,color:#fff
+  block:Gateway:1
+    columns 1
+    GatewayDev["Gateway<br/>LoRa Receiver<br/>🔌"]
+    Processor["Data Processing<br/>& Forwarding"]
+  end
+  
+  space
+  
+  Server["Backend Server<br/>Cloud/Local<br/>☁️"]
+  
+  Tags--"UWB Ranging<br/>DS-TWR Protocol<br/>38m max"-->Sniffer
+  Sniffer--"LoRa VHF<br/>Distance Data<br/>Long Range"-->Gateway
+  Gateway--"TCP/IP<br/>HTTP/MQTT<br/>Ethernet/WiFi"-->Server
+  
+  classDef tag fill:#4A90E2,stroke:#2E5C8A,color:#fff,stroke-width:3px
+  classDef sniffer fill:#50C878,stroke:#2E7D4E,color:#fff,stroke-width:3px
+  classDef gateway fill:#9B59B6,stroke:#6C3483,color:#fff,stroke-width:3px
+  classDef server fill:#F39C12,stroke:#C87F0A,color:#fff,stroke-width:3px
   
   class Tag1,Tag2,TagN tag
   class SnifferDev,UWB,LoRaModule sniffer
+  class GatewayDev,Processor gateway
   class Server server
 ```
+
+**Data Flow:** Tags (UWB) → Sniffer (LoRa VHF) → Gateway (Internet) → Backend Server
 
 ## 📦 Projects
 
