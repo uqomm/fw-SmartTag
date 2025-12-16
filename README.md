@@ -21,12 +21,12 @@ block-beta
     columns 1
     SnifferDev["Sniffer Device<br/>STM32G474"]
     UWB["DW3000 UWB<br/>DS-TWR Protocol"]
-    LoRaModule["LoRa SX1278<br/>Long Range"]
+    LoRaModule["LoRa SX1276<br/>VHF Transmission"]
   end
   
   Tags--"UWB Ranging<br/>38m max"-->Sniffer
   space:3
-  Sniffer--"Distance Data<br/>LoRa 915MHz"-->Server["Backend Server"]
+  Sniffer--"Distance Data<br/>LoRa VHF"-->Server["Gateway/Server"]
   
   classDef tag fill:#4A90E2,stroke:#2E5C8A,color:#fff
   classDef sniffer fill:#50C878,stroke:#2E7D4E,color:#fff
@@ -56,11 +56,12 @@ block-beta
 
 **Features:**
 - Dual DW3000 UWB chips (DS-TWR protocol)
-- LoRa transmission (SX1278, 915MHz)
+- LoRa transmission (SX1276, VHF band)
 - 8 configurable UWB timeouts
 - EEPROM configuration storage
 - UART command interface
 - Supports up to 255 tags per sniffer
+- Gateway communication via LoRa VHF
 
 ### 🛠️ Tools
 GUI applications for configuration and monitoring:
@@ -122,5 +123,12 @@ Proprietary - UQOMM
 
 ---
 
-**Latest Release:** v1.0.0  
+**Latest Release:** v1.1.0  
 **Repository:** https://github.com/uqomm/fw-SmartTag
+
+## 🔧 Hardware Specifications
+
+### Communication Modules
+- **UWB:** Qorvo DW3000 (6.5 GHz band, IEEE 802.15.4z)
+- **LoRa:** Semtech SX1276 (VHF band for gateway communication)
+- **Range:** UWB up to 38m, LoRa long-range to gateway
