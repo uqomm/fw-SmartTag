@@ -8,7 +8,7 @@
 #ifndef INC_TAG_C_
 #define INC_TAG_C_
 
-#ifdef __cplusplus
+#ifdef __cplusplus // Check if compiling with a C++ compiler
 extern "C" {
 #endif
 
@@ -462,7 +462,7 @@ typedef enum {
 #define DWT_BROUT_EN     0x4                        // enable brownout detector during sleep/deep sleep
 #define DWT_SLEEP        0x2                        // enable sleep (if this bit is clear the device will enter deep sleep)
 #define DWT_SLP_EN       0x1                        // enable sleep/deep sleep functionality
-#define DWT_WAKE_CNT     0x02
+
 //DW3000 IDLE/INIT mode definitions
 #define DWT_DW_INIT      0x0
 #define DWT_DW_IDLE      0x1
@@ -598,6 +598,7 @@ typedef struct {
 	uint8_t pdoaMode;        //!< PDOA mode
 } dwt_config_t;
 
+
 typedef struct {
 	uint8_t PGdly;
 	//TX POWER
@@ -729,7 +730,7 @@ typedef struct {
 #define RESP_RX_TIMEOUT_UUS_6M8 600  // Aumentado de 300 a 600 (+100%) - Solución 1B para detección >20m
 #define RESP_RX_TIMEOUT_UUS_850K 2000  // Escalado ×8 para 850K
 /* Preamble timeout, in multiple of PAC size. See NOTE 7 below. */
-#define PRE_TIMEOUT_6M8 12  // Aumentado de 8 a 12 (+50% adicional, +140% desde baseline 5) - Solución 1B para mejorar tasa de éxito a >50%
+#define PRE_TIMEOUT_6M8 8  // Aumentado de 8 a 12 (+50% adicional, +140% desde baseline 5) - Solución 1B para mejorar tasa de éxito a >50%
 #define PRE_TIMEOUT_850K 32  // Calculado: PAC32 requiere timeout de 32 (escalado desde PAC8=8)
 
 // OTP addresses definitions
@@ -759,7 +760,7 @@ typedef struct {
 #define GAIN_3DB   0x04040404  //  3db
 #define GAIN_0DB   0x00000000  //  0db
 
-#define DISTANCE_READINGS 10
+#define DISTANCE_READINGS 6
 
 //DW-IC SPI CRC-8 polynomial
 #define POLYNOMIAL  0x07    /* x^8 + x^2 + x^1 + x^0 */
@@ -900,11 +901,9 @@ typedef struct {
 	uint16_t nssPin;
 	GPIO_TypeDef *nrstPort;
 	uint16_t nrstPin;
-} SPI_HW_t;
+} Uwb_HW_t;
 
-
-
-extern SPI_HW_t hw;
+extern Uwb_HW_t *hw;
 extern dwt_local_data_t *pdw3000local;
 extern dwt_config_t *config_options;
 
@@ -975,7 +974,6 @@ void resp_msg_set_ts(uint8_t *ts_field, const uint64_t ts);
 uint32_t get_rx_delay_time_data_rate(dwt_config_t *config_options);
 uint32_t get_rx_delay_time_txpreamble(dwt_config_t *config_options);
 void deca_usleep(unsigned int usec);
-
 // -------------------------------------------------------------------------------------------------------------------
 // Internal functions prototypes for controlling and configuring the device
 //
@@ -983,20 +981,10 @@ void dwt_force_clocks(int clocks);
 uint32_t _dwt_otpread(uint16_t address);      // Read non-volatile memory
 void _dwt_otpprogword32(uint32_t data, uint16_t address); // Program the non-volatile memory
 uint16_t dwt_readtempvbat(void);
-float set_temperature(uint8_t raw_temp);
+float dwt_convertrawtemperature(uint8_t raw_temp);
 float dwt_convertrawvoltage(uint8_t raw_voltage);
 
-/* sleep api*/
-void dwt_entersleepaftertx(int enable);
-void dwt_restoreconfig(void);
-void dwt_configuresleep(uint16_t mode, uint8_t wake);
-void dwt_configuresleepcnt(uint16_t sleepcnt);
-void dwt_entersleep(int idle_rc);
-
-void dwt_setsniffmode(int enable, uint8_t timeOn, uint8_t timeOff);
-
 #ifdef __cplusplus
-}
+} // End of extern "C" block
 #endif
-
 #endif /* INC_TAG_C_ */

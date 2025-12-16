@@ -245,15 +245,15 @@ int main(void)
 	pdw3000local = &dwt_local_data;
 	/* Default communication configuration. We use default non-STS DW mode. */
 	dwt_config_t defatult_dwt_config = { 5, /* Channel number. */
-	DWT_PLEN_128, /* Preamble length. Used in TX only. */
-	DWT_PAC8, /* Preamble acquisition chunk size. Used in RX only. */
+	DWT_PLEN_1024, /* Preamble length. Used in TX only. */
+	DWT_PAC32, /* Preamble acquisition chunk size. Used in RX only. */
 	9, /* TX preamble code. Used in TX only. */
 	9, /* RX preamble code. Used in RX only. */
 	1, /* 0 to use standard 8 symbol SFD, 1 to use non-standard 8 symbol, 2 for non-standard 16 symbol SFD and 3 for 4z 8 symbol SDF type */
-	DWT_BR_6M8, /* Data rate. */
+	DWT_BR_850K, /* Data rate. */
 	DWT_PHRMODE_STD, /* PHY header mode. */
 	DWT_PHRRATE_STD, /* PHY header rate. */
-	(129 + 8 - 8), /* SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. */
+	(1025 + 1 + 8 - 32), /* SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. */
 	DWT_STS_MODE_OFF, /* STS disabled */
 	DWT_STS_LEN_64,/* STS length see allowed values in Enum dwt_sts_lengths_e */
 	DWT_PDOA_M0 /* PDOA mode off */
@@ -342,7 +342,7 @@ int main(void)
 			break;
 
 		case TAG_WAIT_SEND_TX:
-			HAL_Delay(1); // TODO quizas hall delay 2
+			HAL_Delay(8); // TODO quizas hall delay 2
 			tag_status = process_second(tag);
 			if (tag_status == TAG_SLEEP)
 				tag_status = TAG_SLEEP_RECIVED;
@@ -369,12 +369,10 @@ int main(void)
 				tag_status = TAG_WAIT_FOR_FIRST_DETECTION;
 			}
 
-			else if (tag_status != TAG_SLEEP) {
-				HAL_Delay(1);
-				tag_status = TAG_WAIT_FOR_TIMESTAMPT_QUERY;
-			}
-
-			if (HAL_GetTick() - query_ticks > query_timeout) {
+		else if (tag_status != TAG_SLEEP) {
+			// HAL_Delay(1); // ELIMINADO: Causaba pérdida de sincronización en MULTIPLE_DETECTION >20m
+			tag_status = TAG_WAIT_FOR_TIMESTAMPT_QUERY;
+		}			if (HAL_GetTick() - query_ticks > query_timeout) {
 				if ((tag->distance_a > 0) && (tag->distance_b > 0))
 					tag_status = TAG_SLEEP_RECIVED;
 				else

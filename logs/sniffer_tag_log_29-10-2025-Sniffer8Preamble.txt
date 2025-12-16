@@ -1,0 +1,530 @@
+=== SNIFFER-TAG LOG ===
+Generated: 2025-10-29 16:24:49
+============================================================
+
+[16:17:30.408] [00:05:17] TAG [0x2783] - R:5, DistA:04.91, DistB:02.74, Bat:41
+[16:17:30.510] [00:05:17] TAG [0x29EC] - R:5, DistA:05.01, DistB:02.93, Bat:41
+[16:17:35.468] [00:05:22] Tags detected: 4
+[16:17:41.424] [00:05:28] TAG [0x2B45] - R:5, DistA:05.71, DistB:03.33, Bat:41
+[16:17:44.247] [00:05:31] No tags detected (scan 11)
+[16:17:44.356] [00:05:31] TAG [0x2B5E] - R:5, DistA:05.63, DistB:03.97, Bat:38
+[16:17:45.548] [00:05:32] TAG [0x2783] - R:5, DistA:04.51, DistB:03.78, Bat:41
+[16:17:45.763] [00:05:32] TAG [0x29EC] - R:5, DistA:05.60, DistB:05.71, Bat:41
+[16:17:50.753] [00:05:37] Tags detected: 4
+[16:18:00.435] [00:05:47] TAG [0x2B5E] - R:5, DistA:11.15, DistB:09.02, Bat:38
+[16:18:00.545] ╔═══ ERROR LOG: Tag 0x62482B5E ═══╗
+[16:18:00.546] ║ Total Errors: 50 (Ant-A:50, Ant-B:0)
+[16:18:00.548] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:18:00.549] ╠═════════════════════════════════════════╣
+[16:18:00.551] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:00.552] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:00.553] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:00.554] ║ ... (44 similar errors omitted) ...
+[16:18:00.556] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:00.558] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:00.670] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:00.672] ╚═════════════════════════════════════════╝
+[16:18:00.675] [00:05:47] TAG [0x0000] - R:0, DistA:N/A, DistB:N/A, Bat:0
+[16:18:00.677] ╔═══ ERROR LOG: Tag 0x62482B5E ═══╗
+[16:18:00.679] ║ Total Errors: 50 (Ant-A:50, Ant-B:0)
+[16:18:00.681] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:18:00.684] ╠═════════════════════════════════════════╣
+[16:18:00.687] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:00.794] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:00.796] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:00.798] ║ ... (44 similar errors omitted) ...
+[16:18:00.802] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:00.804] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:00.806] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:00.809] ╚═════════════════════════════════════════╝
+[16:18:01.132] [00:05:48] TAG [0x2B45] - R:5, DistA:11.19, DistB:08.49, Bat:41
+[16:18:01.134] ╔═══ ERROR LOG: Tag 0x66482B45 ═══╗
+[16:18:01.241] ║ Total Errors: 25 (Ant-A:1, Ant-B:24)
+[16:18:01.243] ║ Types: Timeouts=25, CRC=0, Others=0
+[16:18:01.245] ╠═════════════════════════════════════════╣
+[16:18:01.247] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:01.250] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:01.252] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:2, 6ms)
+[16:18:01.254] ║ ... (19 similar errors omitted) ...
+[16:18:01.256] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:01.261] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:01.268] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:01.273] ╚═════════════════════════════════════════╝
+[16:18:01.815] [00:05:48] TAG [0x2783] - R:5, DistA:11.09, DistB:07.87, Bat:41
+[16:18:06.830] [00:05:53] Tags detected: 3
+[16:18:14.114] [00:06:01] No tags detected (scan 12)
+[16:18:26.810] [00:06:13] TAG [0x2B5E] - R:3, DistA:N/A, DistB:13.99, Bat:38
+[16:18:26.817] ╔═══ ERROR LOG: Tag 0x62482B5E ═══╗
+[16:18:26.822] ║ Total Errors: 50 (Ant-A:50, Ant-B:0)
+[16:18:26.827] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:18:26.833] ╠═════════════════════════════════════════╣
+[16:18:26.838] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:26.845] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:26.852] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:26.858] ║ ... (44 similar errors omitted) ...
+[16:18:26.863] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:26.869] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:26.875] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:26.881] ╚═════════════════════════════════════════╝
+[16:18:28.412] [00:06:15] TAG [0x2B45] - R:3, DistA:N/A, DistB:13.95, Bat:41
+[16:18:28.418] ╔═══ ERROR LOG: Tag 0x66482B45 ═══╗
+[16:18:28.423] ║ Total Errors: 50 (Ant-A:48, Ant-B:2)
+[16:18:28.429] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:18:28.436] ╠═════════════════════════════════════════╣
+[16:18:28.553] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:28.559] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:28.564] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:2, 6ms)
+[16:18:28.570] ║ ... (44 similar errors omitted) ...
+[16:18:28.575] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:28.582] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:28.587] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:28.593] ╚═════════════════════════════════════════╝
+[16:18:30.010] [00:06:16] TAG [0x2B5E] - R:3, DistA:N/A, DistB:12.37, Bat:38
+[16:18:30.019] ╔═══ ERROR LOG: Tag 0x62482B5E ═══╗
+[16:18:30.026] ║ Total Errors: 50 (Ant-A:49, Ant-B:1)
+[16:18:30.033] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:18:30.042] ╠═════════════════════════════════════════╣
+[16:18:30.051] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:30.057] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:18:30.063] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:30.071] ║ ... (44 similar errors omitted) ...
+[16:18:30.078] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 7ms)
+[16:18:30.085] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:30.092] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:30.100] ╚═════════════════════════════════════════╝
+[16:18:31.623] [00:06:18] TAG [0x2B45] - R:3, DistA:N/A, DistB:14.44, Bat:41
+[16:18:31.734] ╔═══ ERROR LOG: Tag 0x66482B45 ═══╗
+[16:18:31.741] ║ Total Errors: 50 (Ant-A:48, Ant-B:2)
+[16:18:31.747] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:18:31.755] ╠═════════════════════════════════════════╣
+[16:18:31.762] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:31.769] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:18:31.775] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:31.783] ║ ... (44 similar errors omitted) ...
+[16:18:31.790] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:31.796] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:31.803] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:31.808] ╚═════════════════════════════════════════╝
+[16:18:33.222] [00:06:20] TAG [0x2B5E] - R:3, DistA:N/A, DistB:14.02, Bat:38
+[16:18:33.229] ╔═══ ERROR LOG: Tag 0x62482B5E ═══╗
+[16:18:33.235] ║ Total Errors: 50 (Ant-A:49, Ant-B:1)
+[16:18:33.240] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:18:33.245] ╠═════════════════════════════════════════╣
+[16:18:33.251] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:33.362] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:33.368] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:2, 6ms)
+[16:18:33.373] ║ ... (44 similar errors omitted) ...
+[16:18:33.379] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 7ms)
+[16:18:33.385] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:33.390] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 7ms)
+[16:18:33.396] ╚═════════════════════════════════════════╝
+[16:18:34.912] [00:06:21] TAG [0x2B45] - R:3, DistA:N/A, DistB:15.82, Bat:41
+[16:18:34.918] ╔═══ ERROR LOG: Tag 0x66482B45 ═══╗
+[16:18:34.924] ║ Total Errors: 50 (Ant-A:39, Ant-B:11)
+[16:18:35.037] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:18:35.046] ╠═════════════════════════════════════════╣
+[16:18:35.053] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:35.058] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:18:35.063] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:35.070] ║ ... (44 similar errors omitted) ...
+[16:18:35.076] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:35.081] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:35.087] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:35.093] ╚═════════════════════════════════════════╝
+[16:18:36.505] [00:06:23] TAG [0x2B5E] - R:3, DistA:N/A, DistB:13.92, Bat:38
+[16:18:36.511] ╔═══ ERROR LOG: Tag 0x62482B5E ═══╗
+[16:18:36.517] ║ Total Errors: 50 (Ant-A:50, Ant-B:0)
+[16:18:36.523] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:18:36.528] ╠═════════════════════════════════════════╣
+[16:18:36.534] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:36.541] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:36.546] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:36.552] ║ ... (44 similar errors omitted) ...
+[16:18:36.558] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:36.563] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:36.677] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:36.684] ╚═════════════════════════════════════════╝
+[16:18:43.937] [00:06:31] No tags detected (scan 13)
+[16:18:46.329] [00:06:33] TAG [0x29EC] - R:3, DistA:N/A, DistB:14.28, Bat:41
+[16:18:46.335] ╔═══ ERROR LOG: Tag 0x6A4829EC ═══╗
+[16:18:46.341] ║ Total Errors: 50 (Ant-A:50, Ant-B:0)
+[16:18:46.346] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:18:46.353] ╠═════════════════════════════════════════╣
+[16:18:46.359] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:46.364] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:46.370] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:46.375] ║ ... (44 similar errors omitted) ...
+[16:18:46.381] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:46.388] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:46.393] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:46.399] ╚═════════════════════════════════════════╝
+[16:18:47.601] [00:06:34] TAG [0x2783] - R:3, DistA:N/A, DistB:14.33, Bat:41
+[16:18:47.606] ╔═══ ERROR LOG: Tag 0x6E482783 ═══╗
+[16:18:47.611] ║ Total Errors: 50 (Ant-A:50, Ant-B:0)
+[16:18:47.618] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:18:47.623] ╠═════════════════════════════════════════╣
+[16:18:47.628] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:47.635] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:47.640] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:47.646] ║ ... (44 similar errors omitted) ...
+[16:18:47.653] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:47.658] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:47.664] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:47.671] ╚═════════════════════════════════════════╝
+[16:18:49.407] [00:06:36] TAG [0x29EC] - R:3, DistA:N/A, DistB:14.27, Bat:41
+[16:18:49.414] ╔═══ ERROR LOG: Tag 0x6A4829EC ═══╗
+[16:18:49.420] ║ Total Errors: 50 (Ant-A:49, Ant-B:1)
+[16:18:49.425] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:18:49.430] ╠═════════════════════════════════════════╣
+[16:18:49.436] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:49.441] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:18:49.448] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:49.453] ║ ... (44 similar errors omitted) ...
+[16:18:49.459] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 7ms)
+[16:18:49.464] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:49.470] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:49.476] ╚═════════════════════════════════════════╝
+[16:18:50.459] [00:06:37] TAG [0x2B45] - R:3, DistA:N/A, DistB:14.30, Bat:41
+[16:18:50.468] ╔═══ ERROR LOG: Tag 0x66482B45 ═══╗
+[16:18:50.474] ║ Total Errors: 50 (Ant-A:50, Ant-B:0)
+[16:18:50.481] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:18:50.488] ╠═════════════════════════════════════════╣
+[16:18:50.494] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:50.500] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:50.506] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:50.617] ║ ... (44 similar errors omitted) ...
+[16:18:50.622] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:50.628] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:50.634] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:50.639] ╚═════════════════════════════════════════╝
+[16:18:51.731] [00:06:38] TAG [0x29EC] - R:3, DistA:N/A, DistB:14.31, Bat:41
+[16:18:51.737] ╔═══ ERROR LOG: Tag 0x6A4829EC ═══╗
+[16:18:51.742] ║ Total Errors: 50 (Ant-A:50, Ant-B:0)
+[16:18:51.748] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:18:51.754] ╠═════════════════════════════════════════╣
+[16:18:51.760] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:51.869] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:51.875] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:51.881] ║ ... (44 similar errors omitted) ...
+[16:18:51.887] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:51.892] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:51.899] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:51.905] ╚═════════════════════════════════════════╝
+[16:18:53.421] [00:06:40] TAG [0x29EC] - R:3, DistA:N/A, DistB:13.81, Bat:41
+[16:18:53.426] ╔═══ ERROR LOG: Tag 0x6A4829EC ═══╗
+[16:18:53.433] ║ Total Errors: 50 (Ant-A:50, Ant-B:0)
+[16:18:53.439] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:18:53.444] ╠═════════════════════════════════════════╣
+[16:18:53.450] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:53.456] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:53.461] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:53.468] ║ ... (44 similar errors omitted) ...
+[16:18:53.474] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:53.481] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:53.594] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:18:53.600] ╚═════════════════════════════════════════╝
+[16:19:00.021] [00:06:47] TAG [0x2B45] - R:5, DistA:16.57, DistB:14.45, Bat:41
+[16:19:00.027] ╔═══ ERROR LOG: Tag 0x66482B45 ═══╗
+[16:19:00.034] ║ Total Errors: 50 (Ant-A:50, Ant-B:0)
+[16:19:00.040] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:19:00.045] ╠═════════════════════════════════════════╣
+[16:19:00.052] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:00.162] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:00.170] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:00.178] ║ ... (44 similar errors omitted) ...
+[16:19:00.187] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:00.195] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:00.203] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:00.212] ╚═════════════════════════════════════════╝
+[16:19:01.191] [00:06:48] TAG [0x2783] - R:3, DistA:N/A, DistB:14.40, Bat:41
+[16:19:01.300] ╔═══ ERROR LOG: Tag 0x6E482783 ═══╗
+[16:19:01.308] ║ Total Errors: 50 (Ant-A:50, Ant-B:0)
+[16:19:01.317] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:19:01.327] ╠═════════════════════════════════════════╣
+[16:19:01.339] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:01.347] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:01.357] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:01.366] ║ ... (44 similar errors omitted) ...
+[16:19:01.375] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:01.385] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:01.394] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:01.404] ╚═════════════════════════════════════════╝
+[16:19:04.457] [00:06:51] TAG [0x2783] - R:3, DistA:N/A, DistB:13.85, Bat:41
+[16:19:04.463] ╔═══ ERROR LOG: Tag 0x6E482783 ═══╗
+[16:19:04.469] ║ Total Errors: 50 (Ant-A:50, Ant-B:0)
+[16:19:04.475] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:19:04.480] ╠═════════════════════════════════════════╣
+[16:19:04.597] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:04.603] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:04.609] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:04.616] ║ ... (44 similar errors omitted) ...
+[16:19:04.621] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:04.627] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:04.633] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:04.638] ╚═════════════════════════════════════════╝
+[16:19:04.969] [00:06:52] Tags detected: 1
+[16:19:10.055] [00:06:57] TAG [0x2783] - R:5, DistA:17.80, DistB:15.04, Bat:41
+[16:19:10.060] ╔═══ ERROR LOG: Tag 0x6E482783 ═══╗
+[16:19:10.066] ║ Total Errors: 50 (Ant-A:50, Ant-B:0)
+[16:19:10.072] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:19:10.077] ╠═════════════════════════════════════════╣
+[16:19:10.084] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:10.089] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:10.094] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:10.100] ║ ... (44 similar errors omitted) ...
+[16:19:10.210] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:10.216] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:10.221] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:10.227] ╚═════════════════════════════════════════╝
+[16:19:11.847] [00:06:59] TAG [0x2B5E] - R:5, DistA:18.60, DistB:16.67, Bat:38
+[16:19:11.955] ╔═══ ERROR LOG: Tag 0x62482B5E ═══╗
+[16:19:11.961] ║ Total Errors: 18 (Ant-A:0, Ant-B:18)
+[16:19:11.967] ║ Types: Timeouts=18, CRC=0, Others=0
+[16:19:11.973] ╠═════════════════════════════════════════╣
+[16:19:11.978] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:11.985] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:11.991] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:11.996] ║ ... (12 similar errors omitted) ...
+[16:19:12.002] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:2, 6ms)
+[16:19:12.007] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:2, 6ms)
+[16:19:12.013] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:2, 6ms)
+[16:19:12.019] ╚═════════════════════════════════════════╝
+[16:19:13.317] [00:07:00] TAG [0x29EC] - R:3, DistA:18.79, DistB:N/A, Bat:41
+[16:19:13.323] ╔═══ ERROR LOG: Tag 0x6A4829EC ═══╗
+[16:19:13.329] ║ Total Errors: 50 (Ant-A:0, Ant-B:50)
+[16:19:13.335] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:19:13.340] ╠═════════════════════════════════════════╣
+[16:19:13.456] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:13.462] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:13.468] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:13.473] ║ ... (44 similar errors omitted) ...
+[16:19:13.480] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:13.485] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:13.491] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:13.498] ╚═════════════════════════════════════════╝
+[16:19:13.718] [00:07:01] No tags detected (scan 14)
+[16:19:15.024] [00:07:02] TAG [0x29EC] - R:3, DistA:18.83, DistB:N/A, Bat:41
+[16:19:15.035] ╔═══ ERROR LOG: Tag 0x6A4829EC ═══╗
+[16:19:15.042] ║ Total Errors: 50 (Ant-A:0, Ant-B:50)
+[16:19:15.053] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:19:15.063] ╠═════════════════════════════════════════╣
+[16:19:15.070] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:15.077] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:15.084] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:15.090] ║ ... (44 similar errors omitted) ...
+[16:19:15.097] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:15.105] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:15.112] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:15.122] ╚═════════════════════════════════════════╝
+[16:19:15.786] [00:07:03] TAG [0x29EC] - R:5, DistA:18.78, DistB:16.91, Bat:41
+[16:19:15.793] ╔═══ ERROR LOG: Tag 0x6A4829EC ═══╗
+[16:19:15.800] ║ Total Errors: 17 (Ant-A:0, Ant-B:17)
+[16:19:15.911] ║ Types: Timeouts=17, CRC=0, Others=0
+[16:19:15.918] ╠═════════════════════════════════════════╣
+[16:19:15.923] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:15.929] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:15.936] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:15.941] ║ ... (11 similar errors omitted) ...
+[16:19:15.946] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:15.952] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:15.958] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:15.963] ╚═════════════════════════════════════════╝
+[16:19:15.970] [00:07:03] TAG [0x2B45] - R:5, DistA:18.85, DistB:16.93, Bat:41
+[16:19:20.851] [00:07:08] Tags detected: 4
+[16:19:26.154] [00:07:13] TAG [0x2783] - R:3, DistA:18.83, DistB:N/A, Bat:41
+[16:19:26.160] ╔═══ ERROR LOG: Tag 0x6E482783 ═══╗
+[16:19:26.165] ║ Total Errors: 50 (Ant-A:0, Ant-B:50)
+[16:19:26.171] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:19:26.176] ╠═════════════════════════════════════════╣
+[16:19:26.181] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:26.188] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:26.193] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:26.198] ║ ... (44 similar errors omitted) ...
+[16:19:26.204] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:26.210] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:26.326] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:26.333] ╚═════════════════════════════════════════╝
+[16:19:27.970] [00:07:15] TAG [0x2B5E] - R:5, DistA:18.84, DistB:16.85, Bat:38
+[16:19:27.977] ╔═══ ERROR LOG: Tag 0x62482B5E ═══╗
+[16:19:27.984] ║ Total Errors: 50 (Ant-A:0, Ant-B:50)
+[16:19:27.991] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:19:27.999] ╠═════════════════════════════════════════╣
+[16:19:28.006] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:28.012] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:28.019] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:28.026] ║ ... (44 similar errors omitted) ...
+[16:19:28.034] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:28.040] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:28.047] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:28.055] ╚═════════════════════════════════════════╝
+[16:19:28.061] [00:07:15] TAG [0x0000] - R:0, DistA:N/A, DistB:N/A, Bat:0
+[16:19:28.069] ╔═══ ERROR LOG: Tag 0x62482B5E ═══╗
+[16:19:28.176] ║ Total Errors: 50 (Ant-A:0, Ant-B:50)
+[16:19:28.183] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:19:28.189] ╠═════════════════════════════════════════╣
+[16:19:28.194] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:28.200] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:28.206] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:28.211] ║ ... (44 similar errors omitted) ...
+[16:19:28.218] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:28.224] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:28.229] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:28.236] ╚═════════════════════════════════════════╝
+[16:19:28.776] [00:07:16] TAG [0x2783] - R:5, DistA:18.81, DistB:16.71, Bat:41
+[16:19:28.783] ╔═══ ERROR LOG: Tag 0x6E482783 ═══╗
+[16:19:28.789] ║ Total Errors: 50 (Ant-A:28, Ant-B:22)
+[16:19:28.795] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:19:28.801] ╠═════════════════════════════════════════╣
+[16:19:28.806] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:28.811] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:28.817] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:28.823] ║ ... (44 similar errors omitted) ...
+[16:19:28.831] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:2, 6ms)
+[16:19:28.838] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:2, 6ms)
+[16:19:28.845] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:2, 6ms)
+[16:19:28.966] ╚═════════════════════════════════════════╝
+[16:19:30.807] [00:07:18] TAG [0x2B45] - R:5, DistA:18.66, DistB:15.91, Bat:41
+[16:19:31.787] [00:07:19] TAG [0x29EC] - R:5, DistA:18.02, DistB:16.01, Bat:41
+[16:19:31.794] ╔═══ ERROR LOG: Tag 0x6A4829EC ═══╗
+[16:19:31.801] ║ Total Errors: 6 (Ant-A:6, Ant-B:0)
+[16:19:31.807] ║ Types: Timeouts=6, CRC=0, Others=0
+[16:19:31.812] ╠═════════════════════════════════════════╣
+[16:19:31.818] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:31.927] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:31.933] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:31.938] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:31.944] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:31.950] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:31.955] ╚═════════════════════════════════════════╝
+[16:19:36.738] [00:07:24] Tags detected: 4
+[16:19:43.671] [00:07:31] No tags detected (scan 15)
+[16:19:56.424] [00:07:43] TAG [0x2B5E] - R:2, DistA:15.79, DistB:N/A, Bat:38
+[16:19:56.430] ╔═══ ERROR LOG: Tag 0x62482B5E ═══╗
+[16:19:56.437] ║ Total Errors: 50 (Ant-A:24, Ant-B:26)
+[16:19:56.550] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:19:56.556] ╠═════════════════════════════════════════╣
+[16:19:56.561] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:56.567] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:56.572] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:56.577] ║ ... (44 similar errors omitted) ...
+[16:19:56.585] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:56.590] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:2, 6ms)
+[16:19:56.595] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:56.602] ╚═════════════════════════════════════════╝
+[16:19:58.021] [00:07:45] TAG [0x2B45] - R:3, DistA:15.64, DistB:N/A, Bat:41
+[16:19:58.130] ╔═══ ERROR LOG: Tag 0x66482B45 ═══╗
+[16:19:58.138] ║ Total Errors: 50 (Ant-A:0, Ant-B:50)
+[16:19:58.143] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:19:58.149] ╠═════════════════════════════════════════╣
+[16:19:58.154] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:58.159] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:58.167] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:58.175] ║ ... (44 similar errors omitted) ...
+[16:19:58.183] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:58.190] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:58.197] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:58.205] ╚═════════════════════════════════════════╝
+[16:19:59.831] [00:07:47] TAG [0x2B45] - R:5, DistA:15.48, DistB:14.41, Bat:41
+[16:19:59.838] ╔═══ ERROR LOG: Tag 0x66482B45 ═══╗
+[16:19:59.843] ║ Total Errors: 50 (Ant-A:7, Ant-B:43)
+[16:19:59.849] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:19:59.854] ╠═════════════════════════════════════════╣
+[16:19:59.859] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:59.865] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:19:59.872] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:59.877] ║ ... (44 similar errors omitted) ...
+[16:19:59.883] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:59.890] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:59.896] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:19:59.902] ╚═════════════════════════════════════════╝
+[16:20:04.744] [00:07:52] Tags detected: 1
+[16:20:05.725] [00:07:53] TAG [0x2783] - R:5, DistA:14.82, DistB:12.02, Bat:41
+[16:20:05.736] ╔═══ ERROR LOG: Tag 0x6E482783 ═══╗
+[16:20:05.746] ║ Total Errors: 50 (Ant-A:0, Ant-B:50)
+[16:20:05.759] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:20:05.771] ╠═════════════════════════════════════════╣
+[16:20:05.780] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:05.789] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:05.801] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:05.811] ║ ... (44 similar errors omitted) ...
+[16:20:05.821] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:05.832] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:05.845] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:05.857] ╚═════════════════════════════════════════╝
+[16:20:06.949] [00:07:54] TAG [0x29EC] - R:3, DistA:14.79, DistB:N/A, Bat:41
+[16:20:06.963] ╔═══ ERROR LOG: Tag 0x6A4829EC ═══╗
+[16:20:06.975] ║ Total Errors: 50 (Ant-A:0, Ant-B:50)
+[16:20:06.987] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:20:07.000] ╠═════════════════════════════════════════╣
+[16:20:07.012] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:07.024] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:07.036] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:07.047] ║ ... (44 similar errors omitted) ...
+[16:20:07.058] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:07.167] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:07.173] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:07.180] ╚═════════════════════════════════════════╝
+[16:20:10.754] [00:07:58] Tags detected: 1
+[16:20:12.482] [00:08:00] TAG [0x2B5E] - R:3, DistA:16.07, DistB:N/A, Bat:38
+[16:20:12.487] ╔═══ ERROR LOG: Tag 0x62482B5E ═══╗
+[16:20:12.493] ║ Total Errors: 50 (Ant-A:3, Ant-B:47)
+[16:20:12.499] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:20:12.505] ╠═════════════════════════════════════════╣
+[16:20:12.510] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:12.516] ║ ⏱ [Ant-A] RX_PREAMBLE_DETECTION_TIMEOUT (R:1, 6ms)
+[16:20:12.521] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:12.527] ║ ... (44 similar errors omitted) ...
+[16:20:12.532] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:12.538] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:12.543] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:12.654] ╚═════════════════════════════════════════╝
+[16:20:13.409] [00:08:01] No tags detected (scan 16)
+[16:20:14.602] [00:08:02] TAG [0x2B5E] - R:3, DistA:16.05, DistB:N/A, Bat:38
+[16:20:14.608] ╔═══ ERROR LOG: Tag 0x62482B5E ═══╗
+[16:20:14.615] ║ Total Errors: 50 (Ant-A:0, Ant-B:50)
+[16:20:14.622] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:20:14.627] ╠═════════════════════════════════════════╣
+[16:20:14.635] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:14.643] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:14.651] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:14.656] ║ ... (44 similar errors omitted) ...
+[16:20:14.662] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:14.669] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:14.678] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:14.686] ╚═════════════════════════════════════════╝
+[16:20:16.762] [00:08:04] TAG [0x2B45] - R:3, DistA:15.79, DistB:N/A, Bat:41
+[16:20:16.768] ╔═══ ERROR LOG: Tag 0x66482B45 ═══╗
+[16:20:16.773] ║ Total Errors: 50 (Ant-A:0, Ant-B:50)
+[16:20:16.779] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:20:16.786] ╠═════════════════════════════════════════╣
+[16:20:16.902] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:16.907] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:16.912] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:16.918] ║ ... (44 similar errors omitted) ...
+[16:20:16.924] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:16.930] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:16.936] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:16.941] ╚═════════════════════════════════════════╝
+[16:20:19.984] [00:08:07] TAG [0x2B45] - R:3, DistA:15.94, DistB:N/A, Bat:41
+[16:20:19.990] ╔═══ ERROR LOG: Tag 0x66482B45 ═══╗
+[16:20:19.996] ║ Total Errors: 50 (Ant-A:0, Ant-B:50)
+[16:20:20.123] ║ Types: Timeouts=50, CRC=0, Others=0
+[16:20:20.129] ╠═════════════════════════════════════════╣
+[16:20:20.135] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:20.140] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:20.145] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:20.152] ║ ... (44 similar errors omitted) ...
+[16:20:20.158] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:20.164] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:20.171] ║ ⏱ [Ant-B] RX_PREAMBLE_DETECTION_TIMEOUT (R:0, 6ms)
+[16:20:20.176] ╚═════════════════════════════════════════╝
+[16:20:26.033] === Disconnected ===
+
+
+
+============================================================
+=== STATISTICS ===
+
+Total Detections: 111
+Unique Tags: 5
+Active Tags: 4

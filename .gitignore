@@ -17,13 +17,13 @@ Release/
 *.cyclo
 
 # STM32CubeIDE specific files
-.cstat
-.pcy
-.settings/
-*.launch
-.cproject
-.project
-.mxproject
+#.cstat
+#.pcy
+#.settings/
+#*.launch
+#.cproject
+#.project
+#.mxproject
 
 # System files
 .DS_Store
@@ -49,12 +49,14 @@ Thumbs.db
 
 # Eclipse metadata (STM32CubeIDE)
 .metadata/
+/.metadata/
 RemoteSystemsTempFiles/
 
 # Python virtual environments
 venv/
 env/
 __pycache__/
+**/__pycache__/*
 *.pyc
 *.pyo
 *.egg-info/
