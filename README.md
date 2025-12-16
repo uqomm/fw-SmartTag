@@ -132,3 +132,85 @@ Proprietary - UQOMM
 - **UWB:** Qorvo DW3000 (6.5 GHz band, IEEE 802.15.4z)
 - **LoRa:** Semtech SX1276 (VHF band for gateway communication)
 - **Range:** UWB up to 38m, LoRa long-range to gateway
+
+---
+
+## 📊 Operation Flow Diagrams
+
+### ONE DETECTION Mode - UWB Ranging Protocol
+
+```mermaid
+sequenceDiagram
+    participant Sniffer as Sniffer<br/>(STM32G474)
+    participant Tag as Personal Tag<br/>(STM32U535)
+    
+    Note over Sniffer,Tag: DS-TWR (Double-Sided Two-Way Ranging)
+    
+    Sniffer->>+Tag: POLL Frame
+    Note right of Sniffer: TX timestamp: T1
+    
+    Tag-->>-Sniffer: RESPONSE Frame
+    Note left of Tag: RX timestamp: T2<br/>TX timestamp: T3
+    
+    Sniffer->>Tag: FINAL Frame
+    Note right of Sniffer: RX timestamp: T4<br/>TX timestamp: T5
+    
+    Tag-->>Sniffer: FINAL Response
+    Note left of Tag: RX timestamp: T6
+    
+    rect rgb(200, 230, 255)
+    Note over Sniffer: Calculate Distance<br/>TOF = [(T4-T1)-(T3-T2)+(T6-T5)-(T6-T3)]/4<br/>Distance = TOF × c
+    end
+    
+    Note over Sniffer: Store Distance<br/>Tag ID + Distance
+```
+
+**ONE DETECTION Features:**
+- Single measurement per tag per cycle
+- High precision (±10cm according to DW3000 specs)
+- Optimized for energy efficiency
+- 8 configurable timeouts for reliability at >20m
+
+---
+
+### Sniffer Data Transmission Flow
+
+```mermaid
+sequenceDiagram
+    participant Tags as Personal Tags<br/>(Multiple)
+    participant Sniffer as Sniffer Device<br/>(STM32G474)
+    participant LoRa as LoRa Module<br/>(SX1276)
+    participant Gateway as Gateway<br/>(VHF Receiver)
+    
+    rect rgb(220, 240, 255)
+    Note over Tags,Sniffer: UWB Detection Phase
+    loop For each Tag (up to 255)
+        Tags->>Sniffer: UWB DS-TWR Protocol
+        Sniffer->>Sniffer: Calculate Distance
+        Sniffer->>Sniffer: Store in Memory<br/>(Tag_ID, Distance, Antenna)
+    end
+    end
+    
+    rect rgb(240, 255, 220)
+    Note over Sniffer,Gateway: LoRa Transmission Phase
+    
+    Sniffer->>Sniffer: Build Data Packet<br/>Format: [Sniffer_ID | Tag_Count | Data...]
+    
+    Sniffer->>LoRa: Serial Data via UART
+    Note right of Sniffer: Data includes:<br/>- Tag IDs<br/>- Distances<br/>- Antenna info<br/>- Timestamps
+    
+    LoRa->>Gateway: VHF Transmission
+    Note right of LoRa: Long-range<br/>Low power<br/>LoRa modulation
+    
+    Gateway-->>Gateway: Process & Forward<br/>to Backend Server
+    end
+    
+    Note over Sniffer: Transmission Interval:<br/>Configurable (default ~16s)<br/>Balances data freshness<br/>vs power consumption
+```
+
+**Transmission Protocol:**
+- **Packet Structure:** Sniffer ID + Tag count + [Tag ID, Distance, Antenna] × N
+- **Frequency:** VHF band (configurable)
+- **Modulation:** LoRa (high range, low power)
+- **Timeout:** 16 seconds LoRa send timeout
+- **Error Handling:** Retry mechanism with logging
